@@ -11,5 +11,29 @@
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalEnv": ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "VITE_SUPABASE_GOOGLE"],
+  "globalPassThroughEnv": [
+    "LLM_PROVIDER",
+    "GEMINI_API_KEY",
+    "GEMINI_MODEL",
+    "GEMINI_FALLBACK_MODEL",
+    "LLM_MAX_CONCURRENT",
+    "LLM_RPM",
+    "LLM_QUEUE_WAIT_MS",
+    "TASK_DB_PATH",
+    "POOL_REUSE_RATIO",
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "CORS_ORIGIN",
+    "CRON_SECRET",
+    "PUBLIC_URL",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_SECURE",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "MAIL_FROM",
+    "PORT"
+  ]
 }
