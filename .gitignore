@@ -9,3 +9,4 @@ apps/api/data/
 test-results/
 playwright-report/
 .turbo/
+.vercel

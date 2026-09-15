@@ -12,6 +12,7 @@ import Fastify from "fastify";
 import { registerAuth } from "./auth.ts";
 import { createMailer, type Mailer } from "./mailer.ts";
 import { registerConsentRoutes } from "./routes/consent.ts";
+import { registerCronRoutes } from "./routes/cron.ts";
 import { registerMeRoutes } from "./routes/me.ts";
 import { registerSessionRoutes } from "./routes/sessions.ts";
 import { registerTaskRoutes } from "./routes/tasks.ts";
@@ -73,6 +74,7 @@ export async function buildApp(
   registerTaskRoutes(app, pool);
   registerMeRoutes(app, db);
   registerConsentRoutes(app, { db, mailer, publicUrl });
+  registerCronRoutes(app, db);
 
   // In production serve the built SPA from the same origin.
   if (serveWeb && existsSync(WEB_DIST)) {
