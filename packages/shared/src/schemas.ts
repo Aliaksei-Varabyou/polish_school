@@ -29,6 +29,8 @@ export const GenerateRequest = z
       message: "count must be one of 5, 10, 15, 20",
     }),
     answerMode: AnswerMode,
+    /** ids of tasks the student has already seen — not served again from the pool */
+    excludeIds: z.array(z.string().max(64)).max(1000).optional(),
   })
   .refine((r) => !isLyceum(r.grade) || r.level !== undefined, {
     message: "level is required for liceum",

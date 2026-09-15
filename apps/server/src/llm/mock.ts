@@ -2,15 +2,15 @@ import type { Difficulty, FeedbackRequest, FeedbackResponse, Lang } from "@matem
 import { getTopic } from "@matema/shared";
 import type { LLMProvider, TaskBatchInput } from "./provider.ts";
 
-const TEXT: Record<Lang, { calc: string; hint: string; solve: string; order: string; left: string }> = {
-  ru: { calc: "Вычисли", hint: "Сначала выполни умножение.", solve: "Решение", order: "Неверный порядок действий", left: "Действия слева направо без приоритета" },
-  en: { calc: "Calculate", hint: "Do the multiplication first.", solve: "Solution", order: "Wrong order of operations", left: "Left to right without precedence" },
-  pl: { calc: "Oblicz", hint: "Najpierw wykonaj mnożenie.", solve: "Rozwiązanie", order: "Zła kolejność działań", left: "Działania od lewej bez kolejności" },
+const TEXT: Record<Lang, { calc: string; hint: string; order: string; left: string }> = {
+  ru: { calc: "Вычисли", hint: "Сначала выполни умножение.", order: "Неверный порядок действий", left: "Действия слева направо без приоритета" },
+  en: { calc: "Calculate", hint: "Do the multiplication first.", order: "Wrong order of operations", left: "Left to right without precedence" },
+  pl: { calc: "Oblicz", hint: "Najpierw wykonaj mnożenie.", order: "Zła kolejność działań", left: "Działania od lewej bez kolejności" },
 };
 
 const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-function makeTask(lang: Lang, difficulty: Difficulty, asChoice: boolean) {
+function makeTask(lang: Lang, topicId: string, difficulty: Difficulty, asChoice: boolean) {
   const t = TEXT[lang];
   const scale = difficulty * 5;
   const a = rnd(2, scale + 5);
@@ -18,6 +18,7 @@ function makeTask(lang: Lang, difficulty: Difficulty, asChoice: boolean) {
   const c = rnd(2, scale);
   const answer = a + b * c;
   const base = {
+    topicId,
     subtopic: "kolejność wykonywania działań",
     difficulty,
     question: `${t.calc}: $${a} + ${b} \\cdot ${c}$`,
@@ -27,9 +28,9 @@ function makeTask(lang: Lang, difficulty: Difficulty, asChoice: boolean) {
   };
   if (!asChoice) return { ...base, answerType: "number", correctAnswer: String(answer) };
 
-  const wrong = [(a + b) * c, a + b + c + 1, a * b + c + 2].map((v, i, arr) =>
-    v === answer || arr.indexOf(v) !== i ? answer + 10 + i : v,
-  );
+  // typical mistakes first, then simple offsets; always 3 distinct wrong values
+  const candidates = [(a + b) * c, a + b + c, a * b + c, answer + 1, answer - 1, answer + 10, answer - 10];
+  const wrong = [...new Set(candidates.filter((v) => v !== answer))].slice(0, 3);
   const options = [
     { text: String(answer) },
     { text: String(wrong[0]), misconception: t.order },
@@ -50,15 +51,15 @@ function makeTask(lang: Lang, difficulty: Difficulty, asChoice: boolean) {
 /** Offline provider for development and tests: arithmetic tasks, no API key needed. */
 export class MockProvider implements LLMProvider {
   readonly name = "mock";
+  calls = 0;
 
   async generateTasks(input: TaskBatchInput): Promise<unknown[]> {
-    return input.difficulties.map((d, i) => {
-      const asChoice = input.answerMode === "choice" || (input.answerMode === "mixed" && i % 2 === 1);
-      return makeTask(input.lang, d, asChoice);
-    });
+    this.calls++;
+    return input.slots.map((s) => makeTask(input.lang, s.topic.id, s.difficulty, s.kind === "choice"));
   }
 
   async generateFeedback(input: FeedbackRequest): Promise<FeedbackResponse> {
+    this.calls++;
     const stats = new Map<string, { ok: number; total: number }>();
     for (const r of input.results) {
       const s = stats.get(r.topicId) ?? { ok: 0, total: 0 };

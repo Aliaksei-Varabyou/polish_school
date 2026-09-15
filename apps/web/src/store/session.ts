@@ -41,6 +41,8 @@ interface State {
   answers: Record<string, AnswerRecord>;
   hints: Record<string, boolean>;
   feedback: { status: "idle" | "loading" | "done" | "error"; data?: FeedbackResponse; error?: string };
+  /** recently served task ids — sent to the server so pooled tasks don't repeat */
+  seenTaskIds: string[];
 
   setSettings: (patch: Partial<Settings>) => void;
   generate: (override?: Partial<Settings>) => Promise<void>;
@@ -68,6 +70,7 @@ export const useSession = create<State>()(
       answers: {},
       hints: {},
       feedback: { status: "idle" },
+      seenTaskIds: [],
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
@@ -82,6 +85,7 @@ export const useSession = create<State>()(
             topicIds: settings.topicIds,
             count: settings.count,
             answerMode: settings.answerMode,
+            excludeIds: get().seenTaskIds,
           });
           set({
             status: "active",
@@ -90,6 +94,7 @@ export const useSession = create<State>()(
             answers: {},
             hints: {},
             partial: tasks.length < settings.count ? { got: tasks.length, count: settings.count } : null,
+            seenTaskIds: [...get().seenTaskIds, ...tasks.map((t) => t.id)].slice(-1000),
           });
         } catch (err) {
           set({ status: "idle", error: err instanceof ApiRequestError ? err.code : "generic" });
@@ -137,7 +142,7 @@ export const useSession = create<State>()(
     {
       name: "matema-settings",
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ settings: s.settings }),
+      partialize: (s) => ({ settings: s.settings, seenTaskIds: s.seenTaskIds }),
     },
   ),
 );

@@ -9,6 +9,12 @@ import {
 
 export type VerifyResult = { ok: true; task: Task } | { ok: false; reason: string };
 
+export interface VerifyContext {
+  /** topics requested in the batch; the task's topicId must be one of them */
+  allowedTopicIds: string[];
+  answerMode: AnswerMode;
+}
+
 const numericParts = (s: string) => s.split(";").map((p) => evaluateNumber(normalizeAnswer(p)));
 const isNumeric = (s: string) => numericParts(s).every((n) => n !== null);
 
@@ -22,7 +28,7 @@ function sameValue(a: string, b: string): boolean {
  * verifyExpression (computed independently by mathjs) must match correctAnswer,
  * and for choice tasks exactly one option must equal the correct answer.
  */
-export function verifyTask(raw: unknown, ctx: { topicId: string; answerMode: AnswerMode }): VerifyResult {
+export function verifyTask(raw: unknown, ctx: VerifyContext): VerifyResult {
   if (!raw || typeof raw !== "object") return { ok: false, reason: "not an object" };
 
   const r = raw as Record<string, unknown>;
@@ -30,7 +36,12 @@ export function verifyTask(raw: unknown, ctx: { topicId: string; answerMode: Ans
   for (const key of ["verifyExpression", "choices", "correctChoice", "hint"]) {
     if (r[key] === null || r[key] === "") delete r[key];
   }
-  const parsed = Task.safeParse({ ...r, id: randomUUID(), topicId: ctx.topicId });
+
+  let topicId = typeof r.topicId === "string" ? r.topicId : undefined;
+  if (!topicId && ctx.allowedTopicIds.length === 1) topicId = ctx.allowedTopicIds[0];
+  if (!topicId || !ctx.allowedTopicIds.includes(topicId)) return { ok: false, reason: `unexpected topicId: ${topicId}` };
+
+  const parsed = Task.safeParse({ ...r, id: randomUUID(), topicId });
   if (!parsed.success) return { ok: false, reason: `schema: ${parsed.error.issues[0]?.message}` };
   const task = parsed.data;
 
