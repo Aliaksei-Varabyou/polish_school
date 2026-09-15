@@ -1,5 +1,4 @@
 import {
-  isAnswerCorrect,
   isLyceum,
   type AnswerMode,
   type FeedbackResponse,
@@ -8,7 +7,8 @@ import {
   type Level,
   type Task,
   type TaskResult,
-} from "@matema/shared";
+} from "@portal/core";
+import { isAnswerCorrect } from "@portal/trainer-math";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { api, ApiRequestError } from "../api/client.ts";

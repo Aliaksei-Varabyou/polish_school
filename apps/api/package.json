@@ -1,0 +1,26 @@
+{
+  "name": "@portal/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env --import tsx --watch src/index.ts",
+    "start": "node --env-file-if-exists=../../.env --import tsx src/index.ts",
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^9.0.0",
+    "@portal/ai": "*",
+    "@portal/core": "*",
+    "@portal/task-pool": "*",
+    "@portal/trainer-math": "*",
+    "fastify": "^5.12.4",
+    "tsx": "^4.23.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

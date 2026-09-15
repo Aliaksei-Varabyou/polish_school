@@ -1,7 +1,7 @@
-import type { AnswerType } from "@matema/shared";
+import type { AnswerType } from "@portal/core";
+import { Button } from "@portal/ui";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "./ui.tsx";
 
 const KEYS_NUMBER = ["√", "^", "/", "π", "(", ")", ";"];
 const KEYS_EXPRESSION = ["x", "^", "/", "√", "(", ")"];

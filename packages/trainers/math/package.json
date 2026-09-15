@@ -1,0 +1,22 @@
+{
+  "name": "@portal/trainer-math",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@portal/ai": "*",
+    "@portal/core": "*",
+    "mathjs": "^15.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

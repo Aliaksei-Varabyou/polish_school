@@ -1,12 +1,11 @@
-import { getTopic } from "@matema/shared";
+import { getTopic } from "@portal/trainer-math";
+import { Button, Card, ProgressBar } from "@portal/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnswerInput } from "../components/AnswerInput.tsx";
 import { ChoiceOptions } from "../components/ChoiceOptions.tsx";
 import { correctAnswerText } from "../components/format.ts";
 import { MathText } from "../components/MathText.tsx";
-import { ProgressBar } from "../components/ProgressBar.tsx";
-import { Button, Card } from "../components/ui.tsx";
 import { useSession } from "../store/session.ts";
 
 const DIFFICULTY_STYLE = {

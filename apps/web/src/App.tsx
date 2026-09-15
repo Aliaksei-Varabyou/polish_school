@@ -1,7 +1,7 @@
-import { LANGS } from "@matema/shared";
+import { LANGS } from "@portal/core";
+import { Segmented } from "@portal/ui";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Segmented } from "./components/ui.tsx";
 import { LoadingScreen } from "./pages/LoadingScreen.tsx";
 import { ResultsPage } from "./pages/ResultsPage.tsx";
 import { StartPage } from "./pages/StartPage.tsx";

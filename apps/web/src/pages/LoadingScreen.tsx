@@ -1,6 +1,6 @@
+import { Card } from "@portal/ui";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card } from "../components/ui.tsx";
 
 const SYMBOLS = ["+", "−", "×", "÷", "√", "π", "∑", "%", "x²", "∞"];
 

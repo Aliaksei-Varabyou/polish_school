@@ -1,4 +1,4 @@
-import type { Task } from "@matema/shared";
+import type { Task } from "@portal/core";
 
 /** Makes a machine answer ("2*sqrt(3); -2.5") readable ("2·√(3); -2,5"). */
 export function prettyAnswer(answer: string, lang: string): string {

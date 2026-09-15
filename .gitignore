@@ -5,6 +5,7 @@ dist
 *.log
 .DS_Store
 .claude/settings.local.json
-apps/server/data/
+apps/api/data/
 test-results/
 playwright-report/
+.turbo/

@@ -7,9 +7,13 @@
 ## Структура
 
 ```
-packages/shared   zod-схемы, справочник тем (curriculum/), проверка ответов (answer.ts)
-apps/server       Fastify API: /api/generate, /api/feedback; провайдеры ИИ (gemini, mock)
-apps/web          React + Vite + Tailwind; экраны Start → Trainer → Results
+apps/api                Fastify API: /api/generate, /api/feedback, /api/health
+apps/web                React + Vite + Tailwind; экраны Start → Trainer → Results
+packages/core           общие zod-схемы и типы (Task, Topic, TaskSlot…)
+packages/ai             LLMClient: Gemini, mock, общая очередь запросов
+packages/task-pool      пул проверенных задач (SQLite)
+packages/ui             общие React-компоненты
+packages/trainers/math  тренажёр математики: темы, проверка ответов; server/ — промпты, валидация, mock-ответы
 ```
 
 ## Запуск
@@ -31,7 +35,7 @@ npm run dev                 # сервер :8787 + фронт :5173 (прокс�
    Остальные генерируются пачками до 5 задач: темы внутри пачки смешиваются, поэтому 10 задач — это 2 запроса к ИИ при любом числе тем.
    Все запросы к ИИ проходят через общую очередь сервера (`LLM_MAX_CONCURRENT`, `LLM_RPM`).
 2. Gemini возвращает JSON по схеме. Для числовых ответов модель также присылает `verifyExpression`: выражение, которое вычисляет ответ из условия.
-3. Сервер проверяет каждую задачу (`apps/server/src/validation/verifyTask.ts`):
+3. Сервер проверяет каждую задачу (`packages/trainers/math/src/server/verifyTask.ts`):
    - схема данных;
    - `verifyExpression` должен совпасть с ответом (через mathjs);
    - в задачах с выбором ровно один верный вариант.
@@ -40,7 +44,7 @@ npm run dev                 # сервер :8787 + фронт :5173 (прокс�
    Если ИИ недоступен или квота исчерпана, недостающие задачи добираются из пула.
    Модели перебираются по порядку (`GEMINI_MODEL`, затем `GEMINI_FALLBACK_MODEL`). Модель, получившая 429, пропускается
    на время из ответа Google, а при исчерпании суточной квоты — на час. Состояние видно в `GET /api/health`.
-4. Ответ ученика проверяется на клиенте (`packages/shared/src/answer.ts`). Эквивалентными считаются `0,5`, `1/2` и `.5`; `2√3` и `2*sqrt(3)`. Корни проверяются без учёта порядка (`2; -3`), выражения — подстановкой значений.
+4. Ответ ученика проверяется на клиенте (`packages/trainers/math/src/answer.ts`). Эквивалентными считаются `0,5`, `1/2` и `.5`; `2√3` и `2*sqrt(3)`. Корни проверяются без учёта порядка (`2; -3`), выражения — подстановкой значений.
 
 ## Переменные окружения
 
@@ -53,7 +57,7 @@ npm run dev                 # сервер :8787 + фронт :5173 (прокс�
 | `LLM_MAX_CONCURRENT` | `4` | сколько запросов к ИИ одновременно на весь сервер |
 | `LLM_RPM` | `15` (mock: без лимита) | запросов к ИИ в минуту на весь сервер |
 | `LLM_QUEUE_WAIT_MS` | `45000` | сколько запрос может ждать в очереди, потом ошибка «слишком много запросов» |
-| `TASK_DB_PATH` | `apps/server/data/tasks.db` | файл пула задач |
+| `TASK_DB_PATH` | `apps/api/data/tasks.db` | файл пула задач |
 | `POOL_REUSE_RATIO` | `0.5` | доля задач из пула в каждой тренировке |
 | `PORT` | `8787` | |
 | `CORS_ORIGIN` | любой | список через запятую |
@@ -67,5 +71,5 @@ npm run typecheck
 
 ## Справочник тем
 
-`packages/shared/src/curriculum/{sp,lo}.ts` — это черновая раскладка по классам на основе популярных учебников.
+`packages/trainers/math/src/curriculum/{sp,lo}.ts` — это черновая раскладка по классам на основе популярных учебников.
 Сверьте её с podstawa programowa и учебником конкретной школы. Подтемы записаны по-польски, они идут в промпт.

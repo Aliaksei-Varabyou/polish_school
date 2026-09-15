@@ -1,9 +1,9 @@
-import { getTopic } from "@matema/shared";
+import { getTopic } from "@portal/trainer-math";
+import { Button, Card } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { correctAnswerText, prettyAnswer } from "../components/format.ts";
 import { MathText } from "../components/MathText.tsx";
-import { Button, Card } from "../components/ui.tsx";
 import { useSession } from "../store/session.ts";
 
 export function ResultsPage() {

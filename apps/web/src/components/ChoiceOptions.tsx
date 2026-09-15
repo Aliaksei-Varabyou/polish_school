@@ -1,4 +1,4 @@
-import type { Task } from "@matema/shared";
+import type { Task } from "@portal/core";
 import { MathText } from "./MathText.tsx";
 
 export function ChoiceOptions({

@@ -1,7 +1,8 @@
-import { isLyceum, TASK_COUNTS, topicsFor, type AnswerMode, type Grade, type Level } from "@matema/shared";
+import { isLyceum, TASK_COUNTS, type AnswerMode, type Grade, type Level } from "@portal/core";
+import { topicsFor } from "@portal/trainer-math";
+import { Button, Card, Label, Segmented } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Card, Label, Segmented } from "../components/ui.tsx";
 import { useSession } from "../store/session.ts";
 
 const SP_GRADES: Grade[] = ["sp5", "sp6", "sp7", "sp8"];

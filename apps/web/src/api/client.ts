@@ -1,4 +1,4 @@
-import type { FeedbackRequest, FeedbackResponse, GenerateRequest, GenerateResponse } from "@matema/shared";
+import type { FeedbackRequest, FeedbackResponse, GenerateRequest, GenerateResponse } from "@portal/core";
 
 export class ApiRequestError extends Error {
   constructor(

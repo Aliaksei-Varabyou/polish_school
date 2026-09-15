@@ -4,20 +4,23 @@
   "type": "module",
   "workspaces": [
     "packages/*",
+    "packages/trainers/*",
     "apps/*"
   ],
+  "packageManager": "npm@11.6.2",
   "scripts": {
-    "dev": "npm run dev -w @matema/server & npm run dev -w @matema/web & wait",
-    "dev:server": "npm run dev -w @matema/server",
-    "dev:web": "npm run dev -w @matema/web",
-    "build": "npm run build -w @matema/web",
-    "start": "npm run start -w @matema/server",
-    "test": "vitest run",
-    "typecheck": "tsc -p packages/shared && tsc -p apps/server && tsc -p apps/web",
+    "dev": "turbo run dev --filter=@portal/api --filter=@portal/web",
+    "dev:api": "npm run dev -w @portal/api",
+    "dev:web": "npm run dev -w @portal/web",
+    "build": "turbo run build",
+    "start": "npm run start -w @portal/api",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
     "e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "turbo": "^2.10.13",
     "typescript": "^5.9.0",
     "vitest": "^5.0.1"
   }
