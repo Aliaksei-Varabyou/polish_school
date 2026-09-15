@@ -166,8 +166,9 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
         for (const item of raw) {
           const result = trainer.verifyTask(item, { allowedTopicIds, answerMode: req.answerMode });
           if (!result.ok) {
+            const { reason } = result as Extract<typeof result, { ok: false }>;
             rejected++;
-            log.warn({ trainer: trainer.id, reason: result.reason }, "task rejected");
+            log.warn({ trainer: trainer.id, reason }, "task rejected");
           } else if (claimSlot(pending, result.task)) {
             generated.push(result.task);
           }

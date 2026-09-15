@@ -65,7 +65,10 @@ export function registerTrainerRoutes(app: FastifyInstance, { client, trainers, 
       }
 
       const outcome = await generateTasks(req, { trainer, client, pool, reuseRatio, log: request.log });
-      if (!outcome.ok) return reply.code(STATUS[outcome.code]).send({ error: MESSAGES[outcome.code], code: outcome.code });
+      if (!outcome.ok) {
+        const { code } = outcome as Extract<typeof outcome, { ok: false }>;
+        return reply.code(STATUS[code]).send({ error: MESSAGES[code], code });
+      }
 
       if (!user || !db) return { tasks: outcome.tasks };
 
@@ -94,7 +97,10 @@ export function registerTrainerRoutes(app: FastifyInstance, { client, trainers, 
         return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? "Invalid request", code: "BAD_REQUEST" });
       }
       const outcome = await generateFeedback(parsed.data, { trainer, client, log: request.log });
-      if (!outcome.ok) return reply.code(STATUS[outcome.code]).send({ error: MESSAGES[outcome.code], code: outcome.code });
+      if (!outcome.ok) {
+        const { code } = outcome as Extract<typeof outcome, { ok: false }>;
+        return reply.code(STATUS[code]).send({ error: MESSAGES[code], code });
+      }
 
       const { sessionId } = parsed.data;
       if (db && request.user && sessionId) {
