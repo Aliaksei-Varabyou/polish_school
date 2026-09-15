@@ -10,4 +10,3 @@ test-results/
 playwright-report/
 .turbo/
 .vercel
-/api/index.js
