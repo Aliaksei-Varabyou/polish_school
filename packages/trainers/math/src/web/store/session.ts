@@ -43,6 +43,8 @@ interface State {
   feedback: { status: "idle" | "loading" | "done" | "error"; data?: FeedbackResponse; error?: string };
   /** recently served task ids — sent to the server so pooled tasks don't repeat */
   seenTaskIds: string[];
+  /** signed-in users: the session stored in history (answers and finish are synced in the background) */
+  sessionId: string | null;
 
   setSettings: (patch: Partial<Settings>) => void;
   generate: (override?: Partial<Settings>) => Promise<void>;
@@ -52,6 +54,19 @@ interface State {
   quit: () => void;
   loadFeedback: () => Promise<void>;
 }
+
+// History sync runs in order (answers before finish) and never blocks or breaks the UI.
+let syncQueue: Promise<void> = Promise.resolve();
+
+function syncInBackground(what: string, request: () => Promise<unknown>) {
+  syncQueue = syncQueue.then(request).then(
+    () => undefined,
+    (err: unknown) => console.warn(`[math] history sync (${what}) failed`, err),
+  );
+}
+
+/** resolves once all queued history requests have settled (used by tests) */
+export const historySynced = () => syncQueue;
 
 const browserLang = (): Lang => {
   const l = navigator.language.slice(0, 2);
@@ -71,14 +86,15 @@ export const useSession = create<State>()(
       hints: {},
       feedback: { status: "idle" },
       seenTaskIds: [],
+      sessionId: null,
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       generate: async (override) => {
         const settings = { ...get().settings, ...override };
-        set({ settings, status: "loading", error: null, partial: null, feedback: { status: "idle" } });
+        set({ settings, status: "loading", error: null, partial: null, feedback: { status: "idle" }, sessionId: null });
         try {
-          const { tasks } = await api.generate({
+          const { tasks, sessionId } = await api.generate({
             lang: settings.lang,
             grade: settings.grade,
             level: isLyceum(settings.grade) ? settings.level : undefined,
@@ -89,6 +105,7 @@ export const useSession = create<State>()(
           });
           set({
             status: "active",
+            sessionId: sessionId ?? null,
             tasks,
             index: 0,
             answers: {},
@@ -102,11 +119,14 @@ export const useSession = create<State>()(
       },
 
       submitAnswer: (answer) => {
-        const { tasks, index, answers, hints } = get();
+        const { tasks, index, answers, hints, sessionId } = get();
         const task = tasks[index];
         if (!task || answers[task.id]) return;
+        // instant client-side check; the server re-checks the synced answer for history
         const correct = isAnswerCorrect(answer, task.correctAnswer, task.answerType);
-        set({ answers: { ...answers, [task.id]: { answer, correct, usedHint: !!hints[task.id] } } });
+        const usedHint = !!hints[task.id];
+        set({ answers: { ...answers, [task.id]: { answer, correct, usedHint } } });
+        if (sessionId) syncInBackground("answer", () => api.answer(sessionId, { position: index, answer, usedHint }));
       },
 
       revealHint: () => {
@@ -115,15 +135,17 @@ export const useSession = create<State>()(
       },
 
       next: () => {
-        const { index, tasks } = get();
-        if (index + 1 >= tasks.length) set({ status: "finished" });
-        else set({ index: index + 1 });
+        const { index, tasks, sessionId, status } = get();
+        if (index + 1 >= tasks.length) {
+          if (status === "active" && sessionId) syncInBackground("finish", () => api.finish(sessionId));
+          set({ status: "finished" });
+        } else set({ index: index + 1 });
       },
 
-      quit: () => set({ status: "idle", tasks: [], answers: {}, hints: {}, index: 0, partial: null }),
+      quit: () => set({ status: "idle", tasks: [], answers: {}, hints: {}, index: 0, partial: null, sessionId: null }),
 
       loadFeedback: async () => {
-        const { settings, feedback } = get();
+        const { settings, feedback, sessionId } = get();
         if (feedback.status === "loading") return;
         set({ feedback: { status: "loading" } });
         try {
@@ -132,6 +154,7 @@ export const useSession = create<State>()(
             grade: settings.grade,
             level: isLyceum(settings.grade) ? settings.level : undefined,
             results: buildResults(get().tasks, get().answers),
+            ...(sessionId ? { sessionId } : {}),
           });
           set({ feedback: { status: "done", data } });
         } catch (err) {

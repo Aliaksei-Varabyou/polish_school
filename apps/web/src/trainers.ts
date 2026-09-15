@@ -3,3 +3,5 @@ import type { TrainerWeb } from "@portal/trainer-sdk";
 
 /** Web-side trainer registry: add new subjects here (and in apps/api/src/trainers.ts). */
 export const trainers: TrainerWeb[] = [mathTrainerWeb];
+
+export const getTrainer = (id: string): TrainerWeb | undefined => trainers.find((tr) => tr.id === id);
