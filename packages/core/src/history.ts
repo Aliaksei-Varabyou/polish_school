@@ -69,6 +69,10 @@ export const ProgressResponse = z.object({
 });
 export type ProgressResponse = z.infer<typeof ProgressResponse>;
 
+/** POST /api/tasks/:taskId/report — "this task is wrong/unclear". */
+export const TaskReportRequest = z.object({ reason: z.string().trim().max(500).optional() });
+export type TaskReportRequest = z.infer<typeof TaskReportRequest>;
+
 /** GET /api/me/profile */
 export const Profile = z.object({
   id: z.string().uuid(),

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@portal/core": "*",
+    "@portal/task-pool": "*",
     "@supabase/supabase-js": "*"
   },
   "devDependencies": {

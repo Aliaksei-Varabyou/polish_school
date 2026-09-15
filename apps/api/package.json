@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env --import tsx --watch src/index.ts",
     "start": "node --env-file-if-exists=../../.env --import tsx src/index.ts",
+    "pool:migrate": "node --env-file-if-exists=../../.env --import tsx scripts/migrate-pool.ts",
     "typecheck": "tsc -p .",
     "test": "vitest run"
   },

@@ -21,55 +21,66 @@ const task = (id: string, overrides: Partial<Task> = {}): Task => ({
 
 const ctx = { trainerId: "math", lang: "pl", grade: "sp7" } as const;
 const query = { ...ctx, topicId: "sp7.percent", answerMode: "input", excludeIds: [], limit: 10 } as const;
+const ids = (tasks: Task[]) => tasks.map((t) => t.id).sort();
 
-describe("TaskPool", () => {
+describe("TaskPool (SQLite)", () => {
   let pool: TaskPool;
   beforeEach(() => {
     pool = new TaskPool(":memory:");
   });
   afterEach(() => pool.close());
 
-  it("stores tasks once and filters by trainer, language, grade, level and topic", () => {
-    pool.add([task("a"), task("b"), task("c", { topicId: "sp7.powers" })], ctx);
-    pool.add([task("a")], ctx); // duplicate id ignored
-    pool.add([task("d")], { ...ctx, lang: "ru" });
-    pool.add([task("e")], { ...ctx, grade: "lo1", level: "R" });
-    pool.add([task("f")], { ...ctx, trainerId: "physics" });
+  it("stores tasks once and filters by trainer, language, grade, level and topic", async () => {
+    await pool.add([task("a"), task("b"), task("c", { topicId: "sp7.powers" })], ctx);
+    await pool.add([task("a")], ctx); // duplicate id ignored
+    await pool.add([task("d")], { ...ctx, lang: "ru" });
+    await pool.add([task("e")], { ...ctx, grade: "lo1", level: "R" });
+    await pool.add([task("f")], { ...ctx, trainerId: "physics" });
 
-    expect(pool.count()).toBe(6);
-    expect(pool.count("math")).toBe(5);
-    expect(pool.take(query).map((t) => t.id).sort()).toEqual(["a", "b"]);
-    expect(pool.take({ ...query, lang: "ru" }).map((t) => t.id)).toEqual(["d"]);
-    expect(pool.take({ ...query, grade: "lo1", level: "R" }).map((t) => t.id)).toEqual(["e"]);
-    expect(pool.take({ ...query, grade: "lo1", level: "P" })).toEqual([]);
-    expect(pool.take({ ...query, trainerId: "physics" }).map((t) => t.id)).toEqual(["f"]);
+    expect(await pool.count()).toBe(6);
+    expect(await pool.count("math")).toBe(5);
+    expect(ids(await pool.take(query))).toEqual(["a", "b"]);
+    expect(ids(await pool.take({ ...query, lang: "ru" }))).toEqual(["d"]);
+    expect(ids(await pool.take({ ...query, grade: "lo1", level: "R" }))).toEqual(["e"]);
+    expect(await pool.take({ ...query, grade: "lo1", level: "P" })).toEqual([]);
+    expect(ids(await pool.take({ ...query, trainerId: "physics" }))).toEqual(["f"]);
   });
 
-  it("respects answer mode and excluded ids", () => {
-    pool.add([task("num"), task("expr", { answerType: "expression" }), task("ch", { answerType: "choice" })], ctx);
-    expect(pool.take({ ...query, answerMode: "choice" }).map((t) => t.id)).toEqual(["ch"]);
-    expect(pool.take({ ...query, answerMode: "input", excludeIds: ["num"] }).map((t) => t.id)).toEqual(["expr"]);
-    expect(pool.take({ ...query, answerMode: "mixed" })).toHaveLength(3);
+  it("respects answer mode and excluded ids", async () => {
+    await pool.add([task("num"), task("expr", { answerType: "expression" }), task("ch", { answerType: "choice" })], ctx);
+    expect(ids(await pool.take({ ...query, answerMode: "choice" }))).toEqual(["ch"]);
+    expect(ids(await pool.take({ ...query, answerMode: "input", excludeIds: ["num"] }))).toEqual(["expr"]);
+    expect(await pool.take({ ...query, answerMode: "mixed" })).toHaveLength(3);
   });
 
-  it("prefers the requested difficulty and least served tasks", () => {
-    pool.add([task("easy", { difficulty: 1 }), task("hard1", { difficulty: 3 }), task("hard2", { difficulty: 3 })], ctx);
-    const first = pool.take({ ...query, difficulty: 3, limit: 1 })[0];
-    const second = pool.take({ ...query, difficulty: 3, limit: 1 })[0];
+  it("prefers the requested difficulty and least served tasks", async () => {
+    await pool.add([task("easy", { difficulty: 1 }), task("hard1", { difficulty: 3 }), task("hard2", { difficulty: 3 })], ctx);
+    const [first] = await pool.take({ ...query, difficulty: 3, limit: 1 });
+    const [second] = await pool.take({ ...query, difficulty: 3, limit: 1 });
     expect([first.id, second.id].sort()).toEqual(["hard1", "hard2"]);
-    expect(pool.take({ ...query, difficulty: 3, limit: 1 })[0].difficulty).toBe(3); // both served once -> random hard
-    expect(pool.take({ ...query, limit: 0 })).toEqual([]);
+    expect((await pool.take({ ...query, difficulty: 3, limit: 1 }))[0].difficulty).toBe(3);
+    expect(await pool.take({ ...query, limit: 0 })).toEqual([]);
   });
 
-  it("returns the full task object", () => {
+  it("stops serving tasks reported twice", async () => {
+    await pool.add([task("bad"), task("good")], ctx);
+    expect(await pool.report("bad", { reason: "wrong answer" })).toBe(true);
+    expect(ids(await pool.take(query))).toEqual(["bad", "good"]);
+    expect(await pool.report("bad", {})).toBe(true);
+    expect(ids(await pool.take(query))).toEqual(["good"]);
+    expect(await pool.report("missing", {})).toBe(false);
+  });
+
+  it("returns the full task object and exports everything", async () => {
     const t = task("x", { answerType: "choice", correctChoice: "B", correctAnswer: "B", hint: "h" });
-    pool.add([t], ctx);
-    expect(pool.take({ ...query, answerMode: "choice" })[0]).toEqual(t);
+    await pool.add([t], { ...ctx, grade: "lo2", level: "R" });
+    expect((await pool.take({ ...query, grade: "lo2", level: "R", answerMode: "choice" }))[0]).toEqual(t);
+    expect(pool.exportAll()).toEqual([{ ctx: { trainerId: "math", lang: "pl", grade: "lo2", level: "R" }, task: t, reports: 0 }]);
   });
 });
 
 describe("TaskPool migration", () => {
-  it("adds trainer_id to a pool created before trainers existed and treats old tasks as math", () => {
+  it("adds trainer_id and reports to a pool created before trainers existed", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pool-"));
     const file = join(dir, "tasks.db");
     try {
@@ -87,8 +98,9 @@ describe("TaskPool migration", () => {
       old.close();
 
       const pool = new TaskPool(file);
-      expect(pool.count("math")).toBe(1);
-      expect(pool.take(query).map((x) => x.id)).toEqual(["legacy"]);
+      expect(await pool.count("math")).toBe(1);
+      expect(ids(await pool.take(query))).toEqual(["legacy"]);
+      expect(await pool.report("legacy", {})).toBe(true);
       pool.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });

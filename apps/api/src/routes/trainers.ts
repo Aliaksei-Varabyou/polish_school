@@ -1,7 +1,7 @@
 import type { LLMClient } from "@portal/ai";
 import { FeedbackRequest, GenerateRequest, Grade, Level } from "@portal/core";
 import type { PortalDb } from "@portal/db";
-import type { TaskPool } from "@portal/task-pool";
+import type { TaskPoolStore } from "@portal/task-pool";
 import type { TrainerServer } from "@portal/trainer-sdk";
 import { generateFeedback, generateTasks } from "@portal/trainer-sdk/server";
 import type { FastifyInstance, FastifyReply } from "fastify";
@@ -9,7 +9,7 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 export interface TrainerRoutesOptions {
   client: LLMClient;
   trainers: Map<string, TrainerServer>;
-  pool?: TaskPool;
+  pool?: TaskPoolStore;
   reuseRatio?: number;
   /** accounts: sessions of signed-in users are stored in history */
   db?: PortalDb;

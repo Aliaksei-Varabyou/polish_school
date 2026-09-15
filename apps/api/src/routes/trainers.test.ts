@@ -35,7 +35,7 @@ describe("trainer API (math, mock AI)", () => {
     const tasks = res.json().tasks as Task[];
     expect(tasks).toHaveLength(10);
     for (const t of tasks) expect(mathTrainer.checkAnswer(t, t.correctAnswer)).toBe(true);
-    expect(pool.count("math")).toBe(10);
+    expect(await pool.count("math")).toBe(10);
   });
 
   it("rejects unknown trainers and invalid requests", async () => {
@@ -60,6 +60,16 @@ describe("trainer API (math, mock AI)", () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ summary: "[mock] 0/1", suggestedTopicIds: [topicIds[0]] });
+  });
+
+  it("accepts reports about tasks in the pool", async () => {
+    const res = await app.inject({ method: "POST", url: "/api/trainers/math/generate", payload: body });
+    const [task] = res.json().tasks as Task[];
+    const report = (id: string, payload: object = {}) => app.inject({ method: "POST", url: `/api/tasks/${id}/report`, payload });
+
+    expect((await report(task.id, { reason: "ответ неверный" })).json()).toEqual({ ok: true });
+    expect((await report("unknown-task")).statusCode).toBe(404);
+    expect((await report(task.id, { reason: "x".repeat(501) })).statusCode).toBe(400);
   });
 
   it("reports health with pool size", async () => {

@@ -11,7 +11,7 @@ import {
   type TaskSlot,
   type Topic,
 } from "@portal/core";
-import type { TaskPool } from "@portal/task-pool";
+import type { TaskPoolStore } from "@portal/task-pool";
 import type { TrainerServer } from "../index.ts";
 
 /** tasks per LLM request (topics are mixed within a batch) */
@@ -92,7 +92,7 @@ function claimSlot(pending: TaskSlot[], task: Task): boolean {
 export interface GenerateDeps {
   trainer: TrainerServer;
   client: LLMClient;
-  pool?: TaskPool;
+  pool?: TaskPoolStore;
   /** share of tasks taken from the pool when available (0..1) */
   reuseRatio?: number;
   log?: Logger;
@@ -126,9 +126,9 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
   const exclude = new Set(req.excludeIds ?? []);
   const fromPool: Task[] = [];
 
-  const takeFromPool = (slot: TaskSlot, strictKind: boolean) => {
+  const takeFromPool = async (slot: TaskSlot, strictKind: boolean) => {
     if (!pool) return false;
-    const [task] = pool.take({
+    const [task] = await pool.take({
       ...ctx,
       topicId: slot.topic.id,
       answerMode: strictKind ? slot.kind : req.answerMode,
@@ -146,7 +146,7 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
   const reuseTarget = pool ? Math.floor(req.count * reuseRatio) : 0;
   for (const slot of shuffle(pending)) {
     if (fromPool.length >= reuseTarget) break;
-    if (takeFromPool(slot, true)) pending = pending.filter((s) => s !== slot);
+    if (await takeFromPool(slot, true)) pending = pending.filter((s) => s !== slot);
   }
 
   // 2) generate the rest; topics are mixed within a batch to save requests
@@ -180,14 +180,17 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
     });
   }
 
-  if (pool && generated.length > 0) pool.add(generated, ctx);
+  if (pool && generated.length > 0) {
+    // the practice session must not fail because the pool is unavailable
+    await pool.add(generated, ctx).catch((err) => log.error({ err, trainer: trainer.id }, "failed to store tasks in the pool"));
+  }
 
   // 3) AI failed or quota exhausted: fill the gaps from the pool
   // (tasks generated in this request are already pooled — don't serve them twice)
   for (const t of generated) exclude.add(t.id);
   const reused = fromPool.length;
   for (const slot of [...pending]) {
-    if (takeFromPool(slot, false)) pending = pending.filter((s) => s !== slot);
+    if (await takeFromPool(slot, false)) pending = pending.filter((s) => s !== slot);
   }
 
   const stats: GenerateStats = {

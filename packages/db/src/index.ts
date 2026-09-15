@@ -26,6 +26,8 @@ export function dbConfigFromEnv(env: Record<string, string | undefined> = proces
     : null;
 }
 
+export { SupabaseTaskPool } from "./taskPool.ts";
+
 export interface AuthUser {
   id: string;
   email: string | null;

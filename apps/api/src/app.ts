@@ -6,12 +6,13 @@ import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { LimitedClient, type LLMClient } from "@portal/ai";
 import type { PortalDb } from "@portal/db";
-import type { TaskPool } from "@portal/task-pool";
+import type { TaskPoolStore } from "@portal/task-pool";
 import type { TrainerServer } from "@portal/trainer-sdk";
 import Fastify from "fastify";
 import { registerAuth } from "./auth.ts";
 import { registerMeRoutes } from "./routes/me.ts";
 import { registerSessionRoutes } from "./routes/sessions.ts";
+import { registerTaskRoutes } from "./routes/tasks.ts";
 import { registerTrainerRoutes } from "./routes/trainers.ts";
 import { trainers as defaultTrainers } from "./trainers.ts";
 
@@ -19,7 +20,7 @@ const WEB_DIST = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dis
 
 export interface AppOptions {
   logger?: boolean;
-  pool?: TaskPool;
+  pool?: TaskPoolStore;
   reuseRatio?: number;
   trainers?: Map<string, TrainerServer>;
   /** accounts, profiles and history (Supabase); omitted = guest mode only */
@@ -41,6 +42,7 @@ export async function buildApp(
   app.get("/api/health", async () => {
     const inner = client instanceof LimitedClient ? client.inner : client;
     const models = (inner as { status?: () => unknown }).status?.();
+    const poolSize = pool ? await pool.count().catch(() => null) : undefined;
     return {
       ok: true,
       provider: client.name,
@@ -48,11 +50,12 @@ export async function buildApp(
       auth: !!db,
       ...(models ? { models } : {}),
       ...(client instanceof LimitedClient ? { queue: client.limiter.stats } : {}),
-      ...(pool ? { poolSize: pool.count() } : {}),
+      ...(poolSize !== undefined ? { poolSize } : {}),
     };
   });
   registerTrainerRoutes(app, { client, trainers, pool, reuseRatio, db });
   registerSessionRoutes(app, trainers, db);
+  registerTaskRoutes(app, pool);
   registerMeRoutes(app, db);
 
   // In production serve the built SPA from the same origin.

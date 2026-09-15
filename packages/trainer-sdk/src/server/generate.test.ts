@@ -87,7 +87,7 @@ describe("generateTasks", () => {
     expect(tasks).toHaveLength(10);
     expect(mock.calls).toBe(2);
     expect(new Set(tasks.map((t) => t.topicId)).size).toBe(5);
-    expect(pool.count()).toBe(10);
+    expect(await pool.count()).toBe(10);
   });
 
   it("rejects requests without valid topics", async () => {
@@ -109,7 +109,7 @@ describe("generateTasks", () => {
     const fresh = await run(mock, pool);
     expect(fresh.tasks).toHaveLength(10);
     expect(mock.calls).toBe(1);
-    expect(pool.count()).toBe(25);
+    expect(await pool.count()).toBe(25);
   });
 
   it("keeps pools of different trainers apart", async () => {
