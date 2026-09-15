@@ -73,6 +73,17 @@ export type ProgressResponse = z.infer<typeof ProgressResponse>;
 export const TaskReportRequest = z.object({ reason: z.string().trim().max(500).optional() });
 export type TaskReportRequest = z.infer<typeof TaskReportRequest>;
 
+/** Students younger than this need a parent's confirmed consent (RODO art. 8, Poland). */
+export const CONSENT_AGE = 16;
+
+/**
+ * True when the student may be younger than CONSENT_AGE (only the birth year is stored, so the check is
+ * conservative) or the birth year is unknown.
+ */
+export function needsParentalConsent(birthYear: number | null, now = new Date()): boolean {
+  return birthYear === null || now.getFullYear() - birthYear <= CONSENT_AGE;
+}
+
 /** GET /api/me/profile */
 export const Profile = z.object({
   id: z.string().uuid(),
@@ -83,10 +94,14 @@ export const Profile = z.object({
   uiLang: Lang,
   birthYear: z.number().int().nullable(),
   parentalConsentAt: z.string().nullable(),
+  /** birth year missing or under 16 without a confirmed parental consent: history is not stored */
+  consentRequired: z.boolean(),
+  /** masked e-mail of the last pending consent request, e.g. "a***@example.com" */
+  consentPendingFor: z.string().nullable(),
 });
 export type Profile = z.infer<typeof Profile>;
 
-/** PATCH /api/me/profile — every field optional. */
+/** PATCH /api/me/profile — every field optional. Consent is granted only by the parent's confirmation link. */
 export const ProfileUpdate = z
   .object({
     displayName: z.string().trim().min(1).max(60),
@@ -94,8 +109,24 @@ export const ProfileUpdate = z
     level: Level.nullable(),
     uiLang: Lang,
     birthYear: z.number().int().min(1990).max(2030).nullable(),
-    /** the student confirms a parent/guardian agreed (required under 16) */
-    parentalConsent: z.boolean(),
   })
   .partial();
 export type ProfileUpdate = z.infer<typeof ProfileUpdate>;
+
+/** POST /api/me/parental-consent — sends a confirmation e-mail to the parent. */
+export const ParentalConsentRequest = z.object({
+  parentEmail: z.string().trim().toLowerCase().email().max(254),
+  lang: Lang,
+});
+export type ParentalConsentRequest = z.infer<typeof ParentalConsentRequest>;
+
+/** GET /api/me/export — everything stored about the student (RODO art. 15, 20). */
+export const DataExport = z.object({
+  exportedAt: z.string(),
+  profile: Profile,
+  sessions: z.array(SessionDetail),
+  parentalConsents: z.array(
+    z.object({ parentEmail: z.string(), requestedAt: z.string(), confirmedAt: z.string().nullable(), textVersion: z.string() }),
+  ),
+});
+export type DataExport = z.infer<typeof DataExport>;

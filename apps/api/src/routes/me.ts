@@ -3,7 +3,7 @@ import type { PortalDb } from "@portal/db";
 import type { FastifyInstance } from "fastify";
 import { isUuid, requireUser } from "../auth.ts";
 
-/** Profile, history and progress of the signed-in student. */
+/** Profile, history, progress, data export and account deletion of the signed-in student. */
 export function registerMeRoutes(app: FastifyInstance, db?: PortalDb) {
   app.get("/api/me/profile", async (request, reply) => {
     const auth = requireUser(request, reply, db);
@@ -43,5 +43,22 @@ export function registerMeRoutes(app: FastifyInstance, db?: PortalDb) {
     const auth = requireUser(request, reply, db);
     if (!auth) return reply;
     return auth.db.progress(auth.user.id);
+  });
+
+  // RODO art. 15/20: everything we store, as a JSON download
+  app.get("/api/me/export", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const auth = requireUser(request, reply, db);
+    if (!auth) return reply;
+    const data = await auth.db.exportData(auth.user);
+    if (!data) return reply.code(404).send({ error: "Profile not found", code: "NOT_FOUND" });
+    return reply.header("content-disposition", `attachment; filename="matema-data-${data.exportedAt.slice(0, 10)}.json"`).send(data);
+  });
+
+  // RODO art. 17: delete the account with profile, history and consents
+  app.delete("/api/me", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const auth = requireUser(request, reply, db);
+    if (!auth) return reply;
+    await auth.db.deleteAccount(auth.user.id);
+    return reply.code(204).send();
   });
 }

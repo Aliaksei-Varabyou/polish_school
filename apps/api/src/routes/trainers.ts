@@ -70,6 +70,8 @@ export function registerTrainerRoutes(app: FastifyInstance, { client, trainers, 
       if (!user || !db) return { tasks: outcome.tasks };
 
       try {
+        // under 16 (or birth year unknown) without a parent's confirmed consent: practice, but no history
+        if (!(await db.canStoreHistory(user.id))) return { tasks: outcome.tasks };
         const { lang, grade, level, topicIds, count, answerMode } = req;
         const sessionId = await db.createSession(user.id, trainer.id, { lang, grade, level, topicIds, count, answerMode }, outcome.tasks);
         return { tasks: outcome.tasks, sessionId };

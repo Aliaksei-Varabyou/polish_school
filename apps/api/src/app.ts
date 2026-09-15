@@ -10,6 +10,8 @@ import type { TaskPoolStore } from "@portal/task-pool";
 import type { TrainerServer } from "@portal/trainer-sdk";
 import Fastify from "fastify";
 import { registerAuth } from "./auth.ts";
+import { createMailer, type Mailer } from "./mailer.ts";
+import { registerConsentRoutes } from "./routes/consent.ts";
 import { registerMeRoutes } from "./routes/me.ts";
 import { registerSessionRoutes } from "./routes/sessions.ts";
 import { registerTaskRoutes } from "./routes/tasks.ts";
@@ -25,13 +27,26 @@ export interface AppOptions {
   trainers?: Map<string, TrainerServer>;
   /** accounts, profiles and history (Supabase); omitted = guest mode only */
   db?: PortalDb;
+  /** e-mail sending (parental consent); defaults to SMTP from env or logging */
+  mailer?: Mailer;
+  /** public base URL used in e-mail links */
+  publicUrl?: string;
   /** serve apps/web/dist when it exists (disabled in tests) */
   serveWeb?: boolean;
 }
 
 export async function buildApp(
   client: LLMClient,
-  { logger = true, pool, reuseRatio, trainers = defaultTrainers, db, serveWeb = true }: AppOptions = {},
+  {
+    logger = true,
+    pool,
+    reuseRatio,
+    trainers = defaultTrainers,
+    db,
+    mailer = createMailer(),
+    publicUrl = process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 8787}`,
+    serveWeb = true,
+  }: AppOptions = {},
 ) {
   const app = Fastify({ logger, bodyLimit: 256 * 1024 });
 
@@ -57,6 +72,7 @@ export async function buildApp(
   registerSessionRoutes(app, trainers, db);
   registerTaskRoutes(app, pool);
   registerMeRoutes(app, db);
+  registerConsentRoutes(app, { db, mailer, publicUrl });
 
   // In production serve the built SPA from the same origin.
   if (serveWeb && existsSync(WEB_DIST)) {

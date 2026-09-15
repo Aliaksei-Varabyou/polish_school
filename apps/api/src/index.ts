@@ -27,3 +27,17 @@ try {
   app.log.error(err);
   process.exit(1);
 }
+
+// RODO: accounts of students under 16 without a confirmed parental consent are removed after 14 days
+if (db) {
+  const cleanup = async () => {
+    try {
+      const deleted = await db.deleteUnconfirmedMinors();
+      if (deleted > 0) app.log.info({ deleted }, "deleted accounts without parental consent");
+    } catch (err) {
+      app.log.error({ err }, "parental consent cleanup failed");
+    }
+  };
+  void cleanup();
+  setInterval(cleanup, 24 * 60 * 60 * 1000).unref();
+}
