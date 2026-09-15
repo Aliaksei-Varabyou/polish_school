@@ -1,0 +1,80 @@
+{
+  "app": {
+    "title": "Trener matematyki",
+    "subtitle": "Przygotowanie do sprawdzianów i kartkówek zgodnie z podstawą programową"
+  },
+  "start": {
+    "language": "Język",
+    "school": "Szkoła",
+    "sp": "Szkoła podstawowa",
+    "lo": "Liceum",
+    "grade": "Klasa",
+    "gradeN": "Klasa {{n}}",
+    "level": "Poziom",
+    "levelP": "Podstawowy",
+    "levelR": "Rozszerzony",
+    "topics": "Tematy",
+    "selectAll": "Zaznacz wszystkie",
+    "clearAll": "Odznacz",
+    "selected": "Wybrano: {{count}}",
+    "extended": "rozsz.",
+    "count": "Liczba zadań",
+    "answerMode": "Forma odpowiedzi",
+    "modeInput": "Wpisz odpowiedź",
+    "modeChoice": "Wybór z 4",
+    "modeMixed": "Mieszana",
+    "generate": "Generuj",
+    "pickTopic": "Wybierz co najmniej jeden temat"
+  },
+  "loading": {
+    "title": "Generuję zadania…",
+    "hint": "To może potrwać do 30 sekund"
+  },
+  "errors": {
+    "RATE_LIMIT": "Za dużo zapytań do AI. Odczekaj minutę i spróbuj ponownie.",
+    "NETWORK": "Brak połączenia z serwerem. Sprawdź internet.",
+    "generic": "Coś poszło nie tak. Spróbuj ponownie.",
+    "partial": "Wygenerowano {{got}} z {{count}} zadań."
+  },
+  "trainer": {
+    "taskOf": "Zadanie {{n}} z {{total}}",
+    "difficulty1": "Łatwe",
+    "difficulty2": "Średnie",
+    "difficulty3": "Trudne",
+    "placeholder": "Twoja odpowiedź",
+    "helpNumber": "Ułamek: 3/4 lub 0,75 · pierwiastek: √2 lub sqrt(2) · kilka odpowiedzi oddziel ;",
+    "helpExpression": "Wyrażenie: 2x+3, (a-b)^2",
+    "check": "Sprawdź",
+    "next": "Dalej",
+    "finish": "Wyniki",
+    "correct": "Dobrze!",
+    "wrong": "Źle",
+    "correctAnswer": "Poprawna odpowiedź:",
+    "showSolution": "Pokaż rozwiązanie",
+    "hideSolution": "Ukryj rozwiązanie",
+    "hint": "Podpowiedź",
+    "quit": "Wyjdź",
+    "quitConfirm": "Przerwać trening? Postęp zostanie utracony."
+  },
+  "results": {
+    "title": "Twój wynik",
+    "score": "{{correct}} z {{total}}",
+    "great": "Świetnie! Jesteś gotowy na sprawdzian.",
+    "good": "Dobrze! Zostało kilka rzeczy do dopracowania.",
+    "ok": "Nieźle, ale warto jeszcze poćwiczyć.",
+    "low": "Ten temat warto powtórzyć. Dasz radę!",
+    "byTopic": "Według tematów",
+    "mistakes": "Błędy",
+    "yourAnswer": "Twoja odpowiedź:",
+    "noAnswer": "brak odpowiedzi",
+    "hintUsed": "z podpowiedzią",
+    "again": "Jeszcze raz",
+    "change": "Zmień ustawienia",
+    "analyze": "Analiza słabych stron",
+    "analyzing": "Analizuję…",
+    "weakTopics": "Nad czym popracować",
+    "recommendations": "Wskazówki",
+    "practiceWeak": "Poćwicz słabe tematy",
+    "noMistakes": "Bez błędów — tak trzymaj!"
+  }
+}

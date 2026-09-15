@@ -1,0 +1,80 @@
+{
+  "app": {
+    "title": "Math Trainer",
+    "subtitle": "Practice for tests and quizzes following the Polish curriculum"
+  },
+  "start": {
+    "language": "Language",
+    "school": "School",
+    "sp": "Primary school",
+    "lo": "High school (liceum)",
+    "grade": "Grade",
+    "gradeN": "Grade {{n}}",
+    "level": "Level",
+    "levelP": "Basic",
+    "levelR": "Extended",
+    "topics": "Topics",
+    "selectAll": "Select all",
+    "clearAll": "Clear",
+    "selected": "Selected: {{count}}",
+    "extended": "ext.",
+    "count": "Number of tasks",
+    "answerMode": "Answer format",
+    "modeInput": "Type the answer",
+    "modeChoice": "Multiple choice",
+    "modeMixed": "Mixed",
+    "generate": "Generate",
+    "pickTopic": "Pick at least one topic"
+  },
+  "loading": {
+    "title": "Generating tasks…",
+    "hint": "This may take up to 30 seconds"
+  },
+  "errors": {
+    "RATE_LIMIT": "Too many AI requests. Wait a minute and try again.",
+    "NETWORK": "Can't reach the server. Check your connection.",
+    "generic": "Something went wrong. Please try again.",
+    "partial": "Generated {{got}} of {{count}} tasks."
+  },
+  "trainer": {
+    "taskOf": "Task {{n}} of {{total}}",
+    "difficulty1": "Easy",
+    "difficulty2": "Medium",
+    "difficulty3": "Hard",
+    "placeholder": "Your answer",
+    "helpNumber": "Fraction: 3/4 or 0.75 · root: √2 or sqrt(2) · several answers separated by ;",
+    "helpExpression": "Expression: 2x+3, (a-b)^2",
+    "check": "Check",
+    "next": "Next",
+    "finish": "See results",
+    "correct": "Correct!",
+    "wrong": "Incorrect",
+    "correctAnswer": "Correct answer:",
+    "showSolution": "Show solution",
+    "hideSolution": "Hide solution",
+    "hint": "Hint",
+    "quit": "Quit",
+    "quitConfirm": "Stop practising? Your progress will be lost."
+  },
+  "results": {
+    "title": "Your result",
+    "score": "{{correct}} of {{total}}",
+    "great": "Excellent! You're ready for the test.",
+    "good": "Good job! Just a few things to polish.",
+    "ok": "Not bad, but there is room to improve.",
+    "low": "This topic is worth revising. You can do it!",
+    "byTopic": "By topic",
+    "mistakes": "Mistakes",
+    "yourAnswer": "Your answer:",
+    "noAnswer": "no answer",
+    "hintUsed": "with hint",
+    "again": "Try again",
+    "change": "Change settings",
+    "analyze": "Analyse weak spots",
+    "analyzing": "Analysing…",
+    "weakTopics": "What to work on",
+    "recommendations": "Recommendations",
+    "practiceWeak": "Practise weak topics",
+    "noMistakes": "No mistakes — keep it up!"
+  }
+}

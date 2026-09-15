@@ -1,0 +1,22 @@
+{
+  "name": "matema",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @matema/server & npm run dev -w @matema/web & wait",
+    "dev:server": "npm run dev -w @matema/server",
+    "dev:web": "npm run dev -w @matema/web",
+    "build": "npm run build -w @matema/web",
+    "start": "npm run start -w @matema/server",
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/shared && tsc -p apps/server && tsc -p apps/web"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.1"
+  }
+}
