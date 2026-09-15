@@ -15,6 +15,7 @@
     "@fastify/static": "^9.0.0",
     "@portal/ai": "*",
     "@portal/core": "*",
+    "@portal/db": "*",
     "@portal/task-pool": "*",
     "@portal/trainer-math": "*",
     "@portal/trainer-sdk": "*",

@@ -5,9 +5,13 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { LimitedClient, type LLMClient } from "@portal/ai";
+import type { PortalDb } from "@portal/db";
 import type { TaskPool } from "@portal/task-pool";
 import type { TrainerServer } from "@portal/trainer-sdk";
 import Fastify from "fastify";
+import { registerAuth } from "./auth.ts";
+import { registerMeRoutes } from "./routes/me.ts";
+import { registerSessionRoutes } from "./routes/sessions.ts";
 import { registerTrainerRoutes } from "./routes/trainers.ts";
 import { trainers as defaultTrainers } from "./trainers.ts";
 
@@ -18,18 +22,21 @@ export interface AppOptions {
   pool?: TaskPool;
   reuseRatio?: number;
   trainers?: Map<string, TrainerServer>;
+  /** accounts, profiles and history (Supabase); omitted = guest mode only */
+  db?: PortalDb;
   /** serve apps/web/dist when it exists (disabled in tests) */
   serveWeb?: boolean;
 }
 
 export async function buildApp(
   client: LLMClient,
-  { logger = true, pool, reuseRatio, trainers = defaultTrainers, serveWeb = true }: AppOptions = {},
+  { logger = true, pool, reuseRatio, trainers = defaultTrainers, db, serveWeb = true }: AppOptions = {},
 ) {
   const app = Fastify({ logger, bodyLimit: 256 * 1024 });
 
   await app.register(cors, { origin: process.env.CORS_ORIGIN?.split(",") ?? true });
   await app.register(rateLimit, { global: true, max: 120, timeWindow: "1 minute" });
+  registerAuth(app, db);
 
   app.get("/api/health", async () => {
     const inner = client instanceof LimitedClient ? client.inner : client;
@@ -38,12 +45,15 @@ export async function buildApp(
       ok: true,
       provider: client.name,
       trainers: [...trainers.keys()],
+      auth: !!db,
       ...(models ? { models } : {}),
       ...(client instanceof LimitedClient ? { queue: client.limiter.stats } : {}),
       ...(pool ? { poolSize: pool.count() } : {}),
     };
   });
-  registerTrainerRoutes(app, { client, trainers, pool, reuseRatio });
+  registerTrainerRoutes(app, { client, trainers, pool, reuseRatio, db });
+  registerSessionRoutes(app, trainers, db);
+  registerMeRoutes(app, db);
 
   // In production serve the built SPA from the same origin.
   if (serveWeb && existsSync(WEB_DIST)) {
