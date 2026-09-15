@@ -13,9 +13,11 @@
     "build": "npm run build -w @matema/web",
     "start": "npm run start -w @matema/server",
     "test": "vitest run",
-    "typecheck": "tsc -p packages/shared && tsc -p apps/server && tsc -p apps/web"
+    "typecheck": "tsc -p packages/shared && tsc -p apps/server && tsc -p apps/web",
+    "e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "typescript": "^5.9.0",
     "vitest": "^5.0.1"
   }

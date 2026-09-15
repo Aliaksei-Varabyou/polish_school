@@ -6,3 +6,5 @@ dist
 .DS_Store
 .claude/settings.local.json
 apps/server/data/
+test-results/
+playwright-report/
