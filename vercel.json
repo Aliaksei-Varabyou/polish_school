@@ -1,14 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && node scripts/build-vercel-function.mjs",
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm install",
   "functions": {
-    "api/[...path].ts": {
+    "api/index.js": {
       "maxDuration": 60
     }
   },
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "crons": [{ "path": "/api/cron/cleanup-consents", "schedule": "0 3 * * *" }]
 }

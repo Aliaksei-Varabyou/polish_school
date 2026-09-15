@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["api", "apps/api/src/serverless.ts"]
+  "include": ["apps/api/src/vercelHandler.ts"]
 }
