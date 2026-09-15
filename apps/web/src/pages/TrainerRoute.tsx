@@ -30,7 +30,8 @@ export function TrainerRoute({ lang, setLanguageLocked }: { lang: Lang; setLangu
   return (
     <LoadErrorBoundary fallback={<Card className="text-rose-700">{t("errors.loadFailed")}</Card>}>
       <Suspense fallback={<p className="animate-pulse text-slate-500">{t("loading")}</p>}>
-        <TrainerApp lang={lang} setLanguageLocked={setLanguageLocked} />
+        {/* TODO(auth): pass the Supabase access token once sign-in is wired */}
+        <TrainerApp lang={lang} setLanguageLocked={setLanguageLocked} getAccessToken={async () => null} />
       </Suspense>
     </LoadErrorBoundary>
   );

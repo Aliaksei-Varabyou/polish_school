@@ -1,6 +1,7 @@
 // Web entry of the math trainer: catalog metadata and translations load eagerly, the app lazily.
 import { GRADES } from "@portal/core";
 import type { TrainerWeb } from "@portal/trainer-sdk";
+import { getTopic } from "../curriculum/index.ts";
 import en from "./i18n/en.json";
 import pl from "./i18n/pl.json";
 import ru from "./i18n/ru.json";
@@ -16,5 +17,7 @@ export const mathTrainerWeb: TrainerWeb = {
   },
   grades: [...GRADES],
   translations: { ru, en, pl },
+  topicName: (topicId, lang) => getTopic(topicId)?.name[lang] ?? topicId,
   load: () => import("./App.tsx"),
+  loadReview: () => import("./Review.tsx"),
 };

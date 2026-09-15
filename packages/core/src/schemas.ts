@@ -81,7 +81,11 @@ export const Task = z
   });
 export type Task = z.infer<typeof Task>;
 
-export const GenerateResponse = z.object({ tasks: z.array(Task) });
+export const GenerateResponse = z.object({
+  tasks: z.array(Task),
+  /** present for signed-in users: the practice session stored in history */
+  sessionId: z.string().uuid().optional(),
+});
 export type GenerateResponse = z.infer<typeof GenerateResponse>;
 
 export const TaskResult = z.object({
@@ -103,6 +107,8 @@ export const FeedbackRequest = z.object({
   grade: Grade,
   level: Level.optional(),
   results: z.array(TaskResult).min(1).max(50),
+  /** signed-in users: store the feedback with this session */
+  sessionId: z.string().uuid().optional(),
 });
 export type FeedbackRequest = z.infer<typeof FeedbackRequest>;
 

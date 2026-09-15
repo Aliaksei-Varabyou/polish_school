@@ -18,7 +18,9 @@
     "@portal/task-pool": "*",
     "@portal/trainer-math": "*",
     "@portal/trainer-sdk": "*",
+    "@supabase/supabase-js": "^2.116.0",
     "fastify": "^5.12.4",
+    "jose": "^6.2.12",
     "tsx": "^4.23.13"
   },
   "devDependencies": {

@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // read VITE_* variables from the monorepo root .env
+  envDir: "../../",
   server: {
     port: 5173,
     proxy: {

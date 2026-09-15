@@ -1,6 +1,6 @@
 // Trainer contract shared by the portal (web), the API and every subject trainer.
 import type { LLMClient } from "@portal/ai";
-import type { FeedbackRequest, Grade, Lang, Level, Task, TaskBatchInput, Topic } from "@portal/core";
+import type { FeedbackRequest, Grade, Lang, Level, SessionTaskRecord, Task, TaskBatchInput, Topic } from "@portal/core";
 import type { ComponentType } from "react";
 
 export interface VerifyContext {
@@ -29,6 +29,14 @@ export interface TrainerAppProps {
   lang: Lang;
   /** hide the portal language switch while a session is running (tasks are generated in one language) */
   setLanguageLocked(locked: boolean): void;
+  /** Supabase access token of the signed-in user, or null for guests; send as `Authorization: Bearer`. */
+  getAccessToken(): Promise<string | null>;
+}
+
+/** Read-only review of a past session (history page). */
+export interface TrainerReviewProps {
+  lang: Lang;
+  tasks: SessionTaskRecord[];
 }
 
 /** Web side of a trainer: catalog entry + lazily loaded app. */
@@ -40,5 +48,8 @@ export interface TrainerWeb {
   grades: Grade[];
   /** i18next resources registered under the namespace = trainer id */
   translations: Record<Lang, Record<string, unknown>>;
+  /** topic names for history and progress pages */
+  topicName(topicId: string, lang: Lang): string;
   load(): Promise<{ default: ComponentType<TrainerAppProps> }>;
+  loadReview(): Promise<{ default: ComponentType<TrainerReviewProps> }>;
 }
