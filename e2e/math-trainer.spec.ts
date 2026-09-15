@@ -101,6 +101,21 @@ test("interface language switch keeps settings", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("accounts enabled: sign-in link shown, protected pages redirect signed-out visitors", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+
+  // the root .env carries local Supabase keys, so accounts are on; a signed-out visitor sees "Войти"
+  await expect(page.getByRole("link", { name: "Войти" })).toBeVisible();
+
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
+  await expect(page.getByRole("heading", { name: "Аккаунт" })).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
 test("unknown trainer and unknown page", async ({ page }) => {
   await page.goto("/t/unknown");
   await page.getByRole("radio", { name: "RU", exact: true }).click();

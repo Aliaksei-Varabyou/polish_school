@@ -7,12 +7,146 @@
     "soon": "Trainers for other subjects are coming soon"
   },
   "nav": {
-    "home": "All trainers"
+    "home": "All trainers",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "account": "Account",
+    "dashboard": "My progress",
+    "history": "History",
+    "profile": "Profile"
   },
   "errors": {
     "notFound": "Page not found",
     "trainerNotFound": "This trainer does not exist",
-    "loadFailed": "Couldn't load the trainer. Check your connection and reload the page."
+    "loadFailed": "Couldn't load the trainer. Check your connection and reload the page.",
+    "retry": "Retry",
+    "signInAgain": "Sign in again",
+    "api": {
+      "generic": "Something went wrong. Please try again.",
+      "NETWORK": "Can't reach the server. Check your connection.",
+      "NOT_FOUND": "Not found.",
+      "RATE_LIMIT": "Too many requests. Please wait a moment.",
+      "UNAUTHORIZED": "Your session expired. Sign in again to continue.",
+      "AUTH_DISABLED": "Accounts are not available right now."
+    }
   },
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "auth": {
+    "title": "Account",
+    "subtitle": "Signing in unlocks your practice history and topic progress",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "submitSignIn": "Sign in",
+    "submitSignUp": "Create account",
+    "email": "E-mail",
+    "password": "Password",
+    "passwordHint": "At least 8 characters",
+    "displayName": "Display name",
+    "displayNameHint": "Skip your last name — only you (and a parent, if needed) will see this",
+    "birthYear": "Year of birth",
+    "birthYearPlaceholder": "Choose a year",
+    "consentNotice": "You may be under 16. After signing up we'll ask for a parent's or guardian's e-mail: without their confirmation your practice history won't be saved.",
+    "consentWhy": "This is required by the law protecting children's personal data (RODO).",
+    "consentBanner": "Your practice history isn't being saved yet — a parent needs to confirm.",
+    "consentBannerLink": "Send a request",
+    "consentPending": "An e-mail was sent to {{email}}. Once your parent follows the link, your history will start saving.",
+    "magicLink": "Sign in with a link instead",
+    "backToPassword": "Sign in with a password",
+    "magicLinkSend": "Send link",
+    "magicLinkSent": "A sign-in link was sent to {{email}}. Check your inbox.",
+    "confirmEmail": "We sent an e-mail to {{email}}. Follow the link to confirm your address.",
+    "or": "or",
+    "google": "Continue with Google",
+    "privacyLink": "Privacy policy",
+    "errors": {
+      "invalid_credentials": "Wrong e-mail or password.",
+      "user_already_exists": "An account with this e-mail already exists. Try signing in.",
+      "weak_password": "The password is too short, at least 8 characters.",
+      "email_invalid": "Please check the e-mail address.",
+      "email_not_confirmed": "Please confirm your e-mail: we sent you a link.",
+      "no_account": "No account found. Sign up first.",
+      "rate_limit": "Too many attempts. Please wait a moment.",
+      "network": "Can't reach the server.",
+      "disabled": "Sign-in is not available right now.",
+      "generic": "Something went wrong. Please try again.",
+      "birthYearRequired": "Please choose your year of birth."
+    },
+    "unavailable": {
+      "title": "Accounts are not available yet",
+      "text": "This part of the portal is coming later. The trainers already work without signing in."
+    }
+  },
+  "privacy": {
+    "draft": "Draft",
+    "title": "Privacy policy",
+    "intro": "We're finishing the full policy text. Here's a short summary of what we store and why.",
+    "sections": [
+      { "title": "What we store", "text": "Your display name, class and level, interface language, year of birth, and your practice history: tasks, your answers and results." },
+      { "title": "Artificial intelligence", "text": "Task texts and wrong answers may be sent to an AI provider to generate new tasks and explain mistakes — without your name or e-mail." },
+      { "title": "Minors", "text": "If you are under 16, your practice history is only stored once a parent or guardian confirms by e-mail." },
+      { "title": "Your rights", "text": "You can download your data or delete your account at any time from the profile settings." }
+    ]
+  },
+  "start": {
+    "school": "School",
+    "sp": "Primary school",
+    "lo": "High school (liceum)",
+    "grade": "Grade",
+    "gradeN": "Grade {{n}}",
+    "level": "Level",
+    "levelP": "Basic",
+    "levelR": "Extended",
+    "language": "Interface language"
+  },
+  "grade": {
+    "n": "Grade {{n}}",
+    "sp": "Primary school",
+    "lo": "Liceum",
+    "levelP": "basic",
+    "levelR": "extended"
+  },
+  "profile": {
+    "title": "Profile",
+    "save": "Save",
+    "saved": "Saved",
+    "consentTitle": "Parental confirmation needed",
+    "consentText": "Until a parent or guardian confirms, your practice history won't be saved. Enter their e-mail and we'll send a confirmation link.",
+    "parentEmailPlaceholder": "parent or guardian's e-mail",
+    "sendConsentRequest": "Send request",
+    "consentRequestSent": "An e-mail was sent to {{email}}.",
+    "consentErrors": {
+      "PARENT_EMAIL_SAME": "The parent's e-mail must be different from yours.",
+      "CONSENT_NOT_REQUIRED": "Confirmation is no longer required.",
+      "generic": "Couldn't send the request. Please try again."
+    },
+    "dataTitle": "Your data",
+    "exportData": "Download my data",
+    "deleteTitle": "Delete account",
+    "deleteButton": "Delete account",
+    "deleteText": "Your account and all practice history will be permanently deleted.",
+    "deleteConfirm": "Yes, delete permanently",
+    "deleteCancel": "Cancel"
+  },
+  "history": {
+    "title": "Practice history",
+    "empty": "You haven't practiced yet.",
+    "unfinished": "unfinished",
+    "answered": "answered {{answered}} of {{total}}",
+    "loadMore": "Load more"
+  },
+  "dashboard": {
+    "title": "My progress",
+    "empty": "Finish your first practice session and stats will show up here.",
+    "sessions": "sessions",
+    "tasksAnswered": "tasks answered",
+    "correctPct": "correct answers",
+    "weakTopics": "What to work on",
+    "strongTopics": "Strong topics",
+    "recentSessions": "Recent sessions",
+    "topicStat": "{{correct}}/{{attempts}}"
+  },
+  "results": {
+    "weakTopics": "What to work on",
+    "recommendations": "Recommendations"
+  }
 }

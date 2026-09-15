@@ -8,7 +8,7 @@ import { useSession } from "../store/session.ts";
 
 export function ResultsPage() {
   const { t } = useTranslation("math");
-  const { tasks, answers, settings, feedback } = useSession();
+  const { tasks, answers, settings, feedback, sessionId } = useSession();
   const { generate, quit, loadFeedback } = useSession.getState();
   const lang = settings.lang;
 
@@ -50,6 +50,12 @@ export function ResultsPage() {
         </div>
         <div className="mt-1 text-slate-600">{t("results.score", { correct, total: tasks.length })}</div>
         <p className="mt-3 text-lg text-slate-800">{t(`results.${message}`)}</p>
+        {sessionId && (
+          // plain link: the trainer doesn't depend on the portal router
+          <a href={`/history/${sessionId}`} className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:underline">
+            ✓ {t("results.savedToHistory")}
+          </a>
+        )}
         <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={() => void generate()}>↻ {t("results.again")}</Button>
           <Button variant="secondary" onClick={quit}>

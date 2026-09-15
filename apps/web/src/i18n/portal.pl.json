@@ -7,12 +7,146 @@
     "soon": "Wkrótce pojawią się trenażery z innych przedmiotów"
   },
   "nav": {
-    "home": "Wszystkie trenażery"
+    "home": "Wszystkie trenażery",
+    "signIn": "Zaloguj się",
+    "signOut": "Wyloguj się",
+    "account": "Konto",
+    "dashboard": "Mój postęp",
+    "history": "Historia",
+    "profile": "Profil"
   },
   "errors": {
     "notFound": "Nie znaleziono strony",
     "trainerNotFound": "Taki trenażer nie istnieje",
-    "loadFailed": "Nie udało się wczytać trenażera. Sprawdź połączenie i odśwież stronę."
+    "loadFailed": "Nie udało się wczytać trenażera. Sprawdź połączenie i odśwież stronę.",
+    "retry": "Spróbuj ponownie",
+    "signInAgain": "Zaloguj się ponownie",
+    "api": {
+      "generic": "Coś poszło nie tak. Spróbuj ponownie.",
+      "NETWORK": "Brak połączenia z serwerem. Sprawdź internet.",
+      "NOT_FOUND": "Nie znaleziono.",
+      "RATE_LIMIT": "Za dużo żądań. Odczekaj chwilę.",
+      "UNAUTHORIZED": "Sesja wygasła. Zaloguj się ponownie, aby kontynuować.",
+      "AUTH_DISABLED": "Konta są obecnie niedostępne."
+    }
   },
-  "loading": "Ładowanie…"
+  "loading": "Ładowanie…",
+  "auth": {
+    "title": "Konto",
+    "subtitle": "Logowanie odblokowuje historię ćwiczeń i postęp w tematach",
+    "signIn": "Logowanie",
+    "signUp": "Rejestracja",
+    "submitSignIn": "Zaloguj się",
+    "submitSignUp": "Załóż konto",
+    "email": "E-mail",
+    "password": "Hasło",
+    "passwordHint": "Co najmniej 8 znaków",
+    "displayName": "Nazwa w serwisie",
+    "displayNameHint": "Nie podawaj nazwiska — zobaczysz je tylko Ty i, jeśli trzeba, rodzic",
+    "birthYear": "Rok urodzenia",
+    "birthYearPlaceholder": "Wybierz rok",
+    "consentNotice": "Możesz mieć mniej niż 16 lat. Po rejestracji poprosimy o e-mail rodzica lub opiekuna: bez jego potwierdzenia historia ćwiczeń nie będzie zapisywana.",
+    "consentWhy": "Wymaga tego prawo o ochronie danych osobowych dzieci (RODO).",
+    "consentBanner": "Historia ćwiczeń nie jest jeszcze zapisywana — potrzebne jest potwierdzenie rodzica.",
+    "consentBannerLink": "Wyślij prośbę",
+    "consentPending": "Wysłano e-mail na {{email}}. Gdy rodzic kliknie w link, historia zacznie się zapisywać.",
+    "magicLink": "Zaloguj się linkiem bez hasła",
+    "backToPassword": "Zaloguj się hasłem",
+    "magicLinkSend": "Wyślij link",
+    "magicLinkSent": "Link do logowania wysłano na {{email}}. Sprawdź skrzynkę.",
+    "confirmEmail": "Wysłaliśmy wiadomość na {{email}}. Kliknij w link, aby potwierdzić adres.",
+    "or": "lub",
+    "google": "Zaloguj się przez Google",
+    "privacyLink": "Polityka prywatności",
+    "errors": {
+      "invalid_credentials": "Nieprawidłowy e-mail lub hasło.",
+      "user_already_exists": "Konto z tym e-mailem już istnieje. Spróbuj się zalogować.",
+      "weak_password": "Hasło jest za krótkie, minimum 8 znaków.",
+      "email_invalid": "Sprawdź adres e-mail.",
+      "email_not_confirmed": "Potwierdź e-mail: wysłaliśmy wiadomość z linkiem.",
+      "no_account": "Nie ma takiego konta. Najpierw się zarejestruj.",
+      "rate_limit": "Za dużo prób. Odczekaj chwilę.",
+      "network": "Brak połączenia z serwerem.",
+      "disabled": "Logowanie jest obecnie niedostępne.",
+      "generic": "Coś poszło nie tak. Spróbuj ponownie.",
+      "birthYearRequired": "Podaj rok urodzenia."
+    },
+    "unavailable": {
+      "title": "Konta są jeszcze niedostępne",
+      "text": "Ta część portalu pojawi się później. Trenażery już działają bez logowania."
+    }
+  },
+  "privacy": {
+    "draft": "Wersja robocza",
+    "title": "Polityka prywatności",
+    "intro": "Dopracowujemy pełny tekst polityki. Poniżej krótko o tym, co przechowujemy i po co.",
+    "sections": [
+      { "title": "Co przechowujemy", "text": "Nazwę w serwisie, klasę i poziom, język interfejsu, rok urodzenia oraz historię ćwiczeń: zadania, Twoje odpowiedzi i wyniki." },
+      { "title": "Sztuczna inteligencja", "text": "Treści zadań i błędne odpowiedzi mogą być przekazywane dostawcy AI do generowania nowych zadań i wyjaśniania błędów — bez imienia i e-maila." },
+      { "title": "Osoby niepełnoletnie", "text": "Jeśli masz mniej niż 16 lat, historia ćwiczeń jest zapisywana dopiero po potwierdzeniu przez rodzica lub opiekuna e-mailem." },
+      { "title": "Twoje prawa", "text": "W każdej chwili możesz pobrać swoje dane lub usunąć konto w ustawieniach profilu." }
+    ]
+  },
+  "start": {
+    "school": "Szkoła",
+    "sp": "Szkoła podstawowa",
+    "lo": "Liceum",
+    "grade": "Klasa",
+    "gradeN": "Klasa {{n}}",
+    "level": "Poziom",
+    "levelP": "Podstawowy",
+    "levelR": "Rozszerzony",
+    "language": "Język interfejsu"
+  },
+  "grade": {
+    "n": "Klasa {{n}}",
+    "sp": "Szkoła podstawowa",
+    "lo": "Liceum",
+    "levelP": "podstawowy",
+    "levelR": "rozszerzony"
+  },
+  "profile": {
+    "title": "Profil",
+    "save": "Zapisz",
+    "saved": "Zapisano",
+    "consentTitle": "Potrzebne potwierdzenie rodzica",
+    "consentText": "Dopóki rodzic lub opiekun nie potwierdzi zgody, historia ćwiczeń nie będzie zapisywana. Podaj jego e-mail — wyślemy link potwierdzający.",
+    "parentEmailPlaceholder": "e-mail rodzica lub opiekuna",
+    "sendConsentRequest": "Wyślij prośbę",
+    "consentRequestSent": "Wysłano e-mail na {{email}}.",
+    "consentErrors": {
+      "PARENT_EMAIL_SAME": "E-mail rodzica musi być inny niż Twój.",
+      "CONSENT_NOT_REQUIRED": "Potwierdzenie nie jest już potrzebne.",
+      "generic": "Nie udało się wysłać prośby. Spróbuj ponownie."
+    },
+    "dataTitle": "Twoje dane",
+    "exportData": "Pobierz moje dane",
+    "deleteTitle": "Usuń konto",
+    "deleteText": "Konto i cała historia ćwiczeń zostaną trwale usunięte.",
+    "deleteButton": "Usuń konto",
+    "deleteConfirm": "Tak, usuń trwale",
+    "deleteCancel": "Anuluj"
+  },
+  "history": {
+    "title": "Historia ćwiczeń",
+    "empty": "Nie masz jeszcze żadnego treningu.",
+    "unfinished": "nieukończony",
+    "answered": "odpowiedziano {{answered}} z {{total}}",
+    "loadMore": "Pokaż więcej"
+  },
+  "dashboard": {
+    "title": "Mój postęp",
+    "empty": "Ukończ pierwszy trening, a pojawią się tu statystyki.",
+    "sessions": "treningów",
+    "tasksAnswered": "rozwiązanych zadań",
+    "correctPct": "poprawnych odpowiedzi",
+    "weakTopics": "Nad czym popracować",
+    "strongTopics": "Mocne tematy",
+    "recentSessions": "Ostatnie treningi",
+    "topicStat": "{{correct}}/{{attempts}}"
+  },
+  "results": {
+    "weakTopics": "Nad czym popracować",
+    "recommendations": "Wskazówki"
+  }
 }
