@@ -29,6 +29,6 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 }
 
 export const api = {
-  generate: (req: GenerateRequest) => post<GenerateResponse>("/api/generate", req),
-  feedback: (req: FeedbackRequest) => post<FeedbackResponse>("/api/feedback", req),
+  generate: (req: GenerateRequest) => post<GenerateResponse>("/api/trainers/math/generate", req),
+  feedback: (req: FeedbackRequest) => post<FeedbackResponse>("/api/trainers/math/feedback", req),
 };

@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import type { AnswerMode, Difficulty, Grade, Lang, Level, Task } from "@portal/core";
 
 export interface PoolContext {
+  trainerId: string;
   lang: Lang;
   grade: Grade;
   level?: Level;
@@ -38,6 +39,7 @@ export class TaskPool {
       PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS tasks (
         id          TEXT PRIMARY KEY,
+        trainer_id  TEXT NOT NULL DEFAULT 'math',
         lang        TEXT NOT NULL,
         grade       TEXT NOT NULL,
         level       TEXT NOT NULL DEFAULT '',
@@ -48,20 +50,32 @@ export class TaskPool {
         created_at  INTEGER NOT NULL,
         served      INTEGER NOT NULL DEFAULT 0
       );
-      CREATE INDEX IF NOT EXISTS tasks_lookup ON tasks (lang, grade, level, topic_id, answer_type);
     `);
+    this.migrate();
+    this.db.exec(`
+      DROP INDEX IF EXISTS tasks_lookup;
+      CREATE INDEX IF NOT EXISTS tasks_lookup_v2 ON tasks (trainer_id, lang, grade, level, topic_id, answer_type);
+    `);
+  }
+
+  /** Pools created before trainers existed only contained math tasks. */
+  private migrate() {
+    const columns = this.db.prepare("PRAGMA table_info(tasks)").all() as { name: string }[];
+    if (!columns.some((c) => c.name === "trainer_id")) {
+      this.db.exec("ALTER TABLE tasks ADD COLUMN trainer_id TEXT NOT NULL DEFAULT 'math'");
+    }
   }
 
   add(tasks: Task[], ctx: PoolContext): void {
     const insert = this.db.prepare(
-      `INSERT OR IGNORE INTO tasks (id, lang, grade, level, topic_id, difficulty, answer_type, data, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR IGNORE INTO tasks (id, trainer_id, lang, grade, level, topic_id, difficulty, answer_type, data, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     const now = Date.now();
     this.db.exec("BEGIN");
     try {
       for (const t of tasks) {
-        insert.run(t.id, ctx.lang, ctx.grade, ctx.level ?? "", t.topicId, t.difficulty, t.answerType, JSON.stringify(t), now);
+        insert.run(t.id, ctx.trainerId, ctx.lang, ctx.grade, ctx.level ?? "", t.topicId, t.difficulty, t.answerType, JSON.stringify(t), now);
       }
       this.db.exec("COMMIT");
     } catch (err) {
@@ -77,16 +91,23 @@ export class TaskPool {
     const rows = this.db
       .prepare(
         `SELECT id, data FROM tasks
-         WHERE lang = ? AND grade = ? AND level = ? AND topic_id = ?
+         WHERE trainer_id = ? AND lang = ? AND grade = ? AND level = ? AND topic_id = ?
            AND answer_type IN (${types.map(() => "?").join(",")})
            AND id NOT IN (SELECT value FROM json_each(?))
          ORDER BY (difficulty = ?) DESC, served ASC, random()
          LIMIT ?`,
       )
-      .all(q.lang, q.grade, q.level ?? "", q.topicId, ...types, JSON.stringify(q.excludeIds), q.difficulty ?? 0, q.limit) as {
-      id: string;
-      data: string;
-    }[];
+      .all(
+        q.trainerId,
+        q.lang,
+        q.grade,
+        q.level ?? "",
+        q.topicId,
+        ...types,
+        JSON.stringify(q.excludeIds),
+        q.difficulty ?? 0,
+        q.limit,
+      ) as { id: string; data: string }[];
 
     if (rows.length > 0) {
       const mark = this.db.prepare("UPDATE tasks SET served = served + 1 WHERE id = ?");
@@ -95,8 +116,11 @@ export class TaskPool {
     return rows.map((r) => JSON.parse(r.data) as Task);
   }
 
-  count(): number {
-    return (this.db.prepare("SELECT COUNT(*) AS n FROM tasks").get() as { n: number }).n;
+  count(trainerId?: string): number {
+    const row = trainerId
+      ? this.db.prepare("SELECT COUNT(*) AS n FROM tasks WHERE trainer_id = ?").get(trainerId)
+      : this.db.prepare("SELECT COUNT(*) AS n FROM tasks").get();
+    return (row as { n: number }).n;
   }
 
   close() {

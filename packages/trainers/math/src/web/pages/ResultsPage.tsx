@@ -1,4 +1,4 @@
-import { getTopic } from "@portal/trainer-math";
+import { getTopic } from "../../index.ts";
 import { Button, Card } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import { MathText } from "../components/MathText.tsx";
 import { useSession } from "../store/session.ts";
 
 export function ResultsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("math");
   const { tasks, answers, settings, feedback } = useSession();
   const { generate, quit, loadFeedback } = useSession.getState();
   const lang = settings.lang;

@@ -13,13 +13,13 @@
   "dependencies": {
     "@portal/core": "*",
     "@portal/trainer-math": "*",
+    "@portal/trainer-sdk": "*",
     "@portal/ui": "*",
     "i18next": "^26.4.2",
-    "katex": "^0.18.7",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.14",
-    "zustand": "^5.0.15"
+    "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -8,7 +8,7 @@ import {
   type Task,
   type TaskResult,
 } from "@portal/core";
-import { isAnswerCorrect } from "@portal/trainer-math";
+import { isAnswerCorrect } from "../../index.ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { api, ApiRequestError } from "../api/client.ts";

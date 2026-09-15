@@ -1,0 +1,18 @@
+{
+  "name": "Matema",
+  "tagline": "Practice trainers for school tests following the Polish curriculum",
+  "catalog": {
+    "title": "Trainers",
+    "open": "Start",
+    "soon": "Trainers for other subjects are coming soon"
+  },
+  "nav": {
+    "home": "All trainers"
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "trainerNotFound": "This trainer does not exist",
+    "loadFailed": "Couldn't load the trainer. Check your connection and reload the page."
+  },
+  "loading": "Loading…"
+}

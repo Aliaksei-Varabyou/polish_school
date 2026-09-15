@@ -6,10 +6,10 @@ import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { LimitedClient, type LLMClient } from "@portal/ai";
 import type { TaskPool } from "@portal/task-pool";
-import { TOPICS } from "@portal/trainer-math";
+import type { TrainerServer } from "@portal/trainer-sdk";
 import Fastify from "fastify";
-import { registerFeedbackRoute } from "./routes/feedback.ts";
-import { registerGenerateRoute } from "./routes/generate.ts";
+import { registerTrainerRoutes } from "./routes/trainers.ts";
+import { trainers as defaultTrainers } from "./trainers.ts";
 
 const WEB_DIST = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 
@@ -17,11 +17,15 @@ export interface AppOptions {
   logger?: boolean;
   pool?: TaskPool;
   reuseRatio?: number;
+  trainers?: Map<string, TrainerServer>;
   /** serve apps/web/dist when it exists (disabled in tests) */
   serveWeb?: boolean;
 }
 
-export async function buildApp(client: LLMClient, { logger = true, pool, reuseRatio, serveWeb = true }: AppOptions = {}) {
+export async function buildApp(
+  client: LLMClient,
+  { logger = true, pool, reuseRatio, trainers = defaultTrainers, serveWeb = true }: AppOptions = {},
+) {
   const app = Fastify({ logger, bodyLimit: 256 * 1024 });
 
   await app.register(cors, { origin: process.env.CORS_ORIGIN?.split(",") ?? true });
@@ -33,14 +37,13 @@ export async function buildApp(client: LLMClient, { logger = true, pool, reuseRa
     return {
       ok: true,
       provider: client.name,
+      trainers: [...trainers.keys()],
       ...(models ? { models } : {}),
       ...(client instanceof LimitedClient ? { queue: client.limiter.stats } : {}),
       ...(pool ? { poolSize: pool.count() } : {}),
     };
   });
-  app.get("/api/curriculum", async () => ({ topics: TOPICS }));
-  registerGenerateRoute(app, client, { pool, reuseRatio });
-  registerFeedbackRoute(app, client);
+  registerTrainerRoutes(app, { client, trainers, pool, reuseRatio });
 
   // In production serve the built SPA from the same origin.
   if (serveWeb && existsSync(WEB_DIST)) {

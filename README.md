@@ -7,13 +7,17 @@
 ## Структура
 
 ```
-apps/api                Fastify API: /api/generate, /api/feedback, /api/health
-apps/web                React + Vite + Tailwind; экраны Start → Trainer → Results
+apps/api                Fastify API: /api/trainers/:id/{topics,generate,feedback}, /api/health
+apps/web                портал: шапка, каталог, ленивая загрузка тренажёров (/t/:id)
 packages/core           общие zod-схемы и типы (Task, Topic, TaskSlot…)
 packages/ai             LLMClient: Gemini, mock, общая очередь запросов
-packages/task-pool      пул проверенных задач (SQLite)
+packages/task-pool      пул проверенных задач (SQLite, с trainer_id)
+packages/trainer-sdk    контракт тренажёра (TrainerServer / TrainerWeb) и общий пайплайн генерации
 packages/ui             общие React-компоненты
-packages/trainers/math  тренажёр математики: темы, проверка ответов; server/ — промпты, валидация, mock-ответы
+packages/trainers/math  тренажёр математики:
+                          src/         темы и проверка ответов (общее для web и api)
+                          src/server/  промпты, валидация задач, mock-ответы, mathTrainer
+                          src/web/     экраны, store, переводы, mathTrainerWeb
 ```
 
 ## Запуск
@@ -73,3 +77,14 @@ npm run typecheck
 
 `packages/trainers/math/src/curriculum/{sp,lo}.ts` — это черновая раскладка по классам на основе популярных учебников.
 Сверьте её с podstawa programowa и учебником конкретной школы. Подтемы записаны по-польски, они идут в промпт.
+
+## Как добавить тренажёр
+
+1. Создать пакет `packages/trainers/<id>` (по образцу `math`) с тремя входами:
+   - `.` — темы и проверка ответа (используются и в браузере, и на сервере);
+   - `./server` — объект `TrainerServer`: `topicsFor`, `generateTaskBatch` (промпт + JSON-схема + mock-ответ), `verifyTask`, `checkAnswer`, `generateFeedback`;
+   - `./web` — объект `TrainerWeb`: название, описание, иконка, переводы (namespace = id) и `load: () => import("./App.tsx")`.
+2. Зарегистрировать тренажёр в `apps/api/src/trainers.ts` и `apps/web/src/trainers.ts`.
+3. Пайплайн генерации (пул, пачки, очередь, догенерация) общий — в `@portal/trainer-sdk/server`, его писать не нужно.
+
+Приложение тренажёра получает `lang` и `setLanguageLocked` от портала и грузится отдельным чанком.

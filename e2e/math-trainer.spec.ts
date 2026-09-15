@@ -40,11 +40,16 @@ async function answerTask(page: Page, index: number, total: number, makeWrong: b
   await page.getByRole("button", { name: index === total - 1 ? /Результаты/ : /Дальше/ }).click();
 }
 
-test("start → 10 tasks → results → analysis → try again", async ({ page }) => {
+test("catalog → math: 10 tasks → results → analysis → try again", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/");
 
   await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Тренажёры" })).toBeVisible();
+  await page.getByRole("link", { name: /Математика/ }).click();
+  await expect(page).toHaveURL(/\/t\/math$/);
+  await expect(page.getByRole("heading", { name: /Тренажёр математики/ })).toBeVisible();
+
   await page.getByRole("radio", { name: "Liceum", exact: true }).click();
   await page.getByRole("radio", { name: "2 класс", exact: true }).click();
   await page.getByRole("radio", { name: "Расширенный", exact: true }).click();
@@ -55,6 +60,10 @@ test("start → 10 tasks → results → analysis → try again", async ({ page 
   await boxes.nth(6).check();
   await page.locator("select").selectOption("10");
   await page.getByRole("button", { name: "Сгенерировать" }).click();
+
+  // the portal hides the language switch while a session is running
+  await expect(page.getByText("Задача 1 из 10")).toBeVisible();
+  await expect(page.getByRole("radio", { name: "PL", exact: true })).toHaveCount(0);
 
   for (let i = 0; i < 10; i++) await answerTask(page, i, 10, i < 3);
 
@@ -72,7 +81,7 @@ test("start → 10 tasks → results → analysis → try again", async ({ page 
 
 test("interface language switch keeps settings", async ({ page }) => {
   const errors = collectErrors(page);
-  await page.goto("/");
+  await page.goto("/t/math");
 
   await page.getByRole("radio", { name: "RU", exact: true }).click();
   await page.locator("input[type=checkbox]").nth(0).check();
@@ -86,5 +95,19 @@ test("interface language switch keeps settings", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Generuj" })).toBeVisible();
   await expect(page.locator("input[type=checkbox]:checked")).toHaveCount(1);
 
+  await page.getByRole("link", { name: /Matema/ }).click();
+  await expect(page.getByRole("heading", { name: "Trenażery" })).toBeVisible();
+
   expect(errors).toEqual([]);
+});
+
+test("unknown trainer and unknown page", async ({ page }) => {
+  await page.goto("/t/unknown");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await expect(page.getByText("Такого тренажёра нет")).toBeVisible();
+
+  await page.goto("/no/such/page");
+  await expect(page.getByText("Страница не найдена")).toBeVisible();
+  await page.getByRole("link", { name: /Все тренажёры/ }).click();
+  await expect(page.getByRole("heading", { name: "Тренажёры" })).toBeVisible();
 });

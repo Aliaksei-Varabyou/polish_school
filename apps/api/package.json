@@ -17,6 +17,7 @@
     "@portal/core": "*",
     "@portal/task-pool": "*",
     "@portal/trainer-math": "*",
+    "@portal/trainer-sdk": "*",
     "fastify": "^5.12.4",
     "tsx": "^4.23.13"
   },

@@ -15,7 +15,7 @@ export function AnswerInput({
   disabled: boolean;
   onSubmit: (answer: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("math");
   const [value, setValue] = useState("");
   const ref = useRef<HTMLInputElement>(null);
 

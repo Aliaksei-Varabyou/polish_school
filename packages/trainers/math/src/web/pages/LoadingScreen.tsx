@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 const SYMBOLS = ["+", "−", "×", "÷", "√", "π", "∑", "%", "x²", "∞"];
 
 export function LoadingScreen() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("math");
   const [i, setI] = useState(0);
 
   useEffect(() => {

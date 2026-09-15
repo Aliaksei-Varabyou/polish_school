@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./server": "./src/server/index.ts"
+    "./server": "./src/server/index.ts",
+    "./web": "./src/web/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
@@ -14,9 +15,19 @@
   "dependencies": {
     "@portal/ai": "*",
     "@portal/core": "*",
-    "mathjs": "^15.2.0"
+    "@portal/trainer-sdk": "*",
+    "@portal/ui": "*",
+    "i18next": "^26.4.2",
+    "katex": "^0.18.7",
+    "mathjs": "^15.2.0",
+    "react-i18next": "^17.0.14",
+    "zustand": "^5.0.15"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0"
   }
 }

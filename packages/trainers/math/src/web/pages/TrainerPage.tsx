@@ -1,4 +1,4 @@
-import { getTopic } from "@portal/trainer-math";
+import { getTopic } from "../../index.ts";
 import { Button, Card, ProgressBar } from "@portal/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +15,7 @@ const DIFFICULTY_STYLE = {
 } as const;
 
 export function TrainerPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("math");
   const { tasks, index, answers, hints, partial, settings } = useSession();
   const { submitAnswer, revealHint, next, quit } = useSession.getState();
   const [solutionOpen, setSolutionOpen] = useState<string | null>(null);

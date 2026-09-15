@@ -1,5 +1,5 @@
 import { isLyceum, TASK_COUNTS, type AnswerMode, type Grade, type Level } from "@portal/core";
-import { topicsFor } from "@portal/trainer-math";
+import { topicsFor } from "../../index.ts";
 import { Button, Card, Label, Segmented } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +9,7 @@ const SP_GRADES: Grade[] = ["sp5", "sp6", "sp7", "sp8"];
 const LO_GRADES: Grade[] = ["lo1", "lo2", "lo3", "lo4"];
 
 export function StartPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("math");
   const settings = useSession((s) => s.settings);
   const error = useSession((s) => s.error);
   const setSettings = useSession((s) => s.setSettings);
