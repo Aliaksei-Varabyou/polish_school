@@ -42,8 +42,8 @@ npm run dev                 # сервер :8787 + фронт :5173 (прокс�
 |---|---|---|
 | `LLM_PROVIDER` | `gemini`, если есть ключ, иначе `mock` | |
 | `GEMINI_API_KEY` | — | ключ Google AI Studio |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | лимиты бесплатного тарифа меняются, сверяйтесь с ai.google.dev |
-| `GEMINI_FALLBACK_MODEL` | `gemini-2.5-flash-lite` | используется при 429 |
+| `GEMINI_MODEL` | `gemini-3.6-flash` | модели и лимиты бесплатного тарифа меняются, сверяйтесь с ai.google.dev |
+| `GEMINI_FALLBACK_MODEL` | `gemini-3.5-flash-lite` | используется при 429 и при недоступности основной модели (404) |
 | `PORT` | `8787` | |
 | `CORS_ORIGIN` | любой | список через запятую |
 

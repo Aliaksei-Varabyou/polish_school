@@ -2,7 +2,7 @@ import { ApiError, GoogleGenAI } from "@google/genai";
 import type { FeedbackRequest } from "@matema/shared";
 import { buildFeedbackPrompt, FEEDBACK_JSON_SCHEMA, FEEDBACK_SYSTEM_PROMPT } from "../prompts/feedback.ts";
 import { buildTasksPrompt, TASKS_JSON_SCHEMA, TASKS_SYSTEM_PROMPT } from "../prompts/generateTasks.ts";
-import { RateLimitError, type LLMProvider, type TaskBatchInput } from "./provider.ts";
+import { FatalLLMError, RateLimitError, type LLMProvider, type TaskBatchInput } from "./provider.ts";
 
 const TIMEOUT_MS = 90_000;
 const RETRIES = 2;
@@ -64,14 +64,17 @@ export class GeminiProvider implements LLMProvider {
           return JSON.parse(text);
         } catch (err) {
           lastError = err;
-          if (err instanceof ApiError && err.status === 429) break; // quota: try next model
-          if (err instanceof ApiError && err.status >= 400 && err.status < 500) throw err; // bad request/key
+          // quota exhausted or model unavailable: try the next model
+          if (err instanceof ApiError && (err.status === 429 || err.status === 404)) break;
+          // bad key / invalid request: retrying won't help
+          if (err instanceof ApiError && err.status >= 400 && err.status < 500) throw new FatalLLMError(err.message, err.status);
           await sleep(1000 * 2 ** attempt);
         }
       }
     }
 
     if (lastError instanceof ApiError && lastError.status === 429) throw new RateLimitError();
+    if (lastError instanceof ApiError && lastError.status === 404) throw new FatalLLMError(lastError.message, 404);
     throw lastError;
   }
 }

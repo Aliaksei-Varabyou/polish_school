@@ -6,7 +6,7 @@ import {
   type Topic,
 } from "@matema/shared";
 import type { FastifyInstance } from "fastify";
-import { RateLimitError, type LLMProvider } from "../llm/provider.ts";
+import { FatalLLMError, RateLimitError, type LLMProvider } from "../llm/provider.ts";
 import { verifyTask } from "../validation/verifyTask.ts";
 
 const MAX_BATCH = 5;
@@ -74,13 +74,14 @@ export function registerGenerateRoute(app: FastifyInstance, provider: LLMProvide
 
       const plan = planTopics(topics, req.count);
       let lastError: unknown;
+      let stop = false; // set on errors that make further requests pointless
       let rejected = 0;
 
       const collected = await mapLimit(plan, CONCURRENCY, async ({ topic, difficulties }) => {
         const tasks: Task[] = [];
-        for (let round = 0; round < MAX_ROUNDS && tasks.length < difficulties.length; round++) {
+        for (let round = 0; round < MAX_ROUNDS && tasks.length < difficulties.length && !stop; round++) {
           const missing = difficulties.slice(tasks.length);
-          for (let i = 0; i < missing.length; i += MAX_BATCH) {
+          for (let i = 0; i < missing.length && !stop; i += MAX_BATCH) {
             const batch = missing.slice(i, i + MAX_BATCH);
             try {
               const raw = await provider.generateTasks({ ...req, topic, difficulties: batch });
@@ -96,7 +97,10 @@ export function registerGenerateRoute(app: FastifyInstance, provider: LLMProvide
             } catch (err) {
               lastError = err;
               request.log.error({ err, topic: topic.id }, "generation batch failed");
-              if (err instanceof RateLimitError) return tasks;
+              if (err instanceof RateLimitError || err instanceof FatalLLMError) {
+                stop = true;
+                return tasks;
+              }
             }
           }
         }

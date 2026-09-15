@@ -18,6 +18,17 @@ export interface LLMProvider {
   generateFeedback(input: FeedbackRequest): Promise<unknown>;
 }
 
+/** Non-retryable error (bad key, unknown model, invalid request) — retrying won't help. */
+export class FatalLLMError extends Error {
+  constructor(
+    message: string,
+    public status?: number,
+  ) {
+    super(message);
+    this.name = "FatalLLMError";
+  }
+}
+
 export class RateLimitError extends Error {
   constructor(message = "LLM rate limit exceeded") {
     super(message);
