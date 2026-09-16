@@ -8,6 +8,8 @@ export interface VerifyContext {
   /** topics requested in the batch; the task's topicId must be one of them */
   allowedTopicIds: string[];
   answerMode: AnswerMode;
+  /** deterministic id to use instead of a random one (offline template rendering) */
+  id?: string;
 }
 
 const numericParts = (s: string) => s.split(";").map((p) => evaluateNumber(normalizeAnswer(p)));
@@ -36,7 +38,7 @@ export function verifyTask(raw: unknown, ctx: VerifyContext): VerifyResult {
   if (!topicId && ctx.allowedTopicIds.length === 1) topicId = ctx.allowedTopicIds[0];
   if (!topicId || !ctx.allowedTopicIds.includes(topicId)) return { ok: false, reason: `unexpected topicId: ${topicId}` };
 
-  const parsed = Task.safeParse({ ...r, id: randomUUID(), topicId });
+  const parsed = Task.safeParse({ ...r, id: ctx.id ?? randomUUID(), topicId });
   if (!parsed.success) return { ok: false, reason: `schema: ${parsed.error.issues[0]?.message}` };
   const task = parsed.data;
 

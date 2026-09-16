@@ -6,6 +6,7 @@ dist
 .DS_Store
 .claude/settings.local.json
 apps/api/data/
+packages/trainers/math/data/
 test-results/
 playwright-report/
 .turbo/

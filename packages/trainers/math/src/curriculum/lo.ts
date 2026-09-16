@@ -36,6 +36,10 @@ export const lo: Topic[] = [
     ["postać ogólna, kanoniczna i iloczynowa", "wierzchołek paraboli", "najmniejsza i największa wartość w przedziale"], "P"),
   topic("lo2.quadEq", "lo2", ["Równania i nierówności kwadratowe", "Квадратные уравнения и неравенства", "Quadratic equations and inequalities"],
     ["wyróżnik i pierwiastki", "nierówności kwadratowe", "zadania tekstowe"], "P"),
+  // added per docs/curriculum-review.md §5 (LO2): polynomials at basic level belong in class 2,
+  // not only as lo2.polynomialsR (extended) — the current podstawa (2024) covers this on level P too.
+  topic("lo2.polynomials", "lo2", ["Wielomiany", "Многочлены", "Polynomials"],
+    ["stopień i współczynniki", "dodawanie, odejmowanie i mnożenie wielomianów", "wyłączanie jednomianu przed nawias", "równania wielomianowe w postaci iloczynowej"], "P"),
   topic("lo2.quadrilaterals", "lo2", ["Planimetria – czworokąty i pola", "Планиметрия — четырёхугольники и площади", "Geometry – quadrilaterals and areas"],
     ["własności czworokątów", "pola czworokątów", "pola figur podobnych"], "P"),
   topic("lo2.trigAcute", "lo2", ["Trygonometria kąta ostrego", "Тригонометрия острого угла", "Trigonometry of acute angles"],
