@@ -1,4 +1,4 @@
-import { LANGS, type Lang } from "@portal/core";
+import type { Lang } from "@portal/core";
 import { Card, Segmented } from "@portal/ui";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,10 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage.tsx").then((m) => ({ 
 const HistoryPage = lazy(() => import("./pages/HistoryPage.tsx").then((m) => ({ default: m.HistoryPage })));
 const SessionPage = lazy(() => import("./pages/SessionPage.tsx").then((m) => ({ default: m.SessionPage })));
 const DashboardPage = lazy(() => import("./pages/DashboardPage.tsx").then((m) => ({ default: m.DashboardPage })));
+
+// English translations that already exist stay in place, but the portal no longer offers switching
+// to EN from the header — only RU/PL are exposed here. Do not add new EN copy going forward.
+const VISIBLE_LANGS: Lang[] = ["ru", "pl"];
 
 export function App() {
   const { t, i18n } = useTranslation();
@@ -52,7 +56,7 @@ export function App() {
         </Link>
         <div className="flex items-center gap-2">
           {!languageLocked && (
-            <Segmented value={lang} onChange={setLang} options={LANGS.map((l) => ({ value: l, label: l.toUpperCase() }))} />
+            <Segmented value={lang} onChange={setLang} options={VISIBLE_LANGS.map((l) => ({ value: l, label: l.toUpperCase() }))} />
           )}
           <AccountMenu />
         </div>

@@ -1,0 +1,49 @@
+{
+  "app": {
+    "title": "Trener lektur",
+    "subtitle": "Pytania sprawdzające znajomość lektur szkolnych"
+  },
+  "start": {
+    "school": "Szkoła",
+    "sp": "Szkoła podstawowa",
+    "lo": "Liceum",
+    "grade": "Klasa",
+    "gradeN": "Klasa {{n}}",
+    "books": "Lektury",
+    "noBooks": "Dla tej klasy nie ma jeszcze żadnej lektury. Wróć tu wkrótce.",
+    "questionCount": "{{count}} pytań",
+    "count": "Liczba pytań",
+    "generate": "Zacznij"
+  },
+  "trainer": {
+    "taskOf": "Pytanie {{n}} z {{total}}",
+    "difficulty1": "Łatwe",
+    "difficulty2": "Średnie",
+    "difficulty3": "Trudne",
+    "next": "Dalej",
+    "finish": "Wyniki",
+    "correct": "Dobrze!",
+    "wrong": "Źle",
+    "correctAnswer": "Poprawna odpowiedź:",
+    "showSolution": "Pokaż wyjaśnienie",
+    "hideSolution": "Ukryj wyjaśnienie",
+    "quit": "Wyjdź",
+    "quitConfirm": "Przerwać trening? Postęp zostanie utracony."
+  },
+  "results": {
+    "title": "Twój wynik",
+    "score": "{{correct}} z {{total}}",
+    "great": "Świetnie! Znasz tę lekturę bardzo dobrze.",
+    "good": "Dobrze! Zostało kilka rzeczy do dopracowania.",
+    "ok": "Nieźle, ale warto jeszcze poćwiczyć.",
+    "low": "Tę lekturę warto powtórzyć. Dasz radę!",
+    "byChapter": "Według rozdziałów",
+    "noChapter": "Bez przypisanego rozdziału",
+    "mistakes": "Błędy",
+    "yourAnswer": "Twoja odpowiedź:",
+    "noAnswer": "brak odpowiedzi",
+    "again": "Jeszcze raz",
+    "change": "Zmień ustawienia",
+    "noMistakes": "Bez błędów — tak trzymaj!"
+  }
+}
