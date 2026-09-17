@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@portal/core": "*",
+    "@portal/trainer-lectures": "*",
     "@portal/trainer-math": "*",
     "@portal/trainer-sdk": "*",
     "@portal/ui": "*",
