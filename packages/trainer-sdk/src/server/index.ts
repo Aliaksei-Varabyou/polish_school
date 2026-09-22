@@ -116,7 +116,10 @@ export type GenerateOutcome =
  * verify and store them, 3) fill remaining gaps from the pool if the AI failed.
  */
 export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): Promise<GenerateOutcome> {
-  const { trainer, client, pool, reuseRatio = 0.5, log = silent } = deps;
+  const { trainer, client, pool, log = silent } = deps;
+  // an offline-first trainer (content rendered from templates, no LLM) drains the pool instead
+  const reuseRatio = deps.reuseRatio ?? trainer.reuseRatio ?? 0.5;
+  const usesLLM = trainer.usesLLM ?? true;
   const ctx = { trainerId: trainer.id, lang: req.lang, grade: req.grade, level: req.level };
   const allowed = new Map(trainer.topicsFor(req.grade, req.level).map((t) => [t.id, t]));
   const topics = req.topicIds.map((id) => allowed.get(id)).filter((t): t is Topic => !!t);
@@ -156,7 +159,7 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
   let rejected = 0;
   let llmCalls = 0;
 
-  for (let round = 0; round < MAX_ROUNDS && pending.length > 0 && !stop; round++) {
+  for (let round = 0; usesLLM && round < MAX_ROUNDS && pending.length > 0 && !stop; round++) {
     await mapLimit(chunk(pending, MAX_BATCH), CONCURRENCY, async (slots) => {
       if (stop) return;
       try {

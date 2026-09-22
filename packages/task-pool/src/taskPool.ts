@@ -38,9 +38,9 @@ export interface TaskPoolStore {
 export const MAX_REPORTS = 2;
 
 export const ANSWER_TYPES: Record<AnswerMode, string[]> = {
-  input: ["number", "expression"],
+  input: ["number", "expression", "text"],
   choice: ["choice"],
-  mixed: ["number", "expression", "choice"],
+  mixed: ["number", "expression", "choice", "text"],
 };
 
 export interface PooledTask {

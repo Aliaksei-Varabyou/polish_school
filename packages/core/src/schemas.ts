@@ -53,9 +53,11 @@ export type Choice = z.infer<typeof Choice>;
  * number     — numeric answer (integers, decimals, fractions, roots: "3/4", "2*sqrt(3)")
  * expression — algebraic expression in variables ("2x+3")
  * choice     — pick one of four options A–D
+ * text       — free-form term or name; correctAnswer holds the canonical form and
+ *              acceptedAnswers lists synonyms and inflections (biology and other term-recall subjects)
  * Several answers (e.g. roots) are separated by ";" in correctAnswer.
  */
-export const AnswerType = z.enum(["number", "expression", "choice"]);
+export const AnswerType = z.enum(["number", "expression", "choice", "text"]);
 export type AnswerType = z.infer<typeof AnswerType>;
 
 export const Difficulty = z.union([z.literal(1), z.literal(2), z.literal(3)]);
@@ -70,6 +72,8 @@ export const Task = z
     question: z.string().min(1),
     answerType: AnswerType,
     correctAnswer: z.string().min(1),
+    /** answerType "text": other spellings/inflections accepted as correct, alongside correctAnswer */
+    acceptedAnswers: z.array(z.string().min(1)).max(12).optional(),
     verifyExpression: z.string().optional(),
     choices: z.array(Choice).length(4).optional(),
     correctChoice: ChoiceLabel.optional(),

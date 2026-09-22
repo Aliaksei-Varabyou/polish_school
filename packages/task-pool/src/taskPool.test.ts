@@ -53,6 +53,14 @@ describe("TaskPool (SQLite)", () => {
     expect(await pool.take({ ...query, answerMode: "mixed" })).toHaveLength(3);
   });
 
+  it("serves free-text answers under input and mixed, never under choice", async () => {
+    const term = task("term", { answerType: "text", correctAnswer: "nefron", acceptedAnswers: ["nefronu"], verifyExpression: undefined });
+    await pool.add([term, task("ch", { answerType: "choice" })], ctx);
+    expect(ids(await pool.take({ ...query, answerMode: "input" }))).toEqual(["term"]);
+    expect(ids(await pool.take({ ...query, answerMode: "mixed" }))).toEqual(["ch", "term"]);
+    expect(ids(await pool.take({ ...query, answerMode: "choice" }))).toEqual(["ch"]);
+  });
+
   it("prefers the requested difficulty and least served tasks", async () => {
     await pool.add([task("easy", { difficulty: 1 }), task("hard1", { difficulty: 3 }), task("hard2", { difficulty: 3 })], ctx);
     const [first] = await pool.take({ ...query, difficulty: 3, limit: 1 });

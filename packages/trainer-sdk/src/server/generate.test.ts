@@ -151,6 +151,25 @@ describe("generateTasks", () => {
     const { outcome } = await run(new FailingClient(), newPool());
     expect(outcome).toMatchObject({ ok: false, code: "RATE_LIMIT" });
   });
+
+  it("never calls the LLM for an offline trainer and serves the whole batch from the pool", async () => {
+    const pool = newPool();
+    await run(new MockClient(), pool); // seed the pool with 10 tasks via the LLM-backed trainer
+
+    const offline: TrainerServer = { ...fakeTrainer, usesLLM: false, reuseRatio: 1 };
+    const failing = new FailingClient();
+    const outcome = await generateTasks(request(), { trainer: offline, client: failing, pool });
+
+    expect(failing.calls).toBe(0);
+    expect(outcome).toMatchObject({ ok: true, stats: { llmCalls: 0, generated: 0, reused: 10 } });
+    expect(outcome.ok && outcome.tasks).toHaveLength(10);
+  });
+
+  it("keeps the LLM rounds for trainers that do not opt out", async () => {
+    const mock = new MockClient();
+    const { outcome } = await run(mock, newPool());
+    expect(outcome).toMatchObject({ ok: true, stats: { llmCalls: 2 } });
+  });
 });
 
 describe("generateFeedback", () => {

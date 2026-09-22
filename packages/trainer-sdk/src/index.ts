@@ -14,6 +14,13 @@ export type VerifyResult = { ok: true; task: Task } | { ok: false; reason: strin
 /** Server side of a trainer: curriculum, AI prompts and task verification. */
 export interface TrainerServer {
   id: string;
+  /**
+   * false for trainers whose content is rendered offline from templates: the generation pipeline
+   * then skips the LLM rounds entirely instead of burning three empty ones. Default true.
+   */
+  usesLLM?: boolean;
+  /** default share of tasks taken from the pool; offline trainers set 1. Overridden by GenerateDeps. */
+  reuseRatio?: number;
   topicsFor(grade: Grade, level?: Level): Topic[];
   getTopic(id: string): Topic | undefined;
   /** Generates one batch of raw (not yet verified) tasks. */
