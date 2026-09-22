@@ -1,5 +1,4 @@
-import { defineTemplate, intRange } from "../types.ts";
-import { fmtNumber } from "../text.ts";
+import { defineTemplate, fmtNumber, intRange } from "@portal/trainer-sdk/templates";
 
 const TOPIC = "sp5.decimals";
 

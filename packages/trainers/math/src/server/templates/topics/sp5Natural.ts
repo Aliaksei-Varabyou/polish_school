@@ -1,5 +1,4 @@
-import { defineTemplate, intRange } from "../types.ts";
-import { plural } from "../text.ts";
+import { defineTemplate, intRange, plural } from "@portal/trainer-sdk/templates";
 
 const TOPIC = "sp5.natural";
 

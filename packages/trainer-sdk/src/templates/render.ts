@@ -1,15 +1,23 @@
 import { createHash } from "node:crypto";
 import type { Lang, Task } from "@portal/core";
-import { verifyTask } from "../verifyTask.ts";
+import type { VerifyContext, VerifyResult } from "../index.ts";
 import { enumerateParams } from "./combinations.ts";
 import type { Derived, ParamSpec, ParamsOf, TaskTemplate } from "./types.ts";
 
-export interface RenderOptions {
-  langs: readonly Lang[];
+/** Same contract as `TrainerServer.verifyTask` — the trainer's own verifier, injected by its shim. */
+export type VerifyFn = (raw: unknown, ctx: VerifyContext) => VerifyResult;
+
+export interface RenderOptions<L extends Lang = Lang> {
+  langs: readonly L[];
   /** how many distinct, verified substitutions to keep (tasks per language = this × langs.length) */
   targetCount: number;
   /** raw substitutions to try before giving up; default targetCount × 8 */
   attemptBudget?: number;
+  /**
+   * The trainer's task verifier. Rendered tasks go through exactly the same check as LLM output,
+   * which is what makes offline content trustworthy — so the engine takes it rather than picking one.
+   */
+  verify: VerifyFn;
 }
 
 export interface RenderStats {
@@ -21,13 +29,13 @@ export interface RenderStats {
   rejectionReasons: string[];
 }
 
-export interface RenderedTask {
-  lang: Lang;
+export interface RenderedTask<L extends Lang = Lang> {
+  lang: L;
   task: Task;
 }
 
-export interface RenderOutcome {
-  tasks: RenderedTask[];
+export interface RenderOutcome<L extends Lang = Lang> {
+  tasks: RenderedTask<L>[];
   stats: RenderStats;
 }
 
@@ -37,17 +45,18 @@ const paramsHash = (params: Record<string, unknown>): string =>
     .digest("hex")
     .slice(0, 10);
 
-function buildRaw<P extends Record<string, ParamSpec>>(template: TaskTemplate<P>, p: ParamsOf<P>, d: Derived, lang: Lang) {
+function buildRaw<P extends Record<string, ParamSpec>, L extends Lang>(template: TaskTemplate<P, L>, p: ParamsOf<P>, d: Derived, lang: L) {
   const isChoice = template.answerType === "choice";
   const choices = isChoice ? template.choices?.(p, d, lang) : undefined;
   const correctChoice = isChoice ? template.correctChoiceLabel?.(p, d) : undefined;
   return {
     topicId: template.topicId,
     subtopic: template.subtopic[lang],
-    difficulty: template.difficulty,
+    difficulty: typeof template.difficulty === "function" ? template.difficulty(p, d) : template.difficulty,
     question: template.question(p, d, lang),
     answerType: template.answerType,
     correctAnswer: isChoice ? (correctChoice ?? "") : template.correctAnswer(p, d),
+    acceptedAnswers: template.acceptedAnswers?.(p, d, lang),
     verifyExpression: template.verifyExpression?.(p, d),
     choices,
     correctChoice,
@@ -58,14 +67,18 @@ function buildRaw<P extends Record<string, ParamSpec>>(template: TaskTemplate<P>
 
 /**
  * Renders one template into concrete, verified tasks: enumerates (or samples) substitutions, applies
- * `constraint`, then builds and verifies a task in every requested language via the same `verifyTask`
- * used for LLM output (re-checks the math, not just the shape). A substitution is only kept if it
- * verifies in *every* language — keeps per-language coverage symmetric instead of silently lopsided.
+ * `constraint`, then builds and verifies a task in every requested language via `opts.verify` — the
+ * same check used for LLM output (re-checks the content, not just the shape). A substitution is only
+ * kept if it verifies in *every* language — keeps per-language coverage symmetric instead of
+ * silently lopsided.
  */
-export function renderTemplate<P extends Record<string, ParamSpec>>(template: TaskTemplate<P>, opts: RenderOptions): RenderOutcome {
+export function renderTemplate<P extends Record<string, ParamSpec>, L extends Lang>(
+  template: TaskTemplate<P, L>,
+  opts: RenderOptions<L>,
+): RenderOutcome<L> {
   const attemptBudget = opts.attemptBudget ?? opts.targetCount * 8;
   const answerMode = template.answerType === "choice" ? "choice" : "input";
-  const tasks: RenderedTask[] = [];
+  const tasks: RenderedTask<L>[] = [];
   let accepted = 0;
   let rejected = 0;
   const rejectionReasons: string[] = [];
@@ -79,12 +92,12 @@ export function renderTemplate<P extends Record<string, ParamSpec>>(template: Ta
     const derived = template.derive?.(p) ?? {};
     const hash = paramsHash(p as Record<string, unknown>);
 
-    const perLang: RenderedTask[] = [];
+    const perLang: RenderedTask<L>[] = [];
     let failReason: string | null = null;
     for (const lang of opts.langs) {
       const raw = buildRaw(template, p, derived, lang);
       const id = `${template.id}:${lang}:${hash}`;
-      const result = verifyTask(raw, { allowedTopicIds: [template.topicId], answerMode, id });
+      const result = opts.verify(raw, { allowedTopicIds: [template.topicId], answerMode, id });
       if (!result.ok) {
         failReason = `[${lang}] ${result.reason}`;
         break;
@@ -105,8 +118,12 @@ export function renderTemplate<P extends Record<string, ParamSpec>>(template: Ta
 }
 
 /** Renders many templates at once; each keeps its own stats (per-template breakdown, e.g. for a report). */
-export function renderTemplates(templates: TaskTemplate<any>[], opts: RenderOptions): { tasks: RenderedTask[]; perTemplate: RenderStats[] } {
-  const tasks: RenderedTask[] = [];
+export function renderTemplates<L extends Lang>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  templates: TaskTemplate<any, L>[],
+  opts: RenderOptions<L>,
+): { tasks: RenderedTask<L>[]; perTemplate: RenderStats[] } {
+  const tasks: RenderedTask<L>[] = [];
   const perTemplate: RenderStats[] = [];
   for (const t of templates) {
     const out = renderTemplate(t, opts);

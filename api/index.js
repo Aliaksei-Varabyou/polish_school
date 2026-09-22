@@ -268,7 +268,7 @@ var Choice = z.object({
   /** typical mistake that leads to this (wrong) option */
   misconception: z.string().optional()
 });
-var AnswerType = z.enum(["number", "expression", "choice"]);
+var AnswerType = z.enum(["number", "expression", "choice", "text"]);
 var Difficulty = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 var Task = z.object({
   id: z.string().min(1),
@@ -278,6 +278,8 @@ var Task = z.object({
   question: z.string().min(1),
   answerType: AnswerType,
   correctAnswer: z.string().min(1),
+  /** answerType "text": other spellings/inflections accepted as correct, alongside correctAnswer */
+  acceptedAnswers: z.array(z.string().min(1)).max(12).optional(),
   verifyExpression: z.string().optional(),
   choices: z.array(Choice).length(4).optional(),
   correctChoice: ChoiceLabel.optional(),
@@ -424,9 +426,9 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 var MAX_REPORTS = 2;
 var ANSWER_TYPES = {
-  input: ["number", "expression"],
+  input: ["number", "expression", "text"],
   choice: ["choice"],
-  mixed: ["number", "expression", "choice"]
+  mixed: ["number", "expression", "choice", "text"]
 };
 var TaskPool = class {
   db;
@@ -1248,7 +1250,9 @@ function claimSlot(pending, task) {
   return true;
 }
 async function generateTasks(req, deps) {
-  const { trainer, client, pool, reuseRatio = 0.5, log = silent } = deps;
+  const { trainer, client, pool, log = silent } = deps;
+  const reuseRatio = deps.reuseRatio ?? trainer.reuseRatio ?? 0.5;
+  const usesLLM = trainer.usesLLM ?? true;
   const ctx = { trainerId: trainer.id, lang: req.lang, grade: req.grade, level: req.level };
   const allowed = new Map(trainer.topicsFor(req.grade, req.level).map((t) => [t.id, t]));
   const topics = req.topicIds.map((id) => allowed.get(id)).filter((t) => !!t);
@@ -1281,7 +1285,7 @@ async function generateTasks(req, deps) {
   let stop = false;
   let rejected = 0;
   let llmCalls = 0;
-  for (let round = 0; round < MAX_ROUNDS && pending.length > 0 && !stop; round++) {
+  for (let round = 0; usesLLM && round < MAX_ROUNDS && pending.length > 0 && !stop; round++) {
     await mapLimit(chunk(pending, MAX_BATCH), CONCURRENCY, async (slots) => {
       if (stop) return;
       try {
@@ -1659,6 +1663,15 @@ var lo = [
     "lo2",
     ["R\xF3wnania i nier\xF3wno\u015Bci kwadratowe", "\u041A\u0432\u0430\u0434\u0440\u0430\u0442\u043D\u044B\u0435 \u0443\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F \u0438 \u043D\u0435\u0440\u0430\u0432\u0435\u043D\u0441\u0442\u0432\u0430", "Quadratic equations and inequalities"],
     ["wyr\xF3\u017Cnik i pierwiastki", "nier\xF3wno\u015Bci kwadratowe", "zadania tekstowe"],
+    "P"
+  ),
+  // added per docs/curriculum-review.md §5 (LO2): polynomials at basic level belong in class 2,
+  // not only as lo2.polynomialsR (extended) — the current podstawa (2024) covers this on level P too.
+  topic(
+    "lo2.polynomials",
+    "lo2",
+    ["Wielomiany", "\u041C\u043D\u043E\u0433\u043E\u0447\u043B\u0435\u043D\u044B", "Polynomials"],
+    ["stopie\u0144 i wsp\xF3\u0142czynniki", "dodawanie, odejmowanie i mno\u017Cenie wielomian\xF3w", "wy\u0142\u0105czanie jednomianu przed nawias", "r\xF3wnania wielomianowe w postaci iloczynowej"],
     "P"
   ),
   topic(
@@ -2303,7 +2316,7 @@ function verifyTask(raw, ctx) {
   let topicId = typeof r.topicId === "string" ? r.topicId : void 0;
   if (!topicId && ctx.allowedTopicIds.length === 1) topicId = ctx.allowedTopicIds[0];
   if (!topicId || !ctx.allowedTopicIds.includes(topicId)) return { ok: false, reason: `unexpected topicId: ${topicId}` };
-  const parsed = Task.safeParse({ ...r, id: randomUUID(), topicId });
+  const parsed = Task.safeParse({ ...r, id: ctx.id ?? randomUUID(), topicId });
   if (!parsed.success) return { ok: false, reason: `schema: ${parsed.error.issues[0]?.message}` };
   const task = parsed.data;
   if (ctx.answerMode === "choice" && task.answerType !== "choice") return { ok: false, reason: "expected choice task" };

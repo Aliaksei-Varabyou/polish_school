@@ -1,4 +1,4 @@
-import { choiceParam, defineTemplate, intRange, type ChoiceLabel } from "../types.ts";
+import { choiceParam, defineTemplate, intRange, type ChoiceLabel } from "@portal/trainer-sdk/templates";
 
 const TOPIC = "lo2.quadEq";
 const LABELS = ["A", "B", "C", "D"] as const;

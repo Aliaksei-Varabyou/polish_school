@@ -53,31 +53,40 @@ export interface TemplateChoice {
  * A parametrized task family. `params` with an empty object renders exactly one fixed task —
  * that's how hand-authored, non-parametrizable content (proofs, figure recognition, …) fits the
  * same pipeline without a separate mechanism.
+ *
+ * `L` is the set of languages the template is written in. It defaults to every portal language, so
+ * math templates are unaffected; a subject whose content is authored in fewer languages narrows it
+ * (biology uses `"ru" | "pl"`) and TypeScript then stops demanding the missing translations.
  */
-export interface TaskTemplate<P extends Record<string, ParamSpec> = Record<string, ParamSpec>> {
+export interface TaskTemplate<P extends Record<string, ParamSpec> = Record<string, ParamSpec>, L extends Lang = Lang> {
   /** stable id prefix; combined with the substitution values to form each rendered task's id */
   id: string;
   topicId: string;
-  difficulty: Difficulty;
+  /** a function when difficulty varies per substitution (e.g. one row of a term table per item) */
+  difficulty: Difficulty | ((p: ParamsOf<P>, d: Derived) => Difficulty);
   answerType: AnswerType;
   params: P;
   /** reject a substitution if it doesn't hold (e.g. keep answers integer, avoid degenerate cases) */
   constraint?: (p: ParamsOf<P>) => boolean;
   /** values computed once per substitution, available to every text/answer function below */
   derive?: (p: ParamsOf<P>) => Derived;
-  subtopic: Record<Lang, string>;
-  question: (p: ParamsOf<P>, d: Derived, lang: Lang) => string;
-  /** mathjs syntax; required for answerType "number", used as a cross-check for "choice" */
+  subtopic: Record<L, string>;
+  question: (p: ParamsOf<P>, d: Derived, lang: L) => string;
+  /** cross-check string interpreted by the trainer's own verifier (mathjs syntax for math) */
   verifyExpression?: (p: ParamsOf<P>, d: Derived) => string;
   correctAnswer: (p: ParamsOf<P>, d: Derived) => string;
-  solution: Record<Lang, (p: ParamsOf<P>, d: Derived) => string>;
-  hint?: Record<Lang, (p: ParamsOf<P>, d: Derived) => string>;
+  /** answerType "text": other spellings and inflections accepted alongside `correctAnswer` */
+  acceptedAnswers?: (p: ParamsOf<P>, d: Derived, lang: L) => string[];
+  solution: Record<L, (p: ParamsOf<P>, d: Derived) => string>;
+  hint?: Record<L, (p: ParamsOf<P>, d: Derived) => string>;
   /** required (and only meaningful) for answerType "choice" */
-  choices?: (p: ParamsOf<P>, d: Derived, lang: Lang) => TemplateChoice[];
+  choices?: (p: ParamsOf<P>, d: Derived, lang: L) => TemplateChoice[];
   correctChoiceLabel?: (p: ParamsOf<P>, d: Derived) => ChoiceLabel;
 }
 
 /** Type-inferring constructor — lets `params`' shape drive every callback's parameter types. */
-export function defineTemplate<P extends Record<string, ParamSpec>>(template: TaskTemplate<P>): TaskTemplate<P> {
+export function defineTemplate<P extends Record<string, ParamSpec>, L extends Lang = Lang>(
+  template: TaskTemplate<P, L>,
+): TaskTemplate<P, L> {
   return template;
 }

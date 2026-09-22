@@ -1,4 +1,4 @@
-import { defineTemplate, intRange } from "../types.ts";
+import { defineTemplate, intRange } from "@portal/trainer-sdk/templates";
 
 const TOPIC = "lo2.polynomials";
 

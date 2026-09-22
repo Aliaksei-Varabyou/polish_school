@@ -7,6 +7,8 @@ export interface VerifyContext {
   /** topics requested in the batch; the task's topicId must be one of them */
   allowedTopicIds: string[];
   answerMode: "input" | "choice" | "mixed";
+  /** deterministic id to use instead of a random one (offline template rendering) */
+  id?: string;
 }
 
 export type VerifyResult = { ok: true; task: Task } | { ok: false; reason: string };
