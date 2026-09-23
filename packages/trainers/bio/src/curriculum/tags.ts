@@ -19,7 +19,7 @@ export const TAGS: Tag[] = [
   {
     id: "homeostaza",
     name: { pl: "Homeostaza i sprzężenie zwrotne", ru: "Гомеостаз и обратная связь", en: "Homeostasis and feedback" },
-    topicIds: ["bio.lo3.hormones"],
+    topicIds: ["bio.lo3.hormones", "bio.lo3.urinary"],
   },
   {
     id: "regulacja-hormonalna",
@@ -30,6 +30,11 @@ export const TAGS: Tag[] = [
     id: "choroby",
     name: { pl: "Choroby i zaburzenia", ru: "Болезни и нарушения", en: "Diseases and disorders" },
     topicIds: ["bio.lo3.hormones"],
+  },
+  {
+    id: "obliczenia",
+    name: { pl: "Zadania obliczeniowe", ru: "Расчётные задания", en: "Calculation tasks" },
+    topicIds: ["bio.lo3.respiration", "bio.lo3.circulation", "bio.lo3.urinary"],
   },
 ];
 

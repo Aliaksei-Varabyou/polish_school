@@ -1,6 +1,6 @@
 // Builders for the shape most biology content takes: a table of rows, one task per row.
 import type { Difficulty } from "@portal/core";
-import { choiceParam, type ChoiceParamSpec, type TaskTemplate } from "@portal/trainer-sdk/templates";
+import { choiceParam, type ChoiceParamSpec, type ParamSpec, type ParamsOf, type TaskTemplate } from "@portal/trainer-sdk/templates";
 import type { BioLang } from "../../lang.ts";
 import { LABELS, pickDistractors, placeChoices } from "./choices.ts";
 
@@ -12,6 +12,24 @@ export interface Bi {
 
 export type RowParams = { i: ChoiceParamSpec<number> };
 export type RowTemplate = TaskTemplate<RowParams, BioLang>;
+
+/**
+ * Any biology template. Widened in `params`: every template has its own parameter shape, and the
+ * code that iterates the registry (the render script, the tests) does not need per-template types.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type BioTemplate = TaskTemplate<any, BioLang>;
+
+/**
+ * Sentences are assembled from table fields, so a field that starts a sentence needs its first
+ * letter raised.
+ *
+ * Question wording uses "Label: value" rather than prepositions on purpose. Polish and Russian would
+ * otherwise need a declined form of every term, and the anatomical names mix singulars and plurals
+ * ("tarczyca" vs "wyspy trzustkowe"), which breaks verb agreement too. A label takes the nominative
+ * the table already stores, and reads like a matura task rather than a broken sentence.
+ */
+export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 interface CommonSpec<T> {
   id: string;
@@ -108,6 +126,61 @@ export function termFromTable<T>(spec: TermSpec<T>): RowTemplate {
     solution: {
       pl: (p) => spec.solution(spec.rows[p.i], "pl"),
       ru: (p) => spec.solution(spec.rows[p.i], "ru"),
+    },
+  };
+}
+
+export interface CalcSpec<P extends Record<string, ParamSpec>> {
+  id: string;
+  topicId: string;
+  subtopic: Bi;
+  tags?: string[];
+  difficulty: Difficulty;
+  params: P;
+  constraint?: (p: ParamsOf<P>) => boolean;
+  /** decimal places in the shown answer; omitted means the result is a whole number */
+  decimals?: number;
+  /** the calculation written out as a mathjs expression, built from the parameters */
+  formula: (p: ParamsOf<P>) => string;
+  /** the same quantity computed independently in TypeScript — the verifier compares the two */
+  value: (p: ParamsOf<P>) => number;
+  question: (p: ParamsOf<P>, lang: BioLang) => string;
+  hint?: (p: ParamsOf<P>, lang: BioLang) => string;
+  solution: (p: ParamsOf<P>, answer: string, lang: BioLang) => string;
+}
+
+/**
+ * A numeric physiology task. `formula` and `value` must be written independently of each other:
+ * that is the whole point, and it is what gives biology the same guarantee the math renderer has —
+ * an answer nobody re-derived is an answer nobody checked.
+ *
+ * The formula carries the rounding too, so the cross-check compares like with like rather than
+ * failing on the display precision.
+ */
+export function calcTemplate<P extends Record<string, ParamSpec>>(spec: CalcSpec<P>): TaskTemplate<P, BioLang> {
+  const round = (n: number) => (spec.decimals === undefined ? Math.round(n) : Number(n.toFixed(spec.decimals)));
+  // decimal comma in both of the trainer's languages
+  const show = (n: number) => String(round(n)).replace(".", ",");
+  return {
+    id: spec.id,
+    topicId: spec.topicId,
+    answerType: "number",
+    tags: spec.tags,
+    params: spec.params,
+    constraint: spec.constraint,
+    difficulty: spec.difficulty,
+    subtopic: spec.subtopic,
+    question: (p, _d, lang) => spec.question(p, lang),
+    verifyExpression: (p) =>
+      spec.decimals === undefined ? `round(${spec.formula(p)})` : `round(${spec.formula(p)}, ${spec.decimals})`,
+    correctAnswer: (p) => show(spec.value(p)),
+    hint: spec.hint && {
+      pl: (p) => spec.hint!(p, "pl"),
+      ru: (p) => spec.hint!(p, "ru"),
+    },
+    solution: {
+      pl: (p) => spec.solution(p, show(spec.value(p)), "pl"),
+      ru: (p) => spec.solution(p, show(spec.value(p)), "ru"),
     },
   };
 }

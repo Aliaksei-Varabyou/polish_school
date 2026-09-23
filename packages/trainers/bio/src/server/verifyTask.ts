@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Task, type AnswerMode } from "@portal/core";
 import { isTermCorrect, normalizeTerm, parseQuantity } from "../answer.ts";
+import { evaluateExpression } from "./crossCheck.ts";
 
 export type VerifyResult = { ok: true; task: Task } | { ok: false; reason: string };
 
@@ -50,7 +51,17 @@ export function verifyTask(raw: unknown, ctx: VerifyContext): VerifyResult {
   }
 
   if (task.answerType === "number") {
-    if (parseQuantity(task.correctAnswer) === null) return { ok: false, reason: "correctAnswer is not a number" };
+    const answer = parseQuantity(task.correctAnswer);
+    if (answer === null) return { ok: false, reason: "correctAnswer is not a number" };
+    if (task.verifyExpression) {
+      // the formula is written from the parameters and evaluated independently of the TypeScript
+      // arithmetic that produced correctAnswer, so a typo in either one shows up here
+      const computed = evaluateExpression(task.verifyExpression);
+      if (computed === null) return { ok: false, reason: `verifyExpression does not evaluate: ${task.verifyExpression}` };
+      if (Math.abs(computed - answer) > Math.max(1e-9, Math.abs(computed) * 0.0001)) {
+        return { ok: false, reason: `verifyExpression (${computed}) != correctAnswer (${answer})` };
+      }
+    }
   }
 
   if (task.answerType === "choice") {

@@ -1,7 +1,7 @@
 // Dział 10: Układ hormonalny. Table-driven — a handful of templates over the ~24-row hormone table
 // (plus disorders and regulation loops) yields dozens of tasks per language, so the work sits in
 // data/hormones.ts rather than here.
-import { choiceFromTable, termFromTable, type RowTemplate } from "../tableTemplate.ts";
+import { cap, choiceFromTable, termFromTable, type RowTemplate } from "../tableTemplate.ts";
 import { DISORDERS, HORMONES, LOOPS, type DisorderEntry, type HormoneEntry, type LoopEntry } from "../data/hormones.ts";
 
 const TOPIC = "bio.lo3.hormones";
@@ -11,16 +11,6 @@ const DISEASES = { pl: "nadczynność i niedoczynność gruczołów", ru: "ги�
 
 const tier = <T extends { tier: HormoneEntry["tier"] }>(row: T) => row.tier;
 
-/**
- * Sentences are assembled from table fields, so a field that starts a sentence needs its first
- * letter raised.
- *
- * Question wording uses "Label: value" rather than prepositions on purpose. Polish and Russian would
- * otherwise need a declined form of every term, and the gland names are a mix of singulars and
- * plurals ("tarczyca" vs "wyspy trzustkowe"), which breaks verb agreement too. A label takes the
- * nominative the table already stores, and reads like a matura task rather than a broken sentence.
- */
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const glandToHormone = choiceFromTable<HormoneEntry>({
   id: `${TOPIC}.gland-to-hormone`,

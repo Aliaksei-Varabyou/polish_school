@@ -220,7 +220,7 @@ function createLLMClient(env = process.env) {
     inner = new MockClient();
   } else if (kind === "gemini") {
     if (!env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set (or use LLM_PROVIDER=mock)");
-    const models = [env.GEMINI_MODEL || DEFAULT_MODEL, ...(env.GEMINI_FALLBACK_MODEL ?? DEFAULT_FALLBACKS).split(",")].map((m) => m.trim()).filter((m, i, all2) => m && all2.indexOf(m) === i);
+    const models = [env.GEMINI_MODEL || DEFAULT_MODEL, ...(env.GEMINI_FALLBACK_MODEL ?? DEFAULT_FALLBACKS).split(",")].map((m) => m.trim()).filter((m, i, all3) => m && all3.indexOf(m) === i);
     inner = new GeminiClient(env.GEMINI_API_KEY, models);
   } else {
     throw new Error(`Unknown LLM_PROVIDER: ${kind}`);
@@ -1583,7 +1583,7 @@ var TAGS = [
   {
     id: "homeostaza",
     name: { pl: "Homeostaza i sprz\u0119\u017Cenie zwrotne", ru: "\u0413\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", en: "Homeostasis and feedback" },
-    topicIds: ["bio.lo3.hormones"]
+    topicIds: ["bio.lo3.hormones", "bio.lo3.urinary"]
   },
   {
     id: "regulacja-hormonalna",
@@ -1594,6 +1594,11 @@ var TAGS = [
     id: "choroby",
     name: { pl: "Choroby i zaburzenia", ru: "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u0438 \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F", en: "Diseases and disorders" },
     topicIds: ["bio.lo3.hormones"]
+  },
+  {
+    id: "obliczenia",
+    name: { pl: "Zadania obliczeniowe", ru: "\u0420\u0430\u0441\u0447\u0451\u0442\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u044F", en: "Calculation tasks" },
+    topicIds: ["bio.lo3.respiration", "bio.lo3.circulation", "bio.lo3.urinary"]
   }
 ];
 var byId = new Map(TAGS.map((t) => [t.id, t]));
@@ -1687,6 +1692,28 @@ function buildFeedback(req) {
 
 // packages/trainers/bio/src/server/verifyTask.ts
 import { randomUUID } from "node:crypto";
+
+// packages/trainers/bio/src/server/crossCheck.ts
+import { all, create } from "mathjs";
+var math = create(all);
+var evaluate = math.evaluate;
+var blocked = () => {
+  throw new Error("Function disabled");
+};
+math.import(
+  { import: blocked, createUnit: blocked, evaluate: blocked, parse: blocked, simplify: blocked, derivative: blocked },
+  { override: true }
+);
+function evaluateExpression(expression) {
+  try {
+    const value = evaluate(expression);
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+// packages/trainers/bio/src/server/verifyTask.ts
 function verifyTask(raw, ctx) {
   if (!raw || typeof raw !== "object") return { ok: false, reason: "not an object" };
   const r = raw;
@@ -1711,7 +1738,15 @@ function verifyTask(raw, ctx) {
     }
   }
   if (task.answerType === "number") {
-    if (parseQuantity(task.correctAnswer) === null) return { ok: false, reason: "correctAnswer is not a number" };
+    const answer = parseQuantity(task.correctAnswer);
+    if (answer === null) return { ok: false, reason: "correctAnswer is not a number" };
+    if (task.verifyExpression) {
+      const computed = evaluateExpression(task.verifyExpression);
+      if (computed === null) return { ok: false, reason: `verifyExpression does not evaluate: ${task.verifyExpression}` };
+      if (Math.abs(computed - answer) > Math.max(1e-9, Math.abs(computed) * 1e-4)) {
+        return { ok: false, reason: `verifyExpression (${computed}) != correctAnswer (${answer})` };
+      }
+    }
   }
   if (task.answerType === "choice") {
     const choices = task.choices;
@@ -1741,23 +1776,23 @@ var bioTrainer = {
 };
 
 // packages/trainers/math/src/answer.ts
-import { all, create } from "mathjs";
-var math = create(all);
-var evaluate = math.evaluate;
-var parse = math.parse;
-var blocked = () => {
+import { all as all2, create as create2 } from "mathjs";
+var math2 = create2(all2);
+var evaluate2 = math2.evaluate;
+var parse = math2.parse;
+var blocked2 = () => {
   throw new Error("Function disabled");
 };
-math.import(
+math2.import(
   {
-    import: blocked,
-    createUnit: blocked,
-    evaluate: blocked,
-    parse: blocked,
-    simplify: blocked,
-    derivative: blocked,
-    resolve: blocked,
-    reviver: blocked
+    import: blocked2,
+    createUnit: blocked2,
+    evaluate: blocked2,
+    parse: blocked2,
+    simplify: blocked2,
+    derivative: blocked2,
+    resolve: blocked2,
+    reviver: blocked2
   },
   { override: true }
 );
@@ -1788,7 +1823,7 @@ function normalizeAnswer(raw) {
 }
 function evaluateNumber(expr, scope = {}) {
   try {
-    const value = evaluate(expr, { ...scope });
+    const value = evaluate2(expr, { ...scope });
     const n = typeof value === "number" ? value : Number(value?.valueOf?.());
     return Number.isFinite(n) ? n : null;
   } catch {
@@ -1810,7 +1845,7 @@ function freeVariables(expr) {
     if (n.type !== "SymbolNode") return;
     const name = n.name;
     const isFnName = parent?.type === "FunctionNode" && parent.fn === n;
-    if (!isFnName && !(name in math)) names.add(name);
+    if (!isFnName && !(name in math2)) names.add(name);
   });
   return [...names];
 }

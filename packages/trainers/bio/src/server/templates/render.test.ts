@@ -11,6 +11,17 @@ const LANGS = [...BIO_LANGS];
 const TARGET = 60;
 
 describe("biology templates", () => {
+  it("renders the same task ids on every run, so re-rendering the pool is a no-op", () => {
+    // a parameter space larger than the attempt budget makes the renderer sample at random, which
+    // would produce new ids each run and quietly grow the pool instead of leaving it alone
+    for (const template of ALL_TEMPLATES) {
+      const opts = { langs: LANGS, targetCount: TARGET, attemptBudget: 500 } as const;
+      const first = renderTemplate(template, opts).tasks.map((t) => t.task.id);
+      const second = renderTemplate(template, opts).tasks.map((t) => t.task.id);
+      expect(second, `${template.id} renders different tasks each run`).toEqual(first);
+    }
+  });
+
   it("has no duplicate template ids", () => {
     const ids = ALL_TEMPLATES.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -102,8 +113,11 @@ describe("cross-cutting tags", () => {
     }
   });
 
-  it("expands a theme into the topics that carry it", () => {
-    expect(topicIdsForTags(["homeostaza"])).toEqual(["bio.lo3.hormones"]);
+  it("expands a theme into the topics that carry it, and spans more than one dział", () => {
+    const homeostasis = topicIdsForTags(["homeostaza"]);
+    expect(homeostasis).toEqual([...(actual.get("homeostaza") ?? [])]);
+    // the whole reason tags exist: a theme that lives in a single dział would just be a subtopic
+    expect(homeostasis.length).toBeGreaterThan(1);
     expect(topicIdsForTags(["nie-ma-takiego"])).toEqual([]);
   });
 
