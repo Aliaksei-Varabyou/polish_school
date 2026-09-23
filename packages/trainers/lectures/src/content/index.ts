@@ -1,4 +1,5 @@
 import { GRADES, type Grade } from "@portal/core";
+import { akademiaPanaKleksa } from "./books/akademiaPanaKleksa.ts";
 import { hobbit } from "./books/hobbit.ts";
 import { stageGrades, type StageId } from "./stages.ts";
 import type { Book, LectureQuestion } from "./types.ts";
@@ -7,7 +8,7 @@ export type { Book, LectureChoice, LectureQuestion } from "./types.ts";
 export * from "./stages.ts";
 
 /** New books are added here one at a time — no other change needed for them to show up. */
-export const BOOKS: Book[] = [hobbit];
+export const BOOKS: Book[] = [akademiaPanaKleksa, hobbit];
 
 const byId = new Map(BOOKS.map((b) => [b.id, b]));
 
