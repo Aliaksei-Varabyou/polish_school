@@ -240,7 +240,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 var LANGS = ["ru", "en", "pl"];
 var Lang = z.enum(LANGS);
-var GRADES = ["sp5", "sp6", "sp7", "sp8", "lo1", "lo2", "lo3", "lo4"];
+var GRADES = ["sp1", "sp2", "sp3", "sp4", "sp5", "sp6", "sp7", "sp8", "lo1", "lo2", "lo3", "lo4"];
 var Grade = z.enum(GRADES);
 var Level = z.enum(["P", "R"]);
 var AnswerMode = z.enum(["input", "choice", "mixed"]);
