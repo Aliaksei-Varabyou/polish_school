@@ -188,7 +188,7 @@ export function ProfilePage({ lang, setLang }: { lang: Lang; setLang: (lang: Lan
 
           <div>
             <Label>{t("start.language")}</Label>
-            <Segmented value={lang} onChange={setLang} options={["ru", "en", "pl"].map((l) => ({ value: l as Lang, label: l.toUpperCase() }))} />
+            <Segmented value={lang} onChange={setLang} options={["ru", "pl"].map((l) => ({ value: l as Lang, label: l.toUpperCase() }))} />
           </div>
 
           <Field id="birthYear" label={t("auth.birthYear")}>

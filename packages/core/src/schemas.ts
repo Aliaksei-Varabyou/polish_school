@@ -4,7 +4,7 @@ export const LANGS = ["ru", "en", "pl"] as const;
 export const Lang = z.enum(LANGS);
 export type Lang = z.infer<typeof Lang>;
 
-export const GRADES = ["sp5", "sp6", "sp7", "sp8", "lo1", "lo2", "lo3", "lo4"] as const;
+export const GRADES = ["sp1", "sp2", "sp3", "sp4", "sp5", "sp6", "sp7", "sp8", "lo1", "lo2", "lo3", "lo4"] as const;
 export const Grade = z.enum(GRADES);
 export type Grade = z.infer<typeof Grade>;
 

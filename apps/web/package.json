@@ -13,6 +13,7 @@
   "dependencies": {
     "@portal/core": "*",
     "@portal/trainer-bio": "*",
+    "@portal/trainer-lectures": "*",
     "@portal/trainer-math": "*",
     "@portal/trainer-sdk": "*",
     "@portal/ui": "*",
