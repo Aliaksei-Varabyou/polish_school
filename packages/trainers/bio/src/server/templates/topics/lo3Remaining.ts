@@ -13,12 +13,14 @@ import {
   SENSE_PARTS,
   VISION_DEFECTS,
 } from "../data/systems.ts";
+import { P } from "../../../curriculum/lo.ts";
 
 const organism = [
   ...pairFromTable({
     topicId: "bio.lo3.organism",
     slug: "tissue",
     rows: TISSUES,
+    paragraph: P.organism.hierarchy,
     subtopic: { pl: "tkanki i poziomy organizacji", ru: "ткани и уровни организации" },
     shift: 0,
     label: { pl: "Tkanka", ru: "Ткань" },
@@ -43,6 +45,7 @@ const skin = pairFromTable({
   topicId: "bio.lo3.skin",
   slug: "skin",
   rows: SKIN_PARTS,
+  paragraph: P.skin.structure,
   subtopic: { pl: "budowa skóry i termoregulacja", ru: "строение кожи и терморегуляция" },
   tags: ["homeostaza"],
   shift: 1,
@@ -74,6 +77,7 @@ const digestion = [
     topicId: "bio.lo3.digestion",
     slug: "enzyme",
     rows: ENZYMES,
+    paragraph: P.digestion.processes,
     subtopic: { pl: "enzymy trawienne", ru: "пищеварительные ферменты" },
     shift: 2,
     label: { pl: "Enzym", ru: "Фермент" },
@@ -105,6 +109,7 @@ const senses = [
     topicId: "bio.lo3.senses",
     slug: "defect",
     rows: VISION_DEFECTS,
+    paragraph: P.senses.vision,
     subtopic: { pl: "wady wzroku", ru: "дефекты зрения" },
     tags: ["choroby"],
     shift: 3,
@@ -128,6 +133,7 @@ const reproduction = pairFromTable({
 const lensPower = calcTemplate({
   id: "bio.lo3.senses.lens-power",
   topicId: "bio.lo3.senses",
+  paragraph: P.senses.vision,
   subtopic: { pl: "wady wzroku", ru: "дефекты зрения" },
   tags: ["obliczenia"],
   difficulty: 2,
@@ -159,6 +165,7 @@ const lensPower = calcTemplate({
 const ovulationDay = calcTemplate({
   id: "bio.lo3.reproduction.ovulation-day",
   topicId: "bio.lo3.reproduction",
+  paragraph: P.reproduction.female,
   subtopic: { pl: "cykl miesiączkowy", ru: "менструальный цикл" },
   tags: ["obliczenia"],
   difficulty: 2,

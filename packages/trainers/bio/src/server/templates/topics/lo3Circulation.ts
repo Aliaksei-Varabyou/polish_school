@@ -3,6 +3,7 @@
 import { intRange } from "@portal/trainer-sdk/templates";
 import { calcTemplate, choiceFromTable, pairFromTable, type BioTemplate } from "../tableTemplate.ts";
 import { BLOOD_COMPONENTS, BLOOD_GROUPS, HEART_AND_VESSELS, IMMUNITY, type BloodGroupEntry } from "../data/circulation.ts";
+import { P } from "../../../curriculum/lo.ts";
 
 const TOPIC = "bio.lo3.circulation";
 const HEART = { pl: "budowa i praca serca, naczynia krwionośne", ru: "строение и работа сердца, кровеносные сосуды" };
@@ -39,6 +40,7 @@ const immunityTemplates = pairFromTable({
   topicId: TOPIC,
   slug: "immunity",
   rows: IMMUNITY,
+  paragraph: P.circulation.immunity,
   subtopic: DEFENCE,
   shift: 2,
   label: { pl: "Rodzaj odporności", ru: "Вид иммунитета" },
@@ -52,6 +54,7 @@ const transfusion = choiceFromTable<BloodGroupEntry>({
   id: `${TOPIC}.transfusion`,
   topicId: TOPIC,
   rows: BLOOD_GROUPS,
+  paragraph: P.circulation.blood,
   subtopic: GROUPS,
   difficulty: tier,
   shift: 0,
@@ -75,6 +78,7 @@ const antigens = choiceFromTable<BloodGroupEntry>({
   id: `${TOPIC}.group-to-antigens`,
   topicId: TOPIC,
   rows: BLOOD_GROUPS,
+  paragraph: P.circulation.blood,
   subtopic: GROUPS,
   difficulty: tier,
   shift: 2,
@@ -95,6 +99,7 @@ const antigens = choiceFromTable<BloodGroupEntry>({
 const cardiacOutput = calcTemplate({
   id: `${TOPIC}.cardiac-output`,
   topicId: TOPIC,
+  paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
   difficulty: 1,
@@ -117,6 +122,7 @@ const cardiacOutput = calcTemplate({
 const strokeVolume = calcTemplate({
   id: `${TOPIC}.stroke-volume`,
   topicId: TOPIC,
+  paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
   difficulty: 2,
@@ -140,6 +146,7 @@ const strokeVolume = calcTemplate({
 const ejectionFraction = calcTemplate({
   id: `${TOPIC}.ejection-fraction`,
   topicId: TOPIC,
+  paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
   difficulty: 3,

@@ -1,7 +1,7 @@
 import { Button, Card, ProgressBar } from "@portal/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getTopic } from "../../index.ts";
+import { topicLabel } from "../../index.ts";
 import { AnswerInput } from "../components/AnswerInput.tsx";
 import { ChoiceOptions } from "../components/ChoiceOptions.tsx";
 import { alsoAcceptedText, correctAnswerText } from "../components/format.ts";
@@ -49,7 +49,7 @@ export function TrainerPage() {
             {t(`trainer.difficulty${task.difficulty}`)}
           </span>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-            {getTopic(task.topicId)?.name[settings.lang] ?? task.topicId}
+            {topicLabel(task.topicId, settings.lang)}
           </span>
           {task.subtopic && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">{task.subtopic}</span>}
         </div>

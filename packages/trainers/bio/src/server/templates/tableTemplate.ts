@@ -32,9 +32,22 @@ export type BioTemplate = TaskTemplate<any, BioLang>;
  */
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/**
+ * The textbook paragraph a row belongs to, when a table spans several (bones and muscles sit in
+ * different paragraphs of one chapter). Rows without one fall back to the spec's `paragraph`.
+ */
+export interface InParagraph {
+  paragraph?: string;
+}
+
+const rowParagraph = (row: unknown): string | undefined => (row as InParagraph).paragraph;
+
 interface CommonSpec<T> {
   id: string;
+  /** the chapter — it names the templates; tasks are filed under a paragraph (see `paragraph`) */
   topicId: string;
+  /** the paragraph for rows that do not name their own */
+  paragraph?: string;
   rows: readonly T[];
   subtopic: Bi;
   /** cross-cutting themes (see curriculum/tags.ts) */
@@ -68,6 +81,9 @@ export function choiceFromTable<T>(spec: ChoiceSpec<T>): RowTemplate {
   return {
     id: spec.id,
     topicId: spec.topicId,
+    // distractors still come from the whole table below: a paragraph with one or two rows could not
+    // offer four options on its own, and neighbouring rows make the more plausible traps anyway
+    topicOf: (p) => rowParagraph(spec.rows[p.i]) ?? spec.paragraph ?? spec.topicId,
     answerType: "choice",
     tags: spec.tags,
     params: { i: choiceParam(...spec.rows.map((_, i) => i)) },
@@ -108,6 +124,7 @@ export function termFromTable<T>(spec: TermSpec<T>): RowTemplate {
   return {
     id: spec.id,
     topicId: spec.topicId,
+    topicOf: (p) => rowParagraph(spec.rows[p.i]) ?? spec.paragraph ?? spec.topicId,
     answerType: "text",
     tags: spec.tags,
     params: { i: choiceParam(...spec.rows.map((_, i) => i)) },
@@ -143,6 +160,7 @@ export function termFromTable<T>(spec: TermSpec<T>): RowTemplate {
 export interface CalcSpec<P extends Record<string, ParamSpec>> {
   id: string;
   topicId: string;
+  paragraph?: string;
   subtopic: Bi;
   tags?: string[];
   difficulty: Difficulty;
@@ -175,7 +193,7 @@ export function calcTemplate<P extends Record<string, ParamSpec>>(spec: CalcSpec
   const show = (n: number) => String(round(n)).replace(".", ",");
   return {
     id: spec.id,
-    topicId: spec.topicId,
+    topicId: spec.paragraph ?? spec.topicId,
     answerType: "number",
     tags: spec.tags,
     // a numeric range yields far more substitutions than a hand-written table has rows, so without
@@ -201,7 +219,7 @@ export function calcTemplate<P extends Record<string, ParamSpec>>(spec: CalcSpec
 }
 
 /** A row of any "name / what it does" table — the shape most of the curriculum takes. */
-export interface NamedEntry {
+export interface NamedEntry extends InParagraph {
   id: string;
   name: Bi;
   /** noun phrase, not a verb phrase: plural names must fit the same singular question frame */
@@ -212,6 +230,8 @@ export interface NamedEntry {
 
 export interface PairSpec {
   topicId: string;
+  /** the paragraph for rows that do not name their own */
+  paragraph?: string;
   /** used in the template ids: `<topicId>.<slug>-to-role` and `<topicId>.role-to-<slug>` */
   slug: string;
   rows: readonly NamedEntry[];
@@ -234,6 +254,7 @@ export function pairFromTable(spec: PairSpec): BioTemplate[] {
     choiceFromTable<NamedEntry>({
       id: `${spec.topicId}.${spec.slug}-to-role`,
       topicId: spec.topicId,
+      paragraph: spec.paragraph,
       rows: spec.rows,
       subtopic: spec.subtopic,
       tags: spec.tags,
@@ -247,6 +268,7 @@ export function pairFromTable(spec: PairSpec): BioTemplate[] {
     termFromTable<NamedEntry>({
       id: `${spec.topicId}.role-to-${spec.slug}`,
       topicId: spec.topicId,
+      paragraph: spec.paragraph,
       rows: spec.rows,
       subtopic: spec.subtopic,
       tags: spec.tags,

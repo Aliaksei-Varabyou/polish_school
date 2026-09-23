@@ -8,7 +8,7 @@
     "contentLangHint": "Biology tasks are available in Polish and Russian.",
     "lang_pl": "Polish",
     "lang_ru": "Russian",
-    "topics": "Sections",
+    "topics": "Chapters and sections",
     "selectAll": "Select all",
     "clearAll": "Clear",
     "selected": "Selected: {{count}}",
@@ -24,7 +24,12 @@
     "modeTags": "By theme",
     "themes": "Cross-cutting themes",
     "themesHint": "A theme gathers tasks from several sections — homeostasis spans thermoregulation, ADH and glucose control.",
-    "pickTheme": "Pick at least one theme"
+    "pickTheme": "Pick at least one theme",
+    "chapterPicked": "{{count}}/{{total}}",
+    "page": "p. {{page}}",
+    "noTasks": "no tasks yet",
+    "tasks_one": "{{count}} task",
+    "tasks_other": "{{count}} tasks"
   },
   "loading": {
     "title": "Preparing tasks…",

@@ -3,6 +3,7 @@
 // data/hormones.ts rather than here.
 import { cap, choiceFromTable, termFromTable, type RowTemplate } from "../tableTemplate.ts";
 import { DISORDERS, HORMONES, LOOPS, type DisorderEntry, type HormoneEntry, type LoopEntry } from "../data/hormones.ts";
+import { P } from "../../../curriculum/lo.ts";
 
 const TOPIC = "bio.lo3.hormones";
 const SUBTOPIC = { pl: "gruczoły dokrewne i hormony", ru: "железы внутренней секреции и гормоны" };
@@ -16,6 +17,7 @@ const glandToHormone = choiceFromTable<HormoneEntry>({
   id: `${TOPIC}.gland-to-hormone`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -40,6 +42,7 @@ const hormoneToAction = choiceFromTable<HormoneEntry>({
   id: `${TOPIC}.hormone-to-action`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -60,6 +63,7 @@ const hormoneToGland = choiceFromTable<HormoneEntry>({
   id: `${TOPIC}.hormone-to-gland`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -78,6 +82,7 @@ const actionToHormone = termFromTable<HormoneEntry>({
   id: `${TOPIC}.action-to-hormone`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -100,6 +105,7 @@ const disorderToDisease = choiceFromTable<DisorderEntry>({
   id: `${TOPIC}.disorder-to-disease`,
   topicId: TOPIC,
   rows: DISORDERS,
+  paragraph: P.hormones.disorders,
   subtopic: DISEASES,
   tags: ["choroby", "regulacja-hormonalna"],
   difficulty: tier,
@@ -124,6 +130,7 @@ const symptomToDisease = choiceFromTable<DisorderEntry>({
   id: `${TOPIC}.symptom-to-disease`,
   topicId: TOPIC,
   rows: DISORDERS,
+  paragraph: P.hormones.disorders,
   subtopic: DISEASES,
   tags: ["choroby", "regulacja-hormonalna"],
   difficulty: tier,

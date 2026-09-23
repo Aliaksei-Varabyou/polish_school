@@ -1,7 +1,7 @@
 import { Button, Card } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { getTopic } from "../../index.ts";
+import { topicLabel } from "../../index.ts";
 import { correctAnswerText } from "../components/format.ts";
 import { useSession } from "../store/session.ts";
 
@@ -27,7 +27,7 @@ export function ResultsPage() {
   }, [tasks, answers]);
 
   const mistakes = tasks.filter((task) => !answers[task.id]?.correct);
-  const topicName = (id: string) => getTopic(id)?.name[lang] ?? id;
+  const topicName = (id: string) => topicLabel(id, lang);
 
   const userAnswerText = (taskId: string) => {
     const task = tasks.find((x) => x.id === taskId)!;

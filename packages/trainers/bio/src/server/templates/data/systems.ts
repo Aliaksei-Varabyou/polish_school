@@ -1,11 +1,13 @@
 // Content tables for działy 3 (ruch), 4 (pokarmowy), 8 (nerwowy), 9 (zmysły) and 11 (rozmnażanie).
 import type { NamedEntry } from "../tableTemplate.ts";
+import { P } from "../../../curriculum/lo.ts";
 
 // ---- dział 3: Układ ruchu ----
 
 export const MOTION_PARTS: readonly NamedEntry[] = [
   {
     id: "okostna",
+    paragraph: P.motion.skeleton,
     name: { pl: "okostna", ru: "надкостница" },
     role: { pl: "odżywianie kości i odtwarzanie jej po złamaniu", ru: "питание кости и её восстановление после перелома" },
     aliases: { pl: [], ru: [] },
@@ -13,6 +15,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "istota-zbita",
+    paragraph: P.motion.skeleton,
     name: { pl: "istota zbita kości", ru: "компактное вещество кости" },
     role: { pl: "przenoszenie obciążeń dzięki gęsto ułożonym osteonom", ru: "восприятие нагрузок благодаря плотно уложенным остеонам" },
     aliases: { pl: ["istota zbita"], ru: ["компактное вещество"] },
@@ -20,6 +23,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "istota-gabczasta",
+    paragraph: P.motion.skeleton,
     name: { pl: "istota gąbczasta kości", ru: "губчатое вещество кости" },
     role: { pl: "zmniejszanie masy kości przy zachowaniu wytrzymałości, z beleczkami wzdłuż linii sił", ru: "снижение массы кости при сохранении прочности, с балками вдоль линий нагрузки" },
     aliases: { pl: ["istota gąbczasta"], ru: ["губчатое вещество"] },
@@ -27,6 +31,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "szpik-czerwony",
+    paragraph: P.motion.skeleton,
     name: { pl: "szpik kostny czerwony", ru: "красный костный мозг" },
     role: { pl: "wytwarzanie komórek krwi", ru: "образование клеток крови" },
     aliases: { pl: ["szpik czerwony"], ru: ["красный мозг"] },
@@ -34,6 +39,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "chrzastka-stawowa",
+    paragraph: P.motion.joints,
     name: { pl: "chrząstka stawowa", ru: "суставной хрящ" },
     role: { pl: "zmniejszanie tarcia między kośćmi w stawie", ru: "снижение трения между костями в суставе" },
     aliases: { pl: [], ru: [] },
@@ -41,6 +47,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "maz-stawowa",
+    paragraph: P.motion.joints,
     name: { pl: "maź stawowa", ru: "синовиальная жидкость" },
     role: { pl: "nawilżanie i odżywianie chrząstki wewnątrz jamy stawowej", ru: "увлажнение и питание хряща внутри суставной полости" },
     aliases: { pl: ["płyn stawowy"], ru: ["синовия"] },
@@ -48,6 +55,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "wiezadla",
+    paragraph: P.motion.joints,
     name: { pl: "więzadła", ru: "связки" },
     role: { pl: "wzmacnianie stawu przez połączenie kości ze sobą", ru: "укрепление сустава соединением костей между собой" },
     aliases: { pl: ["więzadło"], ru: ["связка"] },
@@ -55,6 +63,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "sciegno",
+    paragraph: P.motion.muscles,
     name: { pl: "ścięgno", ru: "сухожилие" },
     role: { pl: "przenoszenie siły skurczu mięśnia na kość", ru: "передача силы сокращения мышцы на кость" },
     aliases: { pl: ["ścięgna"], ru: ["сухожилия"] },
@@ -62,6 +71,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "sarkomer",
+    paragraph: P.motion.muscles,
     name: { pl: "sarkomer", ru: "саркомер" },
     role: { pl: "podstawowa jednostka kurczliwa mięśnia między dwiema liniami Z", ru: "основная сократительная единица мышцы между двумя Z-линиями" },
     aliases: { pl: [], ru: [] },
@@ -69,6 +79,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "aktyna-miozyna",
+    paragraph: P.motion.muscles,
     name: { pl: "aktyna i miozyna", ru: "актин и миозин" },
     role: { pl: "wsuwanie się filamentów względem siebie, co skraca włókno mięśniowe", ru: "скольжение филаментов друг относительно друга, укорачивающее мышечное волокно" },
     aliases: { pl: ["miofilamenty"], ru: ["миофиламенты"] },
@@ -76,6 +87,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "antagonisci",
+    paragraph: P.motion.muscles,
     name: { pl: "mięśnie antagonistyczne", ru: "мышцы-антагонисты" },
     role: { pl: "wykonywanie ruchów przeciwstawnych, jak zginanie i prostowanie", ru: "выполнение противоположных движений, таких как сгибание и разгибание" },
     aliases: { pl: ["antagoniści"], ru: ["антагонисты"] },
@@ -83,6 +95,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "szkielet-osiowy",
+    paragraph: P.motion.bones,
     name: { pl: "szkielet osiowy", ru: "осевой скелет" },
     role: { pl: "czaszka, kręgosłup i klatka piersiowa, osłaniające narządy wewnętrzne", ru: "череп, позвоночник и грудная клетка, защищающие внутренние органы" },
     aliases: { pl: [], ru: [] },
@@ -95,6 +108,7 @@ export const MOTION_PARTS: readonly NamedEntry[] = [
 export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   {
     id: "slinianki",
+    paragraph: P.digestion.structure,
     name: { pl: "ślinianki", ru: "слюнные железы" },
     role: { pl: "wydzielanie śliny z amylazą, rozpoczynającą trawienie skrobi", ru: "выделение слюны с амилазой, начинающей переваривание крахмала" },
     aliases: { pl: ["gruczoły ślinowe"], ru: ["слюнная железа"] },
@@ -102,6 +116,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "przelyk",
+    paragraph: P.digestion.structure,
     name: { pl: "przełyk", ru: "пищевод" },
     role: { pl: "przesuwanie kęsa do żołądka ruchami perystaltycznymi", ru: "продвижение пищевого комка в желудок перистальтическими движениями" },
     aliases: { pl: [], ru: [] },
@@ -109,6 +124,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "zoladek",
+    paragraph: P.digestion.structure,
     name: { pl: "żołądek", ru: "желудок" },
     role: { pl: "trawienie białek w kwaśnym środowisku kwasu solnego", ru: "переваривание белков в кислой среде соляной кислоты" },
     aliases: { pl: [], ru: [] },
@@ -116,6 +132,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "dwunastnica",
+    paragraph: P.digestion.structure,
     name: { pl: "dwunastnica", ru: "двенадцатиперстная кишка" },
     role: { pl: "przyjmowanie soku trzustkowego i żółci, gdzie zachodzi większość trawienia", ru: "приём панкреатического сока и жёлчи, где идёт большая часть переваривания" },
     aliases: { pl: [], ru: [] },
@@ -123,6 +140,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "jelito-cienkie",
+    paragraph: P.digestion.structure,
     name: { pl: "jelito cienkie", ru: "тонкая кишка" },
     role: { pl: "wchłanianie strawionych składników przez kosmki jelitowe", ru: "всасывание переваренных веществ через кишечные ворсинки" },
     aliases: { pl: [], ru: [] },
@@ -130,6 +148,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "kosmki",
+    paragraph: P.digestion.structure,
     name: { pl: "kosmki jelitowe", ru: "кишечные ворсинки" },
     role: { pl: "wielokrotne zwiększanie powierzchni wchłaniania", ru: "многократное увеличение поверхности всасывания" },
     aliases: { pl: ["kosmek jelitowy"], ru: ["ворсинка"] },
@@ -137,6 +156,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "jelito-grube",
+    paragraph: P.digestion.structure,
     name: { pl: "jelito grube", ru: "толстая кишка" },
     role: { pl: "wchłanianie wody i zagęszczanie resztek pokarmowych", ru: "всасывание воды и сгущение непереваренных остатков" },
     aliases: { pl: [], ru: [] },
@@ -144,6 +164,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "watroba",
+    paragraph: P.digestion.structure,
     name: { pl: "wątroba", ru: "печень" },
     role: { pl: "wytwarzanie żółci, odtruwanie i magazynowanie glikogenu", ru: "выработка жёлчи, обезвреживание и запасание гликогена" },
     aliases: { pl: [], ru: [] },
@@ -151,6 +172,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "zolc",
+    paragraph: P.digestion.processes,
     name: { pl: "żółć", ru: "жёлчь" },
     role: { pl: "emulgowanie tłuszczów, bez udziału własnych enzymów", ru: "эмульгирование жиров, без собственных ферментов" },
     aliases: { pl: [], ru: ["желчь"] },
@@ -158,6 +180,7 @@ export const DIGESTIVE_ORGANS: readonly NamedEntry[] = [
   },
   {
     id: "trzustka",
+    paragraph: P.digestion.structure,
     name: { pl: "trzustka", ru: "поджелудочная железа" },
     role: { pl: "wydzielanie soku z enzymami trawiącymi wszystkie grupy składników pokarmowych", ru: "выделение сока с ферментами, переваривающими все группы питательных веществ" },
     aliases: { pl: [], ru: [] },
@@ -222,6 +245,7 @@ export const ENZYMES: readonly NamedEntry[] = [
 export const NERVOUS_PARTS: readonly NamedEntry[] = [
   {
     id: "dendryt",
+    paragraph: P.nervous.structure,
     name: { pl: "dendryt", ru: "дендрит" },
     role: { pl: "odbieranie sygnałów i przewodzenie ich w stronę ciała komórki", ru: "приём сигналов и проведение их к телу клетки" },
     aliases: { pl: ["dendryty"], ru: ["дендриты"] },
@@ -229,6 +253,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "akson",
+    paragraph: P.nervous.structure,
     name: { pl: "akson", ru: "аксон" },
     role: { pl: "przewodzenie impulsu od ciała komórki do innych komórek", ru: "проведение импульса от тела клетки к другим клеткам" },
     aliases: { pl: ["neuryt"], ru: ["нейрит"] },
@@ -236,6 +261,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "oslonka-mielinowa",
+    paragraph: P.nervous.structure,
     name: { pl: "osłonka mielinowa", ru: "миелиновая оболочка" },
     role: { pl: "przyspieszanie przewodzenia dzięki przeskakiwaniu impulsu między przewężeniami", ru: "ускорение проведения за счёт скачков импульса между перехватами" },
     aliases: { pl: ["mielina"], ru: ["миелин"] },
@@ -243,6 +269,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "synapsa",
+    paragraph: P.nervous.structure,
     name: { pl: "synapsa", ru: "синапс" },
     role: { pl: "przekazywanie sygnału między komórkami za pomocą neuroprzekaźnika", ru: "передача сигнала между клетками с помощью нейромедиатора" },
     aliases: { pl: [], ru: [] },
@@ -250,6 +277,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "potencjal-spoczynkowy",
+    paragraph: P.nervous.structure,
     name: { pl: "potencjał spoczynkowy", ru: "потенциал покоя" },
     role: { pl: "ujemny ładunek wnętrza komórki utrzymywany przez pompę sodowo-potasową", ru: "отрицательный заряд внутри клетки, поддерживаемый натрий-калиевым насосом" },
     aliases: { pl: [], ru: [] },
@@ -257,6 +285,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "potencjal-czynnosciowy",
+    paragraph: P.nervous.structure,
     name: { pl: "potencjał czynnościowy", ru: "потенциал действия" },
     role: { pl: "gwałtowna zmiana ładunku po przekroczeniu progu, zgodna z zasadą wszystko albo nic", ru: "резкое изменение заряда после превышения порога, по принципу «всё или ничего»" },
     aliases: { pl: [], ru: [] },
@@ -264,6 +293,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "luk-odruchowy",
+    paragraph: P.nervous.peripheral,
     name: { pl: "łuk odruchowy", ru: "рефлекторная дуга" },
     role: { pl: "droga od receptora przez neurony do efektora, pomijająca świadomą decyzję", ru: "путь от рецептора через нейроны к эффектору, минующий сознательное решение" },
     aliases: { pl: [], ru: [] },
@@ -271,6 +301,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "rdzen-kregowy",
+    paragraph: P.nervous.central,
     name: { pl: "rdzeń kręgowy", ru: "спинной мозг" },
     role: { pl: "ośrodek odruchów bezwarunkowych i droga między mózgowiem a resztą ciała", ru: "центр безусловных рефлексов и путь между головным мозгом и остальным телом" },
     aliases: { pl: [], ru: [] },
@@ -278,6 +309,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "kora-mozgu",
+    paragraph: P.nervous.central,
     name: { pl: "kora mózgu", ru: "кора больших полушарий" },
     role: { pl: "ośrodki świadomych czynności, mowy i pamięci", ru: "центры сознательных действий, речи и памяти" },
     aliases: { pl: ["kora mózgowa"], ru: ["кора мозга"] },
@@ -285,6 +317,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "mozdzek",
+    paragraph: P.nervous.central,
     name: { pl: "móżdżek", ru: "мозжечок" },
     role: { pl: "koordynacja ruchów, napięcie mięśni i utrzymanie równowagi", ru: "координация движений, тонус мышц и поддержание равновесия" },
     aliases: { pl: [], ru: [] },
@@ -292,6 +325,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "rdzen-przedluzony",
+    paragraph: P.nervous.central,
     name: { pl: "rdzeń przedłużony", ru: "продолговатый мозг" },
     role: { pl: "ośrodki oddychania, pracy serca i odruchów kaszlu oraz kichania", ru: "центры дыхания, работы сердца и рефлексов кашля и чихания" },
     aliases: { pl: [], ru: [] },
@@ -299,6 +333,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "podwzgorze",
+    paragraph: P.nervous.central,
     name: { pl: "podwzgórze", ru: "гипоталамус" },
     role: { pl: "sterowanie temperaturą, głodem, pragnieniem i przysadką", ru: "управление температурой, голодом, жаждой и гипофизом" },
     aliases: { pl: [], ru: [] },
@@ -306,6 +341,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "wspolczulny",
+    paragraph: P.nervous.autonomic,
     name: { pl: "układ współczulny", ru: "симпатическая система" },
     role: { pl: "mobilizowanie organizmu do wysiłku: przyspieszenie serca, rozszerzenie źrenic", ru: "мобилизация организма к нагрузке: ускорение сердца, расширение зрачков" },
     aliases: { pl: ["sympatyczny"], ru: ["симпатический отдел"] },
@@ -313,6 +349,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "przywspolczulny",
+    paragraph: P.nervous.autonomic,
     name: { pl: "układ przywspółczulny", ru: "парасимпатическая система" },
     role: { pl: "sterowanie odpoczynkiem i trawieniem: zwolnienie serca, pobudzenie jelit", ru: "управление отдыхом и пищеварением: замедление сердца, усиление работы кишечника" },
     aliases: { pl: ["parasympatyczny"], ru: ["парасимпатический отдел"] },
@@ -325,6 +362,7 @@ export const NERVOUS_PARTS: readonly NamedEntry[] = [
 export const SENSE_PARTS: readonly NamedEntry[] = [
   {
     id: "rogowka",
+    paragraph: P.senses.vision,
     name: { pl: "rogówka", ru: "роговица" },
     role: { pl: "przezroczysta przednia część twardówki, najsilniej załamująca światło", ru: "прозрачная передняя часть склеры, сильнее всего преломляющая свет" },
     aliases: { pl: [], ru: [] },
@@ -332,6 +370,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "tecza",
+    paragraph: P.senses.vision,
     name: { pl: "tęczówka", ru: "радужка" },
     role: { pl: "regulowanie ilości wpadającego światła zmianą wielkości źrenicy", ru: "регулирование количества входящего света изменением размера зрачка" },
     aliases: { pl: [], ru: [] },
@@ -339,6 +378,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "soczewka",
+    paragraph: P.senses.vision,
     name: { pl: "soczewka", ru: "хрусталик" },
     role: { pl: "zmiana kształtu podczas akomodacji, by ostro widzieć z różnych odległości", ru: "изменение формы при аккомодации, чтобы резко видеть с разных расстояний" },
     aliases: { pl: [], ru: [] },
@@ -346,6 +386,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "siatkowka",
+    paragraph: P.senses.vision,
     name: { pl: "siatkówka", ru: "сетчатка" },
     role: { pl: "warstwa z czopkami i pręcikami, w której powstaje obraz", ru: "слой с колбочками и палочками, в котором возникает изображение" },
     aliases: { pl: [], ru: [] },
@@ -353,6 +394,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "czopki",
+    paragraph: P.senses.vision,
     name: { pl: "czopki", ru: "колбочки" },
     role: { pl: "widzenie barw przy dobrym oświetleniu, skupione w plamce żółtej", ru: "цветное зрение при хорошем освещении, сосредоточенное в жёлтом пятне" },
     aliases: { pl: ["czopek"], ru: ["колбочка"] },
@@ -360,6 +402,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "preciki",
+    paragraph: P.senses.vision,
     name: { pl: "pręciki", ru: "палочки" },
     role: { pl: "widzenie o zmierzchu, wrażliwe na natężenie, ale nie na barwę", ru: "сумеречное зрение, чувствительное к яркости, но не к цвету" },
     aliases: { pl: ["pręcik"], ru: ["палочка"] },
@@ -367,6 +410,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "plamka-slepa",
+    paragraph: P.senses.vision,
     name: { pl: "plamka ślepa", ru: "слепое пятно" },
     role: { pl: "miejsce wyjścia nerwu wzrokowego, pozbawione fotoreceptorów", ru: "место выхода зрительного нерва, лишённое фоторецепторов" },
     aliases: { pl: ["tarcza nerwu wzrokowego"], ru: ["диск зрительного нерва"] },
@@ -374,6 +418,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "kosteczki",
+    paragraph: P.senses.ear,
     name: { pl: "kosteczki słuchowe", ru: "слуховые косточки" },
     role: { pl: "wzmacnianie drgań błony bębenkowej i przekazywanie ich do ucha wewnętrznego", ru: "усиление колебаний барабанной перепонки и передача их во внутреннее ухо" },
     aliases: { pl: ["młoteczek", "kowadełko", "strzemiączko"], ru: ["молоточек", "наковальня", "стремечко"] },
@@ -381,6 +426,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "slimak",
+    paragraph: P.senses.ear,
     name: { pl: "ślimak", ru: "улитка" },
     role: { pl: "zamiana drgań płynu na impulsy nerwowe w narządzie Cortiego", ru: "превращение колебаний жидкости в нервные импульсы в кортиевом органе" },
     aliases: { pl: ["narząd Cortiego"], ru: ["кортиев орган"] },
@@ -388,6 +434,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "kanaly-polkoliste",
+    paragraph: P.senses.ear,
     name: { pl: "kanały półkoliste", ru: "полукружные каналы" },
     role: { pl: "odbieranie ruchów obrotowych głowy jako narząd równowagi", ru: "восприятие вращательных движений головы как орган равновесия" },
     aliases: { pl: ["narząd równowagi"], ru: ["вестибулярный аппарат"] },
@@ -395,6 +442,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "traba-sluchowa",
+    paragraph: P.senses.ear,
     name: { pl: "trąbka słuchowa", ru: "слуховая труба" },
     role: { pl: "wyrównywanie ciśnienia po obu stronach błony bębenkowej", ru: "выравнивание давления по обе стороны барабанной перепонки" },
     aliases: { pl: ["trąbka Eustachiusza"], ru: ["евстахиева труба"] },
@@ -402,6 +450,7 @@ export const SENSE_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "kubki-smakowe",
+    paragraph: P.senses["taste-smell"],
     name: { pl: "kubki smakowe", ru: "вкусовые сосочки" },
     role: { pl: "odbieranie smaku substancji rozpuszczonych w ślinie", ru: "восприятие вкуса веществ, растворённых в слюне" },
     aliases: { pl: ["kubek smakowy"], ru: ["вкусовая почка"] },
@@ -452,6 +501,7 @@ export const VISION_DEFECTS: readonly NamedEntry[] = [
 export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   {
     id: "jadro",
+    paragraph: P.reproduction.male,
     name: { pl: "jądro", ru: "семенник" },
     role: { pl: "wytwarzanie plemników i testosteronu", ru: "образование сперматозоидов и тестостерона" },
     aliases: { pl: ["jądra"], ru: ["семенники", "яичко"] },
@@ -459,6 +509,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "najadrze",
+    paragraph: P.reproduction.male,
     name: { pl: "najądrze", ru: "придаток семенника" },
     role: { pl: "dojrzewanie i magazynowanie plemników", ru: "созревание и хранение сперматозоидов" },
     aliases: { pl: [], ru: [] },
@@ -466,6 +517,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "jajnik",
+    paragraph: P.reproduction.female,
     name: { pl: "jajnik", ru: "яичник" },
     role: { pl: "dojrzewanie komórek jajowych i wydzielanie estrogenów", ru: "созревание яйцеклеток и выделение эстрогенов" },
     aliases: { pl: ["jajniki"], ru: ["яичники"] },
@@ -473,6 +525,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "jajowod",
+    paragraph: P.reproduction.female,
     name: { pl: "jajowód", ru: "маточная труба" },
     role: { pl: "miejsce zapłodnienia i droga zarodka do macicy", ru: "место оплодотворения и путь зародыша к матке" },
     aliases: { pl: [], ru: ["яйцевод"] },
@@ -480,6 +533,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "macica",
+    paragraph: P.reproduction.female,
     name: { pl: "macica", ru: "матка" },
     role: { pl: "zagnieżdżenie zarodka i rozwój płodu", ru: "имплантация зародыша и развитие плода" },
     aliases: { pl: [], ru: [] },
@@ -487,6 +541,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "lozysko",
+    paragraph: P.reproduction.development,
     name: { pl: "łożysko", ru: "плацента" },
     role: { pl: "wymiana gazów i substancji między krwią matki a krwią płodu, bez ich mieszania", ru: "обмен газов и веществ между кровью матери и плода, без их смешивания" },
     aliases: { pl: [], ru: [] },
@@ -494,6 +549,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "cialko-zolte",
+    paragraph: P.reproduction.female,
     name: { pl: "ciałko żółte", ru: "жёлтое тело" },
     role: { pl: "wydzielanie progesteronu po owulacji", ru: "выделение прогестерона после овуляции" },
     aliases: { pl: [], ru: [] },
@@ -501,6 +557,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "owulacja",
+    paragraph: P.reproduction.female,
     name: { pl: "owulacja", ru: "овуляция" },
     role: { pl: "uwolnienie komórki jajowej około 14 dni przed następną miesiączką", ru: "выход яйцеклетки примерно за 14 дней до следующей менструации" },
     aliases: { pl: ["jajeczkowanie"], ru: [] },
@@ -508,6 +565,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "ektoderma",
+    paragraph: P.reproduction.development,
     name: { pl: "ektoderma", ru: "эктодерма" },
     role: { pl: "listek zarodkowy dający naskórek i układ nerwowy", ru: "зародышевый листок, дающий эпидермис и нервную систему" },
     aliases: { pl: [], ru: [] },
@@ -515,6 +573,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "mezoderma",
+    paragraph: P.reproduction.development,
     name: { pl: "mezoderma", ru: "мезодерма" },
     role: { pl: "listek zarodkowy dający mięśnie, kości, krew i nerki", ru: "зародышевый листок, дающий мышцы, кости, кровь и почки" },
     aliases: { pl: [], ru: [] },
@@ -522,6 +581,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "endoderma",
+    paragraph: P.reproduction.development,
     name: { pl: "endoderma", ru: "энтодерма" },
     role: { pl: "listek zarodkowy dający nabłonek przewodu pokarmowego i płuc", ru: "зародышевый листок, дающий эпителий пищеварительного тракта и лёгких" },
     aliases: { pl: [], ru: [] },
@@ -529,6 +589,7 @@ export const REPRODUCTION_PARTS: readonly NamedEntry[] = [
   },
   {
     id: "zygota",
+    paragraph: P.reproduction.development,
     name: { pl: "zygota", ru: "зигота" },
     role: { pl: "pierwsza komórka nowego organizmu, powstała z połączenia gamet", ru: "первая клетка нового организма, возникшая при слиянии гамет" },
     aliases: { pl: [], ru: [] },

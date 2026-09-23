@@ -3,6 +3,7 @@
 import { intRange } from "@portal/trainer-sdk/templates";
 import { cap, calcTemplate, choiceFromTable, termFromTable, type BioTemplate } from "../tableTemplate.ts";
 import { AIRWAY_PARTS, LUNG_VOLUMES, type PartEntry, type VolumeEntry } from "../data/respiration.ts";
+import { P } from "../../../curriculum/lo.ts";
 
 const TOPIC = "bio.lo3.respiration";
 const ANATOMY = { pl: "drogi oddechowe i wymiana gazowa", ru: "дыхательные пути и газообмен" };
@@ -44,6 +45,7 @@ const volumeToDefinition = choiceFromTable<VolumeEntry>({
   id: `${TOPIC}.volume-to-definition`,
   topicId: TOPIC,
   rows: LUNG_VOLUMES,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   difficulty: partTier,
   shift: 1,
@@ -58,6 +60,7 @@ const definitionToVolume = termFromTable<VolumeEntry>({
   id: `${TOPIC}.definition-to-volume`,
   topicId: TOPIC,
   rows: LUNG_VOLUMES,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   difficulty: partTier,
   question: (v, lang) =>
@@ -76,6 +79,7 @@ const definitionToVolume = termFromTable<VolumeEntry>({
 const vitalCapacity = calcTemplate({
   id: `${TOPIC}.vital-capacity`,
   topicId: TOPIC,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
   difficulty: 2,
@@ -97,6 +101,7 @@ const vitalCapacity = calcTemplate({
 const minuteVentilation = calcTemplate({
   id: `${TOPIC}.minute-ventilation`,
   topicId: TOPIC,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
   difficulty: 1,
@@ -119,6 +124,7 @@ const minuteVentilation = calcTemplate({
 const alveolarVentilation = calcTemplate({
   id: `${TOPIC}.alveolar-ventilation`,
   topicId: TOPIC,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
   difficulty: 3,

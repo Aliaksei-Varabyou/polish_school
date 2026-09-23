@@ -1,10 +1,10 @@
 import { TASK_COUNTS, type AnswerMode } from "@portal/core";
 import { Button, Card, Label, Segmented } from "@portal/ui";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { TAGS, topicsFor } from "../../index.ts";
+import { PARAGRAPHS, TAGS } from "../../index.ts";
 import { BIO_LANGS, isBioLang, type BioLang } from "../../lang.ts";
-import { GRADE, LEVEL, useSession, type SelectionMode } from "../store/session.ts";
+import { hasTasks, ParagraphTree } from "../components/ParagraphTree.tsx";
+import { useSession, type SelectionMode } from "../store/session.ts";
 
 export function StartPage({ portalLang }: { portalLang: string }) {
   const { t } = useTranslation("bio");
@@ -13,12 +13,9 @@ export function StartPage({ portalLang }: { portalLang: string }) {
   const setSettings = useSession((s) => s.setSettings);
   const generate = useSession((s) => s.generate);
 
-  // no class or level picker: biology here is one year of one track (see store/session.ts)
-  const topics = useMemo(() => topicsFor(GRADE, LEVEL), []);
-  const selected = settings.topicIds.filter((id) => topics.some((tp) => tp.id === id));
-
-  const toggle = (id: string) =>
-    setSettings({ topicIds: selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id] });
+  // no class or level picker: biology here is one year of one track (see store/session.ts).
+  // Only paragraphs with tasks count as chosen: an id kept from an older version is dropped here.
+  const selected = settings.topicIds.filter(hasTasks);
 
   const byTag = settings.mode === "tags";
   const selectedTags = settings.tagIds;
@@ -97,7 +94,7 @@ export function StartPage({ portalLang }: { portalLang: string }) {
             <Button
               variant="ghost"
               className="px-2 py-1.5 text-sm whitespace-nowrap text-indigo-600"
-              onClick={() => setSettings({ topicIds: topics.map((tp) => tp.id) })}
+              onClick={() => setSettings({ topicIds: PARAGRAPHS.map((p) => p.id).filter(hasTasks) })}
             >
               {t("start.selectAll")}
             </Button>
@@ -106,28 +103,7 @@ export function StartPage({ portalLang }: { portalLang: string }) {
             </Button>
           </div>
         </div>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {topics.map((tp) => {
-            const checked = selected.includes(tp.id);
-            return (
-              <li key={tp.id}>
-                <label
-                  className={`flex h-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 ring-1 transition-colors ${
-                    checked ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(tp.id)}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600"
-                  />
-                  <span className="text-sm leading-snug text-slate-700">{tp.name[settings.lang]}</span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
+        <ParagraphTree lang={settings.lang} selected={selected} onChange={(topicIds) => setSettings({ topicIds })} />
       </Card>
       )}
 

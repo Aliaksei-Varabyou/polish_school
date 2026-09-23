@@ -2,9 +2,9 @@
 // catches missing translations, colliding distractors, broken table lookups and empty questions.
 import { describe, expect, it } from "vitest";
 import { checkAnswer } from "../../answer.ts";
-import { TAGS, TOPICS, getTopic, topicIdsForTags } from "../../curriculum/index.ts";
+import { CHAPTERS, P, PARAGRAPHS, TAGS, getParagraph, paragraphsOf, topicIdsForTags } from "../../curriculum/index.ts";
 import { BIO_LANGS } from "../../lang.ts";
-import { ALL_TEMPLATES, renderTemplate } from "./index.ts";
+import { ALL_TEMPLATES, contentId, renderTemplate } from "./index.ts";
 
 const LANGS = [...BIO_LANGS];
 /** big enough to walk every row of the largest table */
@@ -27,10 +27,35 @@ describe("biology templates", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("only references topics that exist in the curriculum", () => {
+  it("files every task under a textbook paragraph of its own chapter", () => {
     for (const template of ALL_TEMPLATES) {
-      expect(getTopic(template.topicId), `${template.id} -> ${template.topicId}`).toBeDefined();
+      // template ids start with the chapter: bio.lo3.<chapter>.<name>
+      const chapterId = template.id.split(".").slice(0, 3).join(".");
+      const { tasks } = renderTemplate(template, { langs: ["pl"], targetCount: TARGET, attemptBudget: 500 });
+      for (const { task } of tasks) {
+        // a row with no paragraph falls back to the chapter id, which is not a paragraph — caught here
+        const paragraph = getParagraph(task.topicId);
+        expect(paragraph, `${task.id} is filed under "${task.topicId}", not a paragraph`).toBeDefined();
+        expect(paragraph!.chapterId, `${task.id} wandered into another chapter`).toBe(chapterId);
+      }
     }
+  });
+
+  it("gives every task of the whole content its own id", () => {
+    const ids = ALL_TEMPLATES.flatMap((t) => renderTemplate(t, { langs: LANGS, targetCount: TARGET, attemptBudget: 500 }).tasks.map((r) => r.task.id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("derives a task's id from its content, so any edit — including a move to another paragraph — changes it", () => {
+    const [{ lang, task }] = renderTemplate(ALL_TEMPLATES[0], { langs: ["pl"], targetCount: 1 }).tasks;
+    const template = ALL_TEMPLATES[0].id;
+    expect(task.id).toBe(contentId(template, lang, task));
+    expect(contentId(template, lang, { ...task, id: "whatever" })).toBe(task.id); // the id itself is not content
+    expect(contentId(template, lang, { ...task, topicId: P.organism.homeostasis })).not.toBe(task.id);
+    expect(contentId(template, lang, { ...task, question: `${task.question} ` })).not.toBe(task.id);
+    // key order is not content either: the hash is over canonical JSON
+    const reordered = Object.fromEntries(Object.entries(task).reverse()) as typeof task;
+    expect(contentId(template, lang, reordered)).toBe(task.id);
   });
 
   it("renders every template in pl and ru with nothing rejected", () => {
@@ -91,11 +116,11 @@ describe("biology templates", () => {
 });
 
 describe("cross-cutting tags", () => {
-  /** which topics actually produce tasks for each tag, straight from the templates */
+  /** which paragraphs actually hold tasks for each tag, straight from the rendered templates */
   const actual = new Map<string, Set<string>>();
   for (const template of ALL_TEMPLATES) {
-    for (const tag of template.tags ?? []) {
-      actual.set(tag, (actual.get(tag) ?? new Set()).add(template.topicId));
+    for (const { task } of renderTemplate(template, { langs: ["pl"], targetCount: TARGET, attemptBudget: 500 }).tasks) {
+      for (const tag of task.tags ?? []) actual.set(tag, (actual.get(tag) ?? new Set()).add(task.topicId));
     }
   }
 
@@ -105,19 +130,15 @@ describe("cross-cutting tags", () => {
     }
   });
 
-  it("keeps each tag's topic list exactly in step with the templates", () => {
-    // the catalog is what the start page expands a theme into; if it drifts, choosing a theme
-    // either misses topics that have content or asks for topics that have none
+  it("expands a theme into exactly the paragraphs holding its tasks, across more than one chapter", () => {
+    // what the start page sends for a theme; drifting from the content would either miss paragraphs
+    // with tagged tasks or ask for paragraphs that have none
     for (const tag of TAGS) {
-      expect([...(actual.get(tag.id) ?? [])].sort(), `tag "${tag.id}"`).toEqual([...tag.topicIds].sort());
+      expect([...topicIdsForTags([tag.id])].sort(), `tag "${tag.id}"`).toEqual([...(actual.get(tag.id) ?? [])].sort());
     }
-  });
-
-  it("expands a theme into the topics that carry it, and spans more than one dział", () => {
-    const homeostasis = topicIdsForTags(["homeostaza"]);
-    expect(homeostasis).toEqual([...(actual.get("homeostaza") ?? [])]);
-    // the whole reason tags exist: a theme that lives in a single dział would just be a subtopic
-    expect(homeostasis.length).toBeGreaterThan(1);
+    // the whole reason tags exist: a theme that lives in a single chapter would just be a subtopic
+    const chapters = new Set(topicIdsForTags(["homeostaza"]).map((id) => getParagraph(id)!.chapterId));
+    expect(chapters.size).toBeGreaterThan(1);
     expect(topicIdsForTags(["nie-ma-takiego"])).toEqual([]);
   });
 
@@ -129,12 +150,36 @@ describe("cross-cutting tags", () => {
 });
 
 describe("biology curriculum", () => {
-  it("covers all 11 działy of LO3 rozszerzony, every one at level R", () => {
-    expect(TOPICS).toHaveLength(11);
-    for (const t of TOPICS) {
-      expect(t.grade).toBe("lo3");
-      expect(t.level).toBe("R");
-      expect(t.subtopics.length).toBeGreaterThan(3);
+  it("follows the book: 11 chapters, 54 paragraphs numbered chapter by chapter with rising pages", () => {
+    expect(CHAPTERS).toHaveLength(11);
+    expect(PARAGRAPHS).toHaveLength(54);
+    let lastPage = 0;
+    CHAPTERS.forEach((chapter, i) => {
+      expect(chapter.number).toBe(i + 1);
+      expect(chapter.subtopics.length).toBeGreaterThan(3);
+      const paragraphs = paragraphsOf(chapter.id);
+      expect(paragraphs.map((p) => p.number)).toEqual(paragraphs.map((_, j) => `${i + 1}.${j + 1}`));
+      for (const p of paragraphs) {
+        expect(p.page, `${p.number} page`).toBeGreaterThan(lastPage);
+        lastPage = p.page;
+      }
+    });
+  });
+
+  it("makes every paragraph a level-R topic of LO3 with a name in both content languages", () => {
+    expect(new Set(PARAGRAPHS.map((p) => p.id)).size).toBe(54);
+    for (const p of PARAGRAPHS) {
+      expect(p.grade).toBe("lo3");
+      expect(p.level).toBe("R");
+      expect(p.name.pl.length).toBeGreaterThan(3);
+      expect(/[а-яё]/i.test(p.name.ru), `${p.number} has no Russian name`).toBe(true);
     }
+  });
+
+  it("names paragraphs by slug, and P resolves to the same ids", () => {
+    expect(P.motion.skeleton).toBe("bio.lo3.motion.skeleton");
+    expect(getParagraph(P.senses["taste-smell"])?.number).toBe("9.4");
+    const fromP = Object.values(P).flatMap((chapter) => Object.values(chapter));
+    expect([...fromP].sort()).toEqual(PARAGRAPHS.map((p) => p.id).sort());
   });
 });

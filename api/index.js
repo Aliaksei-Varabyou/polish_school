@@ -250,7 +250,8 @@ var GenerateRequest = z.object({
   lang: Lang,
   grade: Grade,
   level: Level.optional(),
-  topicIds: z.array(z.string().min(1)).min(1).max(30),
+  // room for a whole textbook: biology selects paragraphs, 54 of them in LO3
+  topicIds: z.array(z.string().min(1)).min(1).max(64),
   count: z.number().int().refine((n) => TASK_COUNTS.includes(n), {
     message: "count must be one of 5, 10, 15, 20"
   }),
@@ -543,6 +544,14 @@ var TaskPool = class {
   async report(taskId, _report) {
     return this.db.prepare("UPDATE tasks SET reports = reports + 1 WHERE id = ?").run(taskId).changes > 0;
   }
+  async listIds(trainerId) {
+    const rows = this.db.prepare("SELECT id FROM tasks WHERE trainer_id = ? ORDER BY id").all(trainerId);
+    return rows.map((r) => r.id);
+  }
+  async remove(ids) {
+    if (ids.length === 0) return;
+    this.db.prepare("DELETE FROM tasks WHERE id IN (SELECT value FROM json_each(?))").run(JSON.stringify(ids));
+  }
   /** All stored tasks (used to copy a local pool into Postgres). */
   exportAll() {
     const rows = this.db.prepare("SELECT trainer_id, lang, grade, level, data, reports FROM tasks").all();
@@ -558,6 +567,8 @@ var TaskPool = class {
 };
 
 // packages/db/src/taskPool.ts
+var ID_PAGE = 1e3;
+var REMOVE_BATCH = 100;
 var SupabaseTaskPool = class {
   constructor(admin) {
     this.admin = admin;
@@ -604,6 +615,21 @@ var SupabaseTaskPool = class {
     const { count, error } = await query;
     if (error) throw new Error(`pool count: ${error.message}`);
     return count ?? 0;
+  }
+  async listIds(trainerId) {
+    const ids = [];
+    for (let from = 0; ; from += ID_PAGE) {
+      const { data, error } = await this.admin.from("tasks").select("id").eq("trainer_id", trainerId).order("id").range(from, from + ID_PAGE - 1);
+      if (error) throw new Error(`pool listIds: ${error.message}`);
+      ids.push(...data.map((r) => r.id));
+      if (data.length < ID_PAGE) return ids;
+    }
+  }
+  async remove(ids) {
+    for (let i = 0; i < ids.length; i += REMOVE_BATCH) {
+      const { error } = await this.admin.from("tasks").delete().in("id", ids.slice(i, i + REMOVE_BATCH));
+      if (error) throw new Error(`pool remove: ${error.message}`);
+    }
   }
   async report(taskId, report) {
     const { data, error } = await this.admin.rpc("report_task", {
@@ -1349,6 +1375,24 @@ async function generateTasks(req, deps) {
   for (const slot of [...pending]) {
     if (await takeFromPool(slot, false)) pending = pending.filter((s) => s !== slot);
   }
+  if (pool && !usesLLM && pending.length > 0) {
+    for (const topic2 of shuffle(topics)) {
+      if (pending.length === 0) break;
+      const taken = await pool.take({
+        ...ctx,
+        topicId: topic2.id,
+        answerMode: req.answerMode,
+        tags: req.tagIds,
+        excludeIds: [...exclude],
+        limit: pending.length
+      });
+      for (const task of taken) {
+        exclude.add(task.id);
+        fromPool.push(task);
+      }
+      pending = pending.slice(taken.length);
+    }
+  }
   const stats = {
     requested: req.count,
     reused,
@@ -1501,115 +1545,192 @@ function checkAnswer(task, answer) {
 }
 
 // packages/trainers/bio/src/curriculum/lo.ts
-var lo = [
-  topic(
-    "bio.lo3.organism",
-    "lo3",
-    ["Organizm cz\u0142owieka jako funkcjonalna ca\u0142o\u015B\u0107", "\u041E\u0440\u0433\u0430\u043D\u0438\u0437\u043C \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u043A\u0430\u043A \u0435\u0434\u0438\u043D\u043E\u0435 \u0446\u0435\u043B\u043E\u0435", "The human organism as a functional whole"],
-    ["poziomy organizacji organizmu", "tkanka nab\u0142onkowa", "tkanka \u0142\u0105czna", "tkanka mi\u0119\u015Bniowa", "tkanka nerwowa", "homeostaza", "ujemne sprz\u0119\u017Cenie zwrotne", "transport przez b\u0142ony biologiczne"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.skin",
-    "lo3",
-    ["Uk\u0142ad pow\u0142okowy", "\u041F\u043E\u043A\u0440\u043E\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The integumentary system"],
-    ["budowa nask\xF3rka", "sk\xF3ra w\u0142a\u015Bciwa", "tkanka podsk\xF3rna", "wytwory nask\xF3rka", "termoregulacja", "receptory sk\xF3ry", "choroby i higiena sk\xF3ry"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.motion",
-    "lo3",
-    ["Uk\u0142ad ruchu", "\u041E\u043F\u043E\u0440\u043D\u043E-\u0434\u0432\u0438\u0433\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The musculoskeletal system"],
-    ["budowa i sk\u0142ad chemiczny ko\u015Bci", "tkanka kostna", "szkielet osiowy", "szkielet ko\u0144czyn", "po\u0142\u0105czenia ko\u015Bci", "budowa stawu", "mi\u0119\u015Bnie szkieletowe", "mechanizm skurczu mi\u0119\u015Bnia", "antagonizm mi\u0119\u015Bni", "wady postawy"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.digestion",
-    "lo3",
-    ["Uk\u0142ad pokarmowy", "\u041F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The digestive system"],
-    ["budowa przewodu pokarmowego", "enzymy trawienne", "trawienie i wch\u0142anianie", "rola w\u0105troby", "rola trzustki", "sk\u0142adniki pokarmowe", "witaminy i sole mineralne", "warto\u015B\u0107 energetyczna pokarmu", "wska\u017Anik BMI"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.respiration",
-    "lo3",
-    ["Uk\u0142ad oddechowy", "\u0414\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The respiratory system"],
-    ["drogi oddechowe", "p\u0119cherzyki p\u0142ucne", "wymiana gazowa", "transport tlenu i dwutlenku w\u0119gla", "mechanika oddychania", "obj\u0119to\u015Bci i pojemno\u015Bci p\u0142uc", "regulacja oddychania", "choroby uk\u0142adu oddechowego"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.circulation",
-    "lo3",
-    ["Uk\u0142ad kr\u0105\u017Cenia. Odporno\u015B\u0107", "\u041A\u0440\u043E\u0432\u043E\u043E\u0431\u0440\u0430\u0449\u0435\u043D\u0438\u0435 \u0438 \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442", "Circulation and immunity"],
-    ["budowa serca", "cykl pracy serca", "krwiobieg du\u017Cy i ma\u0142y", "naczynia krwiono\u015Bne", "sk\u0142ad i funkcje krwi", "grupy krwi", "konflikt serologiczny", "uk\u0142ad limfatyczny", "odporno\u015B\u0107 nieswoista", "odporno\u015B\u0107 swoista", "szczepionki i surowice"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.urinary",
-    "lo3",
-    ["Uk\u0142ad moczowy", "\u041C\u043E\u0447\u0435\u0432\u044B\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The urinary system"],
-    ["budowa nerki", "budowa nefronu", "filtracja k\u0142\u0119buszkowa", "resorpcja zwrotna", "sekrecja kanalikowa", "powstawanie moczu", "osmoregulacja", "rola ADH", "rola aldosteronu"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.nervous",
-    "lo3",
-    ["Uk\u0142ad nerwowy", "\u041D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The nervous system"],
-    ["budowa neuronu", "tkanka nerwowa", "potencja\u0142 spoczynkowy", "potencja\u0142 czynno\u015Bciowy", "budowa i dzia\u0142anie synapsy", "neuroprzeka\u017Aniki", "budowa m\xF3zgowia", "rdze\u0144 kr\u0119gowy", "\u0142uk odruchowy", "uk\u0142ad autonomiczny"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.senses",
-    "lo3",
-    ["Narz\u0105dy zmys\u0142\xF3w", "\u041E\u0440\u0433\u0430\u043D\u044B \u0447\u0443\u0432\u0441\u0442\u0432", "The sense organs"],
-    ["budowa oka", "akomodacja", "wady wzroku", "budowa ucha", "narz\u0105d Cortiego", "narz\u0105d r\xF3wnowagi", "zmys\u0142 smaku", "zmys\u0142 w\u0119chu", "czucie sk\xF3rne"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.hormones",
-    "lo3",
-    ["Uk\u0142ad hormonalny", "\u042D\u043D\u0434\u043E\u043A\u0440\u0438\u043D\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The endocrine system"],
-    ["gruczo\u0142y dokrewne", "hormony i ich dzia\u0142anie", "o\u015B podwzg\xF3rze\u2013przysadka", "regulacja poziomu glukozy", "regulacja gospodarki wapniowej", "ujemne sprz\u0119\u017Cenie zwrotne", "nadczynno\u015B\u0107 i niedoczynno\u015B\u0107 gruczo\u0142\xF3w"],
-    "R"
-  ),
-  topic(
-    "bio.lo3.reproduction",
-    "lo3",
-    ["Rozmna\u017Canie i rozw\xF3j", "\u0420\u0430\u0437\u043C\u043D\u043E\u0436\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u0435", "Reproduction and development"],
-    ["budowa uk\u0142adu rozrodczego", "gametogeneza", "cykl miesi\u0105czkowy", "zap\u0142odnienie", "rozw\xF3j zarodkowy", "listki zarodkowe", "ci\u0105\u017Ca i por\xF3d", "rozw\xF3j postnatalny"],
-    "R"
-  )
-];
+var BOOK = {
+  organism: {
+    number: 1,
+    name: ["Organizm cz\u0142owieka jako funkcjonalna ca\u0142o\u015B\u0107", "\u041E\u0440\u0433\u0430\u043D\u0438\u0437\u043C \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u043A\u0430\u043A \u0435\u0434\u0438\u043D\u043E\u0435 \u0446\u0435\u043B\u043E\u0435", "The human organism as a functional whole"],
+    subtopics: ["poziomy organizacji organizmu", "tkanka nab\u0142onkowa", "tkanka \u0142\u0105czna", "tkanka mi\u0119\u015Bniowa", "tkanka nerwowa", "homeostaza", "ujemne sprz\u0119\u017Cenie zwrotne", "transport przez b\u0142ony biologiczne"],
+    paragraphs: {
+      classification: ["1.1", 6, "Miejsce cz\u0142owieka w systemie klasyfikacji organizm\xF3w", "\u041C\u0435\u0441\u0442\u043E \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0435 \u043A\u043B\u0430\u0441\u0441\u0438\u0444\u0438\u043A\u0430\u0446\u0438\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C\u043E\u0432"],
+      hierarchy: ["1.2", 10, "Hierarchiczna budowa organizmu cz\u0142owieka", "\u0418\u0435\u0440\u0430\u0440\u0445\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C\u0430 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430"],
+      homeostasis: ["1.3", 15, "Homeostaza", "\u0413\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437"]
+    }
+  },
+  skin: {
+    number: 2,
+    name: ["Uk\u0142ad pow\u0142okowy", "\u041F\u043E\u043A\u0440\u043E\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The integumentary system"],
+    subtopics: ["budowa nask\xF3rka", "sk\xF3ra w\u0142a\u015Bciwa", "tkanka podsk\xF3rna", "wytwory nask\xF3rka", "termoregulacja", "receptory sk\xF3ry", "choroby i higiena sk\xF3ry"],
+    paragraphs: {
+      animals: ["2.1", 32, "Uk\u0142ad pow\u0142okowy u zwierz\u0105t", "\u041F\u043E\u043A\u0440\u043E\u0432\u044B \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      structure: ["2.2", 38, "Budowa i funkcje sk\xF3ry", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u043A\u043E\u0436\u0438"],
+      disorders: ["2.3", 47, "Higiena i choroby sk\xF3ry", "\u0413\u0438\u0433\u0438\u0435\u043D\u0430 \u0438 \u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043A\u043E\u0436\u0438"]
+    }
+  },
+  motion: {
+    number: 3,
+    name: ["Uk\u0142ad ruchu", "\u041E\u043F\u043E\u0440\u043D\u043E-\u0434\u0432\u0438\u0433\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The musculoskeletal system"],
+    subtopics: ["budowa i sk\u0142ad chemiczny ko\u015Bci", "tkanka kostna", "szkielet osiowy", "szkielet ko\u0144czyn", "po\u0142\u0105czenia ko\u015Bci", "budowa stawu", "mi\u0119\u015Bnie szkieletowe", "mechanizm skurczu mi\u0119\u015Bnia", "antagonizm mi\u0119\u015Bni", "wady postawy"],
+    paragraphs: {
+      animals: ["3.1", 62, "Ruch u zwierz\u0105t", "\u0414\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      skeleton: ["3.2", 68, "Budowa i funkcje szkieletu", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u0441\u043A\u0435\u043B\u0435\u0442\u0430"],
+      joints: ["3.3", 72, "Rodzaje po\u0142\u0105cze\u0144 ko\u015Bci", "\u0422\u0438\u043F\u044B \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u0439 \u043A\u043E\u0441\u0442\u0435\u0439"],
+      bones: ["3.4", 76, "Elementy szkieletu", "\u042D\u043B\u0435\u043C\u0435\u043D\u0442\u044B \u0441\u043A\u0435\u043B\u0435\u0442\u0430"],
+      muscles: ["3.5", 83, "Budowa i funkcjonowanie uk\u0142adu mi\u0119\u015Bniowego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0431\u043E\u0442\u0430 \u043C\u044B\u0448\u0435\u0447\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      disorders: ["3.6", 95, "Higiena i choroby uk\u0142adu ruchu", "\u0413\u0438\u0433\u0438\u0435\u043D\u0430 \u0438 \u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043E\u043F\u043E\u0440\u043D\u043E-\u0434\u0432\u0438\u0433\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  },
+  digestion: {
+    number: 4,
+    name: ["Uk\u0142ad pokarmowy", "\u041F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The digestive system"],
+    subtopics: ["budowa przewodu pokarmowego", "enzymy trawienne", "trawienie i wch\u0142anianie", "rola w\u0105troby", "rola trzustki", "sk\u0142adniki pokarmowe", "witaminy i sole mineralne", "warto\u015B\u0107 energetyczna pokarmu", "wska\u017Anik BMI"],
+    paragraphs: {
+      animals: ["4.1", 110, "Od\u017Cywianie si\u0119 zwierz\u0105t", "\u041F\u0438\u0442\u0430\u043D\u0438\u0435 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      organic: ["4.2", 116, "Organiczne sk\u0142adniki pokarmowe", "\u041E\u0440\u0433\u0430\u043D\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u043F\u0438\u0442\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u0430"],
+      vitamins: ["4.3", 123, "Rola witamin. Nieorganiczne sk\u0142adniki pokarmowe", "\u0420\u043E\u043B\u044C \u0432\u0438\u0442\u0430\u043C\u0438\u043D\u043E\u0432. \u041D\u0435\u043E\u0440\u0433\u0430\u043D\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u043F\u0438\u0442\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u0430"],
+      structure: ["4.4", 131, "Budowa i funkcje uk\u0142adu pokarmowego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      processes: ["4.5", 139, "Procesy trawienia i wch\u0142aniania", "\u041F\u0440\u043E\u0446\u0435\u0441\u0441\u044B \u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0435\u043D\u0438\u044F \u0438 \u0432\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u044F"],
+      diet: ["4.6", 148, "Zasady racjonalnego od\u017Cywiania si\u0119", "\u041F\u0440\u0438\u043D\u0446\u0438\u043F\u044B \u0440\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u043F\u0438\u0442\u0430\u043D\u0438\u044F"],
+      disorders: ["4.7", 152, "Choroby uk\u0142adu pokarmowego", "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  },
+  respiration: {
+    number: 5,
+    name: ["Uk\u0142ad oddechowy", "\u0414\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The respiratory system"],
+    subtopics: ["drogi oddechowe", "p\u0119cherzyki p\u0142ucne", "wymiana gazowa", "transport tlenu i dwutlenku w\u0119gla", "mechanika oddychania", "obj\u0119to\u015Bci i pojemno\u015Bci p\u0142uc", "regulacja oddychania", "choroby uk\u0142adu oddechowego"],
+    paragraphs: {
+      animals: ["5.1", 170, "Uk\u0142ad oddechowy u zwierz\u0105t", "\u0414\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      structure: ["5.2", 180, "Budowa i funkcje uk\u0142adu oddechowego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      ventilation: ["5.3", 185, "Wentylacja p\u0142uc i wymiana gazowa", "\u0412\u0435\u043D\u0442\u0438\u043B\u044F\u0446\u0438\u044F \u043B\u0451\u0433\u043A\u0438\u0445 \u0438 \u0433\u0430\u0437\u043E\u043E\u0431\u043C\u0435\u043D"],
+      disorders: ["5.4", 198, "Zaburzenia funkcjonowania uk\u0142adu oddechowego", "\u041D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F \u0440\u0430\u0431\u043E\u0442\u044B \u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  },
+  circulation: {
+    number: 6,
+    name: ["Uk\u0142ad kr\u0105\u017Cenia. Odporno\u015B\u0107", "\u041A\u0440\u043E\u0432\u043E\u043E\u0431\u0440\u0430\u0449\u0435\u043D\u0438\u0435 \u0438 \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442", "Circulation and immunity"],
+    subtopics: ["budowa serca", "cykl pracy serca", "krwiobieg du\u017Cy i ma\u0142y", "naczynia krwiono\u015Bne", "sk\u0142ad i funkcje krwi", "grupy krwi", "konflikt serologiczny", "uk\u0142ad limfatyczny", "odporno\u015B\u0107 nieswoista", "odporno\u015B\u0107 swoista", "szczepionki i surowice"],
+    paragraphs: {
+      animals: ["6.1", 214, "Uk\u0142ad kr\u0105\u017Cenia u zwierz\u0105t", "\u041A\u0440\u043E\u0432\u0435\u043D\u043E\u0441\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      blood: ["6.2", 220, "Sk\u0142ad i funkcje krwi", "\u0421\u043E\u0441\u0442\u0430\u0432 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u043A\u0440\u043E\u0432\u0438"],
+      structure: ["6.3", 228, "Budowa i funkcje uk\u0142adu krwiono\u015Bnego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u043A\u0440\u043E\u0432\u0435\u043D\u043E\u0441\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      function: ["6.4", 234, "Funkcjonowanie uk\u0142adu krwiono\u015Bnego", "\u0420\u0430\u0431\u043E\u0442\u0430 \u043A\u0440\u043E\u0432\u0435\u043D\u043E\u0441\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      lymph: ["6.5", 244, "Uk\u0142ad limfatyczny", "\u041B\u0438\u043C\u0444\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430"],
+      disorders: ["6.6", 248, "Choroby uk\u0142adu kr\u0105\u017Cenia", "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043A\u0440\u043E\u0432\u043E\u043E\u0431\u0440\u0430\u0449\u0435\u043D\u0438\u044F"],
+      immune: ["6.7", 258, "Budowa i funkcje uk\u0142adu odporno\u015Bciowego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u0438\u043C\u043C\u0443\u043D\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      immunity: ["6.8", 265, "Rodzaje i mechanizmy odporno\u015Bci", "\u0412\u0438\u0434\u044B \u0438 \u043C\u0435\u0445\u0430\u043D\u0438\u0437\u043C\u044B \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442\u0430"],
+      "immune-disorders": ["6.9", 274, "Zaburzenia funkcjonowania uk\u0142adu odporno\u015Bciowego", "\u041D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F \u0440\u0430\u0431\u043E\u0442\u044B \u0438\u043C\u043C\u0443\u043D\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  },
+  urinary: {
+    number: 7,
+    name: ["Uk\u0142ad moczowy", "\u041C\u043E\u0447\u0435\u0432\u044B\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The urinary system"],
+    subtopics: ["budowa nerki", "budowa nefronu", "filtracja k\u0142\u0119buszkowa", "resorpcja zwrotna", "sekrecja kanalikowa", "powstawanie moczu", "osmoregulacja", "rola ADH", "rola aldosteronu"],
+    paragraphs: {
+      animals: ["7.1", 292, "Osmoregulacja i wydalanie u zwierz\u0105t", "\u041E\u0441\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F \u0438 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      structure: ["7.2", 298, "Budowa i funkcjonowanie uk\u0142adu moczowego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0431\u043E\u0442\u0430 \u043C\u043E\u0447\u0435\u0432\u044B\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      disorders: ["7.3", 307, "Choroby uk\u0142adu moczowego", "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u043C\u043E\u0447\u0435\u0432\u044B\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  },
+  nervous: {
+    number: 8,
+    name: ["Uk\u0142ad nerwowy", "\u041D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The nervous system"],
+    subtopics: ["budowa neuronu", "tkanka nerwowa", "potencja\u0142 spoczynkowy", "potencja\u0142 czynno\u015Bciowy", "budowa i dzia\u0142anie synapsy", "neuroprzeka\u017Aniki", "budowa m\xF3zgowia", "rdze\u0144 kr\u0119gowy", "\u0142uk odruchowy", "uk\u0142ad autonomiczny"],
+    paragraphs: {
+      animals: ["8.1", 318, "Uk\u0142ad nerwowy u zwierz\u0105t", "\u041D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      structure: ["8.2", 323, "Budowa i dzia\u0142anie uk\u0142adu nerwowego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0431\u043E\u0442\u0430 \u043D\u0435\u0440\u0432\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      central: ["8.3", 334, "O\u015Brodkowy uk\u0142ad nerwowy", "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u043D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430"],
+      peripheral: ["8.4", 340, "Obwodowy uk\u0142ad nerwowy", "\u041F\u0435\u0440\u0438\u0444\u0435\u0440\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u043D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430"],
+      autonomic: ["8.5", 350, "Autonomiczny uk\u0142ad nerwowy", "\u0412\u0435\u0433\u0435\u0442\u0430\u0442\u0438\u0432\u043D\u0430\u044F \u043D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430"],
+      disorders: ["8.6", 353, "Higiena i choroby uk\u0142adu nerwowego", "\u0413\u0438\u0433\u0438\u0435\u043D\u0430 \u0438 \u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043D\u0435\u0440\u0432\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  },
+  senses: {
+    number: 9,
+    name: ["Narz\u0105dy zmys\u0142\xF3w", "\u041E\u0440\u0433\u0430\u043D\u044B \u0447\u0443\u0432\u0441\u0442\u0432", "The sense organs"],
+    subtopics: ["budowa oka", "akomodacja", "wady wzroku", "budowa ucha", "narz\u0105d Cortiego", "narz\u0105d r\xF3wnowagi", "zmys\u0142 smaku", "zmys\u0142 w\u0119chu", "czucie sk\xF3rne"],
+    paragraphs: {
+      animals: ["9.1", 368, "Narz\u0105dy zmys\u0142\xF3w u zwierz\u0105t", "\u041E\u0440\u0433\u0430\u043D\u044B \u0447\u0443\u0432\u0441\u0442\u0432 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      vision: ["9.2", 374, "Budowa i dzia\u0142anie narz\u0105du wzroku", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0431\u043E\u0442\u0430 \u043E\u0440\u0433\u0430\u043D\u0430 \u0437\u0440\u0435\u043D\u0438\u044F"],
+      ear: ["9.3", 384, "Ucho \u2013 narz\u0105d s\u0142uchu i r\xF3wnowagi", "\u0423\u0445\u043E \u2014 \u043E\u0440\u0433\u0430\u043D \u0441\u043B\u0443\u0445\u0430 \u0438 \u0440\u0430\u0432\u043D\u043E\u0432\u0435\u0441\u0438\u044F"],
+      "taste-smell": ["9.4", 392, "Narz\u0105dy smaku oraz w\u0119chu", "\u041E\u0440\u0433\u0430\u043D\u044B \u0432\u043A\u0443\u0441\u0430 \u0438 \u043E\u0431\u043E\u043D\u044F\u043D\u0438\u044F"]
+    }
+  },
+  hormones: {
+    number: 10,
+    name: ["Uk\u0142ad hormonalny", "\u042D\u043D\u0434\u043E\u043A\u0440\u0438\u043D\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The endocrine system"],
+    subtopics: ["gruczo\u0142y dokrewne", "hormony i ich dzia\u0142anie", "o\u015B podwzg\xF3rze\u2013przysadka", "regulacja poziomu glukozy", "regulacja gospodarki wapniowej", "ujemne sprz\u0119\u017Cenie zwrotne", "nadczynno\u015B\u0107 i niedoczynno\u015B\u0107 gruczo\u0142\xF3w"],
+    paragraphs: {
+      animals: ["10.1", 402, "Uk\u0142ad hormonalny u zwierz\u0105t", "\u042D\u043D\u0434\u043E\u043A\u0440\u0438\u043D\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      structure: ["10.2", 404, "Budowa i rola uk\u0142adu hormonalnego", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0440\u043E\u043B\u044C \u044D\u043D\u0434\u043E\u043A\u0440\u0438\u043D\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"],
+      regulation: ["10.3", 414, "Regulacja wydzielania hormon\xF3w", "\u0420\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u044F \u0433\u043E\u0440\u043C\u043E\u043D\u043E\u0432"],
+      disorders: ["10.4", 419, "Nadczynno\u015B\u0107 i niedoczynno\u015B\u0107 gruczo\u0142\xF3w dokrewnych. Stres", "\u0413\u0438\u043F\u0435\u0440- \u0438 \u0433\u0438\u043F\u043E\u0444\u0443\u043D\u043A\u0446\u0438\u044F \u0436\u0435\u043B\u0451\u0437 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0435\u043A\u0440\u0435\u0446\u0438\u0438. \u0421\u0442\u0440\u0435\u0441\u0441"]
+    }
+  },
+  reproduction: {
+    number: 11,
+    name: ["Rozmna\u017Canie i rozw\xF3j", "\u0420\u0430\u0437\u043C\u043D\u043E\u0436\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u0435", "Reproduction and development"],
+    subtopics: ["budowa uk\u0142adu rozrodczego", "gametogeneza", "cykl miesi\u0105czkowy", "zap\u0142odnienie", "rozw\xF3j zarodkowy", "listki zarodkowe", "ci\u0105\u017Ca i por\xF3d", "rozw\xF3j postnatalny"],
+    paragraphs: {
+      animals: ["11.1", 434, "Rozmna\u017Canie i rozw\xF3j u zwierz\u0105t", "\u0420\u0430\u0437\u043C\u043D\u043E\u0436\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u0435 \u0443 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"],
+      male: ["11.2", 442, "Budowa i funkcje m\u0119skich narz\u0105d\xF3w rozrodczych", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u043C\u0443\u0436\u0441\u043A\u0438\u0445 \u043F\u043E\u043B\u043E\u0432\u044B\u0445 \u043E\u0440\u0433\u0430\u043D\u043E\u0432"],
+      female: ["11.3", 447, "Budowa i funkcje \u017Ce\u0144skich narz\u0105d\xF3w rozrodczych", "\u0421\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u0436\u0435\u043D\u0441\u043A\u0438\u0445 \u043F\u043E\u043B\u043E\u0432\u044B\u0445 \u043E\u0440\u0433\u0430\u043D\u043E\u0432"],
+      development: ["11.4", 456, "Rozw\xF3j cz\u0142owieka. Metody antykoncepcji", "\u0420\u0430\u0437\u0432\u0438\u0442\u0438\u0435 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430. \u041C\u0435\u0442\u043E\u0434\u044B \u043A\u043E\u043D\u0442\u0440\u0430\u0446\u0435\u043F\u0446\u0438\u0438"],
+      disorders: ["11.5", 467, "Higiena i choroby uk\u0142adu rozrodczego", "\u0413\u0438\u0433\u0438\u0435\u043D\u0430 \u0438 \u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043F\u043E\u043B\u043E\u0432\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B"]
+    }
+  }
+};
+var chapterKeys = Object.keys(BOOK);
+var chapterId = (key) => `bio.lo3.${key}`;
+var CHAPTERS = chapterKeys.map((key) => {
+  const { number, name, subtopics } = BOOK[key];
+  const [pl, ru, en] = name;
+  return { id: chapterId(key), number, name: { pl, ru, en }, subtopics: [...subtopics] };
+});
+var PARAGRAPHS = chapterKeys.flatMap(
+  (key) => Object.entries(BOOK[key].paragraphs).map(([slug, [number, page, pl, ru]]) => ({
+    id: `${chapterId(key)}.${slug}`,
+    grade: "lo3",
+    level: "R",
+    // EN is not offered for biology; the slot is filled so the portal-wide `Topic` shape still holds
+    name: { pl, ru, en: pl },
+    // curriculum terms live on the chapter; a paragraph's own terms come from the tasks in it
+    subtopics: [],
+    chapterId: chapterId(key),
+    number,
+    page
+  }))
+);
+var P = Object.fromEntries(
+  chapterKeys.map((key) => [key, Object.fromEntries(Object.keys(BOOK[key].paragraphs).map((slug) => [slug, `${chapterId(key)}.${slug}`]))])
+);
 
 // packages/trainers/bio/src/curriculum/tags.ts
 var TAGS = [
   {
     id: "homeostaza",
-    name: { pl: "Homeostaza i sprz\u0119\u017Cenie zwrotne", ru: "\u0413\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", en: "Homeostasis and feedback" },
-    topicIds: ["bio.lo3.hormones", "bio.lo3.urinary", "bio.lo3.organism", "bio.lo3.skin"]
+    name: { pl: "Homeostaza i sprz\u0119\u017Cenie zwrotne", ru: "\u0413\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", en: "Homeostasis and feedback" }
   },
   {
     id: "regulacja-hormonalna",
-    name: { pl: "Regulacja hormonalna", ru: "\u0413\u043E\u0440\u043C\u043E\u043D\u0430\u043B\u044C\u043D\u0430\u044F \u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", en: "Hormonal regulation" },
-    topicIds: ["bio.lo3.hormones"]
+    name: { pl: "Regulacja hormonalna", ru: "\u0413\u043E\u0440\u043C\u043E\u043D\u0430\u043B\u044C\u043D\u0430\u044F \u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", en: "Hormonal regulation" }
   },
   {
     id: "choroby",
-    name: { pl: "Choroby i zaburzenia", ru: "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u0438 \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F", en: "Diseases and disorders" },
-    topicIds: ["bio.lo3.hormones", "bio.lo3.senses"]
+    name: { pl: "Choroby i zaburzenia", ru: "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u0438 \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F", en: "Diseases and disorders" }
   },
   {
     id: "obliczenia",
-    name: { pl: "Zadania obliczeniowe", ru: "\u0420\u0430\u0441\u0447\u0451\u0442\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u044F", en: "Calculation tasks" },
-    topicIds: ["bio.lo3.respiration", "bio.lo3.circulation", "bio.lo3.urinary", "bio.lo3.senses", "bio.lo3.reproduction"]
+    name: { pl: "Zadania obliczeniowe", ru: "\u0420\u0430\u0441\u0447\u0451\u0442\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u044F", en: "Calculation tasks" }
   }
 ];
 var byId = new Map(TAGS.map((t) => [t.id, t]));
 
 // packages/trainers/bio/src/curriculum/index.ts
-var TOPICS = [...lo];
-var byId2 = new Map(TOPICS.map((t) => [t.id, t]));
-var getTopic = (id) => byId2.get(id);
+var TOPICS = PARAGRAPHS;
+var paragraphById = new Map(PARAGRAPHS.map((p) => [p.id, p]));
+var chapterById = new Map(CHAPTERS.map((c) => [c.id, c]));
+var getTopic = (id) => paragraphById.get(id);
+var getParagraph = (id) => paragraphById.get(id);
+var getChapter = (id) => chapterById.get(id);
 function topicsFor(grade, level) {
   return TOPICS.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
 }
@@ -1623,8 +1744,8 @@ var PHRASES = {
     good: "Dobry wynik, zosta\u0142o kilka rzeczy do dopracowania.",
     ok: "Podstawy s\u0105, ale warto jeszcze po\u0107wiczy\u0107.",
     low: "Ten materia\u0142 wymaga powt\xF3rki \u2014 spokojnie, to kwestia \u0107wicze\u0144.",
-    weak: (pct) => `poprawnych odpowiedzi: ${pct}%`,
-    reviewSubtopics: (topic2, subtopics) => `Powt\xF3rz temat \u201E${topic2}\u201D, zw\u0142aszcza: ${subtopics.join(", ")}.`,
+    weak: (ok, total) => `poprawnie ${ok} z ${total}`,
+    reviewSubtopics: (chapter, paragraphs, subtopics) => `Powt\xF3rz \u201E${chapter}\u201D${paragraphs.length ? ` (${paragraphs.join(", ")})` : ""}, zw\u0142aszcza: ${subtopics.join(", ")}.`,
     hintsUsed: (n) => `Skorzysta\u0142e\u015B z podpowiedzi ${n} razy \u2014 spr\xF3buj nast\u0119pnym razem najpierw odpowiedzie\u0107 bez nich.`,
     repeatWeak: "Powt\xF3rz sesj\u0119 z zaznaczonymi s\u0142abymi tematami.",
     keepGoing: "Utrzymaj tempo: kr\xF3tka sesja co kilka dni dzia\u0142a lepiej ni\u017C jedna d\u0142uga przed sprawdzianem."
@@ -1634,8 +1755,8 @@ var PHRASES = {
     good: "\u0425\u043E\u0440\u043E\u0448\u0438\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442, \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u0434\u043E\u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C \u043F\u0430\u0440\u0443 \u043C\u0435\u0441\u0442.",
     ok: "\u0411\u0430\u0437\u0430 \u0435\u0441\u0442\u044C, \u043D\u043E \u0441\u0442\u043E\u0438\u0442 \u0435\u0449\u0451 \u043F\u043E\u0442\u0440\u0435\u043D\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F.",
     low: "\u042D\u0442\u043E\u0442 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B \u043D\u0443\u0436\u043D\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u2014 \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u043E, \u044D\u0442\u043E \u0432\u043E\u043F\u0440\u043E\u0441 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0438.",
-    weak: (pct) => `\u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u044B\u0445 \u043E\u0442\u0432\u0435\u0442\u043E\u0432: ${pct}%`,
-    reviewSubtopics: (topic2, subtopics) => `\u041F\u043E\u0432\u0442\u043E\u0440\u0438 \u0442\u0435\u043C\u0443 \xAB${topic2}\xBB, \u043E\u0441\u043E\u0431\u0435\u043D\u043D\u043E: ${subtopics.join(", ")}.`,
+    weak: (ok, total) => `\u0432\u0435\u0440\u043D\u043E ${ok} \u0438\u0437 ${total}`,
+    reviewSubtopics: (chapter, paragraphs, subtopics) => `\u041F\u043E\u0432\u0442\u043E\u0440\u0438 \xAB${chapter}\xBB${paragraphs.length ? ` (${paragraphs.join(", ")})` : ""}, \u043E\u0441\u043E\u0431\u0435\u043D\u043D\u043E: ${subtopics.join(", ")}.`,
     hintsUsed: (n) => `\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430\u043C\u0438 \u0442\u044B \u0432\u043E\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043B\u0441\u044F ${n} \u0440\u0430\u0437 \u2014 \u0432 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0440\u0430\u0437 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0439 \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u0432\u0435\u0442\u0438\u0442\u044C \u0431\u0435\u0437 \u043D\u0438\u0445.`,
     repeatWeak: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438 \u0441\u0435\u0441\u0441\u0438\u044E \u043F\u043E \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u043D\u044B\u043C \u0441\u043B\u0430\u0431\u044B\u043C \u0442\u0435\u043C\u0430\u043C.",
     keepGoing: "\u0414\u0435\u0440\u0436\u0438 \u0442\u0435\u043C\u043F: \u043A\u043E\u0440\u043E\u0442\u043A\u0430\u044F \u0441\u0435\u0441\u0441\u0438\u044F \u0440\u0430\u0437 \u0432 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0434\u043D\u0435\u0439 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043B\u0443\u0447\u0448\u0435, \u0447\u0435\u043C \u043E\u0434\u043D\u0430 \u0434\u043B\u0438\u043D\u043D\u0430\u044F \u043F\u0435\u0440\u0435\u0434 \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u044C\u043D\u043E\u0439."
@@ -1645,8 +1766,8 @@ var PHRASES = {
     good: "Good result, a couple of things left to polish.",
     ok: "The basics are there, but more practice would help.",
     low: "This material needs a review \u2014 nothing a bit of practice won't fix.",
-    weak: (pct) => `correct answers: ${pct}%`,
-    reviewSubtopics: (topic2, subtopics) => `Review "${topic2}", especially: ${subtopics.join(", ")}.`,
+    weak: (ok, total) => `${ok} of ${total} correct`,
+    reviewSubtopics: (chapter, paragraphs, subtopics) => `Review "${chapter}"${paragraphs.length ? ` (${paragraphs.join(", ")})` : ""}, especially: ${subtopics.join(", ")}.`,
     hintsUsed: (n) => `You used hints ${n} times \u2014 next time try answering without them first.`,
     repeatWeak: "Run another session on the topics marked weak.",
     keepGoing: "Keep the rhythm: a short session every few days beats one long one before the test."
@@ -1670,16 +1791,22 @@ function buildFeedback(req) {
   const ratio = req.results.length ? correct / req.results.length : 0;
   const summary = ratio >= STRONG_THRESHOLD ? p.great : ratio >= 0.7 ? p.good : ratio >= 0.5 ? p.ok : p.low;
   const weak = scores.filter((s) => s.ok / s.total < WEAK_THRESHOLD);
-  const weakTopics = weak.map((s) => ({
-    topicId: s.topicId,
-    reason: p.weak(Math.round(s.ok / s.total * 100))
-  }));
+  const weakTopics = weak.map((s) => ({ topicId: s.topicId, reason: p.weak(s.ok, s.total) }));
+  const byChapter = /* @__PURE__ */ new Map();
+  for (const s of weak) {
+    const chapterId2 = getParagraph(s.topicId)?.chapterId ?? (getChapter(s.topicId) ? s.topicId : void 0);
+    if (chapterId2) byChapter.set(chapterId2, [...byChapter.get(chapterId2) ?? [], s]);
+  }
   const recommendations = [];
-  for (const s of weak.slice(0, 3)) {
-    const topic2 = getTopic(s.topicId);
-    if (!topic2) continue;
-    const focus = (s.missedSubtopics.length > 0 ? s.missedSubtopics : topic2.subtopics).slice(0, 3);
-    recommendations.push(p.reviewSubtopics(topic2.name[req.lang] ?? topic2.name.pl, focus));
+  for (const [chapterId2, group] of [...byChapter].slice(0, 3)) {
+    const chapter = getChapter(chapterId2);
+    const numbers = group.flatMap((s) => {
+      const paragraph = getParagraph(s.topicId);
+      return paragraph ? [`\xA7${paragraph.number}`] : [];
+    });
+    const missed = [...new Set(group.flatMap((s) => s.missedSubtopics))];
+    const focus = (missed.length > 0 ? missed : chapter.subtopics).slice(0, 3);
+    recommendations.push(p.reviewSubtopics(chapter.name[req.lang] ?? chapter.name.pl, numbers, focus));
   }
   const hints = req.results.filter((r) => r.usedHint).length;
   if (hints >= 3) recommendations.push(p.hintsUsed(hints));
@@ -1689,7 +1816,8 @@ function buildFeedback(req) {
     summary,
     weakTopics,
     recommendations: recommendations.slice(0, 4),
-    suggestedTopicIds: weak.map((s) => s.topicId).slice(0, 5)
+    // paragraphs, so "practise these" builds a session from exactly what went wrong
+    suggestedTopicIds: weak.map((s) => s.topicId).filter((id) => getParagraph(id)).slice(0, 8)
   };
 }
 
@@ -1753,12 +1881,12 @@ function* enumerateParams(params, attemptBudget) {
 // packages/trainer-sdk/src/templates/render.ts
 import { createHash as createHash2 } from "node:crypto";
 var paramsHash = (params) => createHash2("sha1").update(JSON.stringify(params, Object.keys(params).sort())).digest("hex").slice(0, 10);
-function buildRaw(template, p, d, lang) {
+function buildRaw(template, p, d, lang, topicId) {
   const isChoice = template.answerType === "choice";
   const choices = isChoice ? template.choices?.(p, d, lang) : void 0;
   const correctChoice = isChoice ? template.correctChoiceLabel?.(p, d) : void 0;
   return {
-    topicId: template.topicId,
+    topicId,
     subtopic: template.subtopic[lang],
     difficulty: typeof template.difficulty === "function" ? template.difficulty(p, d) : template.difficulty,
     question: template.question(p, d, lang),
@@ -1789,12 +1917,13 @@ function renderTemplate(template, opts) {
     }
     const derived = template.derive?.(p) ?? {};
     const hash = paramsHash(p);
+    const topicId = template.topicOf?.(p, derived) ?? template.topicId;
     const perLang = [];
     let failReason = null;
     for (const lang of opts.langs) {
-      const raw = buildRaw(template, p, derived, lang);
+      const raw = buildRaw(template, p, derived, lang, topicId);
       const id = `${template.id}:${lang}:${hash}`;
-      const result = opts.verify(raw, { allowedTopicIds: [template.topicId], answerMode, id });
+      const result = opts.verify(raw, { allowedTopicIds: [topicId], answerMode, id });
       if (!result.ok) {
         failReason = `[${lang}] ${result.reason}`;
         break;
@@ -1811,6 +1940,9 @@ function renderTemplate(template, opts) {
   }
   return { tasks, stats: { templateId: template.id, accepted, rejected, rejectionReasons } };
 }
+
+// packages/trainers/bio/src/server/templates/index.ts
+import { createHash as createHash3 } from "node:crypto";
 
 // packages/trainers/bio/src/server/verifyTask.ts
 import { randomUUID } from "node:crypto";
@@ -1906,12 +2038,16 @@ function placeChoices(correctLabel, correctText, distractors, misconception) {
 
 // packages/trainers/bio/src/server/templates/tableTemplate.ts
 var cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+var rowParagraph = (row) => row.paragraph;
 function choiceFromTable(spec) {
   const shift = spec.shift ?? 0;
   const labelFor = (i) => LABELS[(i + shift) % LABELS.length];
   return {
     id: spec.id,
     topicId: spec.topicId,
+    // distractors still come from the whole table below: a paragraph with one or two rows could not
+    // offer four options on its own, and neighbouring rows make the more plausible traps anyway
+    topicOf: (p) => rowParagraph(spec.rows[p.i]) ?? spec.paragraph ?? spec.topicId,
     answerType: "choice",
     tags: spec.tags,
     params: { i: choiceParam(...spec.rows.map((_, i) => i)) },
@@ -1943,6 +2079,7 @@ function termFromTable(spec) {
   return {
     id: spec.id,
     topicId: spec.topicId,
+    topicOf: (p) => rowParagraph(spec.rows[p.i]) ?? spec.paragraph ?? spec.topicId,
     answerType: "text",
     tags: spec.tags,
     params: { i: choiceParam(...spec.rows.map((_, i) => i)) },
@@ -1977,7 +2114,7 @@ function calcTemplate(spec) {
   const show = (n) => String(round(n)).replace(".", ",");
   return {
     id: spec.id,
-    topicId: spec.topicId,
+    topicId: spec.paragraph ?? spec.topicId,
     answerType: "number",
     tags: spec.tags,
     // a numeric range yields far more substitutions than a hand-written table has rows, so without
@@ -2006,6 +2143,7 @@ function pairFromTable(spec) {
     choiceFromTable({
       id: `${spec.topicId}.${spec.slug}-to-role`,
       topicId: spec.topicId,
+      paragraph: spec.paragraph,
       rows: spec.rows,
       subtopic: spec.subtopic,
       tags: spec.tags,
@@ -2019,6 +2157,7 @@ function pairFromTable(spec) {
     termFromTable({
       id: `${spec.topicId}.role-to-${spec.slug}`,
       topicId: spec.topicId,
+      paragraph: spec.paragraph,
       rows: spec.rows,
       subtopic: spec.subtopic,
       tags: spec.tags,
@@ -2312,6 +2451,7 @@ var DISORDERS = [
 var LOOPS = [
   {
     id: "glukoza-wzrost",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom glukozy we krwi ro\u015Bnie po posi\u0142ku", ru: "\u0443\u0440\u043E\u0432\u0435\u043D\u044C \u0433\u043B\u044E\u043A\u043E\u0437\u044B \u0432 \u043A\u0440\u043E\u0432\u0438 \u0440\u0430\u0441\u0442\u0451\u0442 \u043F\u043E\u0441\u043B\u0435 \u0435\u0434\u044B" },
     hormone: { pl: "insulina", ru: "\u0438\u043D\u0441\u0443\u043B\u0438\u043D" },
     response: { pl: "glukoza wnika do kom\xF3rek i jest magazynowana jako glikogen", ru: "\u0433\u043B\u044E\u043A\u043E\u0437\u0430 \u043F\u043E\u0441\u0442\u0443\u043F\u0430\u0435\u0442 \u0432 \u043A\u043B\u0435\u0442\u043A\u0438 \u0438 \u0437\u0430\u043F\u0430\u0441\u0430\u0435\u0442\u0441\u044F \u0432 \u0432\u0438\u0434\u0435 \u0433\u043B\u0438\u043A\u043E\u0433\u0435\u043D\u0430" },
@@ -2319,6 +2459,7 @@ var LOOPS = [
   },
   {
     id: "glukoza-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom glukozy we krwi spada mi\u0119dzy posi\u0142kami", ru: "\u0443\u0440\u043E\u0432\u0435\u043D\u044C \u0433\u043B\u044E\u043A\u043E\u0437\u044B \u0432 \u043A\u0440\u043E\u0432\u0438 \u043F\u0430\u0434\u0430\u0435\u0442 \u043C\u0435\u0436\u0434\u0443 \u043F\u0440\u0438\u0451\u043C\u0430\u043C\u0438 \u043F\u0438\u0449\u0438" },
     hormone: { pl: "glukagon", ru: "\u0433\u043B\u044E\u043A\u0430\u0433\u043E\u043D" },
     response: { pl: "glikogen w\u0105troby jest rozk\u0142adany do glukozy", ru: "\u0433\u043B\u0438\u043A\u043E\u0433\u0435\u043D \u043F\u0435\u0447\u0435\u043D\u0438 \u0440\u0430\u0441\u0449\u0435\u043F\u043B\u044F\u0435\u0442\u0441\u044F \u0434\u043E \u0433\u043B\u044E\u043A\u043E\u0437\u044B" },
@@ -2326,6 +2467,7 @@ var LOOPS = [
   },
   {
     id: "wapn-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom wapnia we krwi spada", ru: "\u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043A\u0430\u043B\u044C\u0446\u0438\u044F \u0432 \u043A\u0440\u043E\u0432\u0438 \u043F\u0430\u0434\u0430\u0435\u0442" },
     hormone: { pl: "parathormon", ru: "\u043F\u0430\u0440\u0430\u0442\u0433\u043E\u0440\u043C\u043E\u043D" },
     response: { pl: "wap\u0144 jest uwalniany z ko\u015Bci i silniej wch\u0142aniany w jelicie", ru: "\u043A\u0430\u043B\u044C\u0446\u0438\u0439 \u0432\u044B\u0441\u0432\u043E\u0431\u043E\u0436\u0434\u0430\u0435\u0442\u0441\u044F \u0438\u0437 \u043A\u043E\u0441\u0442\u0435\u0439 \u0438 \u0441\u0438\u043B\u044C\u043D\u0435\u0435 \u0432\u0441\u0430\u0441\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0432 \u043A\u0438\u0448\u0435\u0447\u043D\u0438\u043A\u0435" },
@@ -2333,6 +2475,7 @@ var LOOPS = [
   },
   {
     id: "wapn-wzrost",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom wapnia we krwi ro\u015Bnie", ru: "\u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043A\u0430\u043B\u044C\u0446\u0438\u044F \u0432 \u043A\u0440\u043E\u0432\u0438 \u0440\u0430\u0441\u0442\u0451\u0442" },
     hormone: { pl: "kalcytonina", ru: "\u043A\u0430\u043B\u044C\u0446\u0438\u0442\u043E\u043D\u0438\u043D" },
     response: { pl: "wap\u0144 jest odk\u0142adany w ko\u015Bciach, a jego st\u0119\u017Cenie we krwi spada", ru: "\u043A\u0430\u043B\u044C\u0446\u0438\u0439 \u043E\u0442\u043A\u043B\u0430\u0434\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0432 \u043A\u043E\u0441\u0442\u044F\u0445, \u0438 \u0435\u0433\u043E \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u044F \u0432 \u043A\u0440\u043E\u0432\u0438 \u043F\u0430\u0434\u0430\u0435\u0442" },
@@ -2340,6 +2483,7 @@ var LOOPS = [
   },
   {
     id: "woda-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "organizm traci wod\u0119 i osmolarno\u015B\u0107 krwi ro\u015Bnie", ru: "\u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C \u0442\u0435\u0440\u044F\u0435\u0442 \u0432\u043E\u0434\u0443 \u0438 \u043E\u0441\u043C\u043E\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C \u043A\u0440\u043E\u0432\u0438 \u0440\u0430\u0441\u0442\u0451\u0442" },
     hormone: { pl: "wazopresyna", ru: "\u0432\u0430\u0437\u043E\u043F\u0440\u0435\u0441\u0441\u0438\u043D" },
     response: { pl: "nerki zag\u0119szczaj\u0105 mocz, oddaj\u0105c mniej wody", ru: "\u043F\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0438\u0440\u0443\u044E\u0442 \u043C\u043E\u0447\u0443, \u043E\u0442\u0434\u0430\u0432\u0430\u044F \u043C\u0435\u043D\u044C\u0448\u0435 \u0432\u043E\u0434\u044B" },
@@ -2347,6 +2491,7 @@ var LOOPS = [
   },
   {
     id: "sod-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom sodu we krwi spada, a wraz z nim ci\u015Bnienie", ru: "\u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043D\u0430\u0442\u0440\u0438\u044F \u0432 \u043A\u0440\u043E\u0432\u0438 \u043F\u0430\u0434\u0430\u0435\u0442, \u0430 \u0432\u043C\u0435\u0441\u0442\u0435 \u0441 \u043D\u0438\u043C \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u0435" },
     hormone: { pl: "aldosteron", ru: "\u0430\u043B\u044C\u0434\u043E\u0441\u0442\u0435\u0440\u043E\u043D" },
     response: { pl: "nerki zatrzymuj\u0105 s\xF3d, a za nim wod\u0119", ru: "\u043F\u043E\u0447\u043A\u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u044E\u0442 \u043D\u0430\u0442\u0440\u0438\u0439, \u0430 \u0432\u0441\u043B\u0435\u0434 \u0437\u0430 \u043D\u0438\u043C \u0432\u043E\u0434\u0443" },
@@ -2354,6 +2499,7 @@ var LOOPS = [
   },
   {
     id: "stres",
+    paragraph: P.hormones.disorders,
     stimulus: { pl: "organizm reaguje na nag\u0142e zagro\u017Cenie", ru: "\u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C \u0440\u0435\u0430\u0433\u0438\u0440\u0443\u0435\u0442 \u043D\u0430 \u0432\u043D\u0435\u0437\u0430\u043F\u043D\u0443\u044E \u0443\u0433\u0440\u043E\u0437\u0443" },
     hormone: { pl: "adrenalina", ru: "\u0430\u0434\u0440\u0435\u043D\u0430\u043B\u0438\u043D" },
     response: { pl: "serce bije szybciej, a do krwi trafia dodatkowa glukoza", ru: "\u0441\u0435\u0440\u0434\u0446\u0435 \u0431\u044C\u0451\u0442\u0441\u044F \u0447\u0430\u0449\u0435, \u0430 \u0432 \u043A\u0440\u043E\u0432\u044C \u043F\u043E\u0441\u0442\u0443\u043F\u0430\u0435\u0442 \u0434\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0433\u043B\u044E\u043A\u043E\u0437\u0430" },
@@ -2361,6 +2507,7 @@ var LOOPS = [
   },
   {
     id: "zimno",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "temperatura otoczenia spada i organizm si\u0119 wych\u0142adza", ru: "\u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0441\u0440\u0435\u0434\u044B \u043F\u0430\u0434\u0430\u0435\u0442 \u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C \u043E\u0445\u043B\u0430\u0436\u0434\u0430\u0435\u0442\u0441\u044F" },
     hormone: { pl: "tyroksyna", ru: "\u0442\u0438\u0440\u043E\u043A\u0441\u0438\u043D" },
     response: { pl: "tempo przemiany materii ro\u015Bnie i wytwarza si\u0119 wi\u0119cej ciep\u0142a", ru: "\u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043E\u0431\u043C\u0435\u043D\u0430 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 \u0440\u0430\u0441\u0442\u0451\u0442 \u0438 \u0432\u044B\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0431\u043E\u043B\u044C\u0448\u0435 \u0442\u0435\u043F\u043B\u0430" },
@@ -2378,6 +2525,7 @@ var glandToHormone = choiceFromTable({
   id: `${TOPIC}.gland-to-hormone`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -2395,6 +2543,7 @@ var hormoneToAction = choiceFromTable({
   id: `${TOPIC}.hormone-to-action`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -2408,6 +2557,7 @@ var hormoneToGland = choiceFromTable({
   id: `${TOPIC}.hormone-to-gland`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -2421,6 +2571,7 @@ var actionToHormone = termFromTable({
   id: `${TOPIC}.action-to-hormone`,
   topicId: TOPIC,
   rows: HORMONES,
+  paragraph: P.hormones.structure,
   subtopic: SUBTOPIC,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
@@ -2436,6 +2587,7 @@ var disorderToDisease = choiceFromTable({
   id: `${TOPIC}.disorder-to-disease`,
   topicId: TOPIC,
   rows: DISORDERS,
+  paragraph: P.hormones.disorders,
   subtopic: DISEASES,
   tags: ["choroby", "regulacja-hormonalna"],
   difficulty: tier,
@@ -2453,6 +2605,7 @@ var symptomToDisease = choiceFromTable({
   id: `${TOPIC}.symptom-to-disease`,
   topicId: TOPIC,
   rows: DISORDERS,
+  paragraph: P.hormones.disorders,
   subtopic: DISEASES,
   tags: ["choroby", "regulacja-hormonalna"],
   difficulty: tier,
@@ -2506,6 +2659,7 @@ var lo3HormonesTemplates = [
 var HEART_AND_VESSELS = [
   {
     id: "przedsionek-prawy",
+    paragraph: P.circulation.structure,
     name: { pl: "prawy przedsionek", ru: "\u043F\u0440\u0430\u0432\u043E\u0435 \u043F\u0440\u0435\u0434\u0441\u0435\u0440\u0434\u0438\u0435" },
     role: { pl: "przyjmowanie krwi odtlenowanej z \u017Cy\u0142 g\u0142\xF3wnych", ru: "\u043F\u0440\u0438\u0451\u043C \u0432\u0435\u043D\u043E\u0437\u043D\u043E\u0439 \u043A\u0440\u043E\u0432\u0438 \u0438\u0437 \u043F\u043E\u043B\u044B\u0445 \u0432\u0435\u043D" },
     aliases: { pl: [], ru: [] },
@@ -2513,6 +2667,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "komora-prawa",
+    paragraph: P.circulation.structure,
     name: { pl: "prawa komora", ru: "\u043F\u0440\u0430\u0432\u044B\u0439 \u0436\u0435\u043B\u0443\u0434\u043E\u0447\u0435\u043A" },
     role: { pl: "t\u0142oczenie krwi do pnia p\u0142ucnego, czyli do krwiobiegu ma\u0142ego", ru: "\u043D\u0430\u0433\u043D\u0435\u0442\u0430\u043D\u0438\u0435 \u043A\u0440\u043E\u0432\u0438 \u0432 \u043B\u0451\u0433\u043E\u0447\u043D\u044B\u0439 \u0441\u0442\u0432\u043E\u043B, \u0442\u043E \u0435\u0441\u0442\u044C \u0432 \u043C\u0430\u043B\u044B\u0439 \u043A\u0440\u0443\u0433" },
     aliases: { pl: [], ru: [] },
@@ -2520,6 +2675,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "przedsionek-lewy",
+    paragraph: P.circulation.structure,
     name: { pl: "lewy przedsionek", ru: "\u043B\u0435\u0432\u043E\u0435 \u043F\u0440\u0435\u0434\u0441\u0435\u0440\u0434\u0438\u0435" },
     role: { pl: "przyjmowanie krwi utlenowanej z \u017Cy\u0142 p\u0142ucnych", ru: "\u043F\u0440\u0438\u0451\u043C \u0430\u0440\u0442\u0435\u0440\u0438\u0430\u043B\u044C\u043D\u043E\u0439 \u043A\u0440\u043E\u0432\u0438 \u0438\u0437 \u043B\u0451\u0433\u043E\u0447\u043D\u044B\u0445 \u0432\u0435\u043D" },
     aliases: { pl: [], ru: [] },
@@ -2527,6 +2683,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "komora-lewa",
+    paragraph: P.circulation.structure,
     name: { pl: "lewa komora", ru: "\u043B\u0435\u0432\u044B\u0439 \u0436\u0435\u043B\u0443\u0434\u043E\u0447\u0435\u043A" },
     role: { pl: "t\u0142oczenie krwi do aorty pod najwy\u017Cszym ci\u015Bnieniem", ru: "\u043D\u0430\u0433\u043D\u0435\u0442\u0430\u043D\u0438\u0435 \u043A\u0440\u043E\u0432\u0438 \u0432 \u0430\u043E\u0440\u0442\u0443 \u043F\u043E\u0434 \u043D\u0430\u0438\u0431\u043E\u043B\u044C\u0448\u0438\u043C \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u0435\u043C" },
     aliases: { pl: [], ru: [] },
@@ -2534,6 +2691,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "zastawki-przedsionkowo-komorowe",
+    paragraph: P.circulation.structure,
     name: { pl: "zastawki przedsionkowo-komorowe", ru: "\u043F\u0440\u0435\u0434\u0441\u0435\u0440\u0434\u043D\u043E-\u0436\u0435\u043B\u0443\u0434\u043E\u0447\u043A\u043E\u0432\u044B\u0435 \u043A\u043B\u0430\u043F\u0430\u043D\u044B" },
     role: { pl: "zapobieganie cofaniu si\u0119 krwi z kom\xF3r do przedsionk\xF3w", ru: "\u043F\u0440\u0435\u0434\u043E\u0442\u0432\u0440\u0430\u0449\u0435\u043D\u0438\u0435 \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0430 \u043A\u0440\u043E\u0432\u0438 \u0438\u0437 \u0436\u0435\u043B\u0443\u0434\u043E\u0447\u043A\u043E\u0432 \u0432 \u043F\u0440\u0435\u0434\u0441\u0435\u0440\u0434\u0438\u044F" },
     aliases: { pl: ["zastawka dwudzielna", "zastawka tr\xF3jdzielna"], ru: ["\u043C\u0438\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439 \u043A\u043B\u0430\u043F\u0430\u043D", "\u0442\u0440\u0451\u0445\u0441\u0442\u0432\u043E\u0440\u0447\u0430\u0442\u044B\u0439 \u043A\u043B\u0430\u043F\u0430\u043D"] },
@@ -2541,6 +2699,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "wezel-zatokowo-przedsionkowy",
+    paragraph: P.circulation.function,
     name: { pl: "w\u0119ze\u0142 zatokowo-przedsionkowy", ru: "\u0441\u0438\u043D\u0443\u0441\u043D\u043E-\u043F\u0440\u0435\u0434\u0441\u0435\u0440\u0434\u043D\u044B\u0439 \u0443\u0437\u0435\u043B" },
     role: { pl: "narzucanie rytmu skurcz\xF3w jako naturalny rozrusznik serca", ru: "\u0437\u0430\u0434\u0430\u043D\u0438\u0435 \u0440\u0438\u0442\u043C\u0430 \u0441\u043E\u043A\u0440\u0430\u0449\u0435\u043D\u0438\u0439 \u043A\u0430\u043A \u0435\u0441\u0442\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439 \u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u0440\u0438\u0442\u043C\u0430" },
     aliases: { pl: ["w\u0119ze\u0142 zatokowy", "rozrusznik serca"], ru: ["\u0441\u0438\u043D\u0443\u0441\u043E\u0432\u044B\u0439 \u0443\u0437\u0435\u043B", "\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u0440\u0438\u0442\u043C\u0430"] },
@@ -2548,6 +2707,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "tetnice",
+    paragraph: P.circulation.structure,
     name: { pl: "t\u0119tnice", ru: "\u0430\u0440\u0442\u0435\u0440\u0438\u0438" },
     role: { pl: "prowadzenie krwi z serca, z grub\u0105 warstw\u0105 mi\u0119\u015Bniow\u0105 i bez zastawek", ru: "\u043F\u0440\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u043A\u0440\u043E\u0432\u0438 \u043E\u0442 \u0441\u0435\u0440\u0434\u0446\u0430, \u0441 \u0442\u043E\u043B\u0441\u0442\u044B\u043C \u043C\u044B\u0448\u0435\u0447\u043D\u044B\u043C \u0441\u043B\u043E\u0435\u043C \u0438 \u0431\u0435\u0437 \u043A\u043B\u0430\u043F\u0430\u043D\u043E\u0432" },
     aliases: { pl: ["t\u0119tnica"], ru: ["\u0430\u0440\u0442\u0435\u0440\u0438\u044F"] },
@@ -2555,6 +2715,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "zyly",
+    paragraph: P.circulation.structure,
     name: { pl: "\u017Cy\u0142y", ru: "\u0432\u0435\u043D\u044B" },
     role: { pl: "prowadzenie krwi do serca, z zastawkami zapobiegaj\u0105cymi cofaniu", ru: "\u043F\u0440\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u043A\u0440\u043E\u0432\u0438 \u043A \u0441\u0435\u0440\u0434\u0446\u0443, \u0441 \u043A\u043B\u0430\u043F\u0430\u043D\u0430\u043C\u0438 \u043F\u0440\u043E\u0442\u0438\u0432 \u043E\u0431\u0440\u0430\u0442\u043D\u043E\u0433\u043E \u0442\u043E\u043A\u0430" },
     aliases: { pl: ["\u017Cy\u0142a"], ru: ["\u0432\u0435\u043D\u0430"] },
@@ -2562,6 +2723,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "naczynia-wlosowate",
+    paragraph: P.circulation.structure,
     name: { pl: "naczynia w\u0142osowate", ru: "\u043A\u0430\u043F\u0438\u043B\u043B\u044F\u0440\u044B" },
     role: { pl: "wymiana gaz\xF3w i substancji mi\u0119dzy krwi\u0105 a tkankami przez jedn\u0105 warstw\u0119 kom\xF3rek", ru: "\u043E\u0431\u043C\u0435\u043D \u0433\u0430\u0437\u043E\u0432 \u0438 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 \u043C\u0435\u0436\u0434\u0443 \u043A\u0440\u043E\u0432\u044C\u044E \u0438 \u0442\u043A\u0430\u043D\u044F\u043C\u0438 \u0447\u0435\u0440\u0435\u0437 \u043E\u0434\u0438\u043D \u0441\u043B\u043E\u0439 \u043A\u043B\u0435\u0442\u043E\u043A" },
     aliases: { pl: ["kapilary", "naczynie w\u0142osowate"], ru: ["\u043A\u0430\u043F\u0438\u043B\u043B\u044F\u0440"] },
@@ -2569,6 +2731,7 @@ var HEART_AND_VESSELS = [
   },
   {
     id: "uklad-limfatyczny",
+    paragraph: P.circulation.lymph,
     name: { pl: "naczynia limfatyczne", ru: "\u043B\u0438\u043C\u0444\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0441\u043E\u0441\u0443\u0434\u044B" },
     role: { pl: "odprowadzanie nadmiaru p\u0142ynu tkankowego z powrotem do krwiobiegu", ru: "\u043E\u0442\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u0438\u0437\u0431\u044B\u0442\u043A\u0430 \u0442\u043A\u0430\u043D\u0435\u0432\u043E\u0439 \u0436\u0438\u0434\u043A\u043E\u0441\u0442\u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u043E \u0432 \u043A\u0440\u043E\u0432\u043E\u0442\u043E\u043A" },
     aliases: { pl: ["uk\u0142ad limfatyczny"], ru: ["\u043B\u0438\u043C\u0444\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430"] },
@@ -2578,6 +2741,7 @@ var HEART_AND_VESSELS = [
 var BLOOD_COMPONENTS = [
   {
     id: "erytrocyty",
+    paragraph: P.circulation.blood,
     name: { pl: "erytrocyty", ru: "\u044D\u0440\u0438\u0442\u0440\u043E\u0446\u0438\u0442\u044B" },
     role: { pl: "transport tlenu dzi\u0119ki hemoglobinie, bez j\u0105dra kom\xF3rkowego", ru: "\u0442\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442 \u043A\u0438\u0441\u043B\u043E\u0440\u043E\u0434\u0430 \u0431\u043B\u0430\u0433\u043E\u0434\u0430\u0440\u044F \u0433\u0435\u043C\u043E\u0433\u043B\u043E\u0431\u0438\u043D\u0443, \u0431\u0435\u0437 \u043A\u043B\u0435\u0442\u043E\u0447\u043D\u043E\u0433\u043E \u044F\u0434\u0440\u0430" },
     aliases: { pl: ["krwinki czerwone", "erytrocyt"], ru: ["\u043A\u0440\u0430\u0441\u043D\u044B\u0435 \u043A\u0440\u043E\u0432\u044F\u043D\u044B\u0435 \u043A\u043B\u0435\u0442\u043A\u0438", "\u044D\u0440\u0438\u0442\u0440\u043E\u0446\u0438\u0442"] },
@@ -2585,6 +2749,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "leukocyty",
+    paragraph: P.circulation.blood,
     name: { pl: "leukocyty", ru: "\u043B\u0435\u0439\u043A\u043E\u0446\u0438\u0442\u044B" },
     role: { pl: "obrona organizmu przed patogenami", ru: "\u0437\u0430\u0449\u0438\u0442\u0430 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C\u0430 \u043E\u0442 \u043F\u0430\u0442\u043E\u0433\u0435\u043D\u043E\u0432" },
     aliases: { pl: ["krwinki bia\u0142e", "leukocyt"], ru: ["\u0431\u0435\u043B\u044B\u0435 \u043A\u0440\u043E\u0432\u044F\u043D\u044B\u0435 \u043A\u043B\u0435\u0442\u043A\u0438", "\u043B\u0435\u0439\u043A\u043E\u0446\u0438\u0442"] },
@@ -2592,6 +2757,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "trombocyty",
+    paragraph: P.circulation.blood,
     name: { pl: "trombocyty", ru: "\u0442\u0440\u043E\u043C\u0431\u043E\u0446\u0438\u0442\u044B" },
     role: { pl: "udzia\u0142 w krzepni\u0119ciu krwi jako fragmenty kom\xF3rek szpiku", ru: "\u0443\u0447\u0430\u0441\u0442\u0438\u0435 \u0432 \u0441\u0432\u0451\u0440\u0442\u044B\u0432\u0430\u043D\u0438\u0438 \u043A\u0440\u043E\u0432\u0438 \u043A\u0430\u043A \u0444\u0440\u0430\u0433\u043C\u0435\u043D\u0442\u044B \u043A\u043B\u0435\u0442\u043E\u043A \u043A\u043E\u0441\u0442\u043D\u043E\u0433\u043E \u043C\u043E\u0437\u0433\u0430" },
     aliases: { pl: ["p\u0142ytki krwi", "trombocyt"], ru: ["\u043A\u0440\u043E\u0432\u044F\u043D\u044B\u0435 \u043F\u043B\u0430\u0441\u0442\u0438\u043D\u043A\u0438", "\u0442\u0440\u043E\u043C\u0431\u043E\u0446\u0438\u0442"] },
@@ -2599,6 +2765,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "osocze",
+    paragraph: P.circulation.blood,
     name: { pl: "osocze", ru: "\u043F\u043B\u0430\u0437\u043C\u0430 \u043A\u0440\u043E\u0432\u0438" },
     role: { pl: "p\u0142ynna cz\u0119\u015B\u0107 krwi, w ponad 90% z\u0142o\u017Cona z wody", ru: "\u0436\u0438\u0434\u043A\u0430\u044F \u0447\u0430\u0441\u0442\u044C \u043A\u0440\u043E\u0432\u0438, \u0431\u043E\u043B\u0435\u0435 \u0447\u0435\u043C \u043D\u0430 90% \u0441\u043E\u0441\u0442\u043E\u044F\u0449\u0430\u044F \u0438\u0437 \u0432\u043E\u0434\u044B" },
     aliases: { pl: [], ru: ["\u043F\u043B\u0430\u0437\u043C\u0430"] },
@@ -2606,6 +2773,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "fibrynogen",
+    paragraph: P.circulation.blood,
     name: { pl: "fibrynogen", ru: "\u0444\u0438\u0431\u0440\u0438\u043D\u043E\u0433\u0435\u043D" },
     role: { pl: "bia\u0142ko osocza przekszta\u0142cane w fibryn\u0119 podczas krzepni\u0119cia", ru: "\u0431\u0435\u043B\u043E\u043A \u043F\u043B\u0430\u0437\u043C\u044B, \u043F\u0440\u0435\u0432\u0440\u0430\u0449\u0430\u044E\u0449\u0438\u0439\u0441\u044F \u0432 \u0444\u0438\u0431\u0440\u0438\u043D \u043F\u0440\u0438 \u0441\u0432\u0451\u0440\u0442\u044B\u0432\u0430\u043D\u0438\u0438" },
     aliases: { pl: [], ru: [] },
@@ -2613,6 +2781,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "limfocyty-b",
+    paragraph: P.circulation.immune,
     name: { pl: "limfocyty B", ru: "B-\u043B\u0438\u043C\u0444\u043E\u0446\u0438\u0442\u044B" },
     role: { pl: "wytwarzanie przeciwcia\u0142 po przekszta\u0142ceniu w kom\xF3rki plazmatyczne", ru: "\u0432\u044B\u0440\u0430\u0431\u043E\u0442\u043A\u0430 \u0430\u043D\u0442\u0438\u0442\u0435\u043B \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u0435\u0432\u0440\u0430\u0449\u0435\u043D\u0438\u044F \u0432 \u043F\u043B\u0430\u0437\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u043A\u043B\u0435\u0442\u043A\u0438" },
     aliases: { pl: ["limfocyt B"], ru: ["B-\u043B\u0438\u043C\u0444\u043E\u0446\u0438\u0442"] },
@@ -2620,6 +2789,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "limfocyty-t",
+    paragraph: P.circulation.immune,
     name: { pl: "limfocyty T", ru: "T-\u043B\u0438\u043C\u0444\u043E\u0446\u0438\u0442\u044B" },
     role: { pl: "niszczenie kom\xF3rek zaka\u017Conych i sterowanie odpowiedzi\u0105 odporno\u015Bciow\u0105", ru: "\u0443\u043D\u0438\u0447\u0442\u043E\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u0440\u0430\u0436\u0451\u043D\u043D\u044B\u0445 \u043A\u043B\u0435\u0442\u043E\u043A \u0438 \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0438\u043C\u043C\u0443\u043D\u043D\u044B\u043C \u043E\u0442\u0432\u0435\u0442\u043E\u043C" },
     aliases: { pl: ["limfocyt T"], ru: ["T-\u043B\u0438\u043C\u0444\u043E\u0446\u0438\u0442"] },
@@ -2627,6 +2797,7 @@ var BLOOD_COMPONENTS = [
   },
   {
     id: "makrofagi",
+    paragraph: P.circulation.immune,
     name: { pl: "makrofagi", ru: "\u043C\u0430\u043A\u0440\u043E\u0444\u0430\u0433\u0438" },
     role: { pl: "fagocytoza patogen\xF3w i prezentowanie ich antygen\xF3w", ru: "\u0444\u0430\u0433\u043E\u0446\u0438\u0442\u043E\u0437 \u043F\u0430\u0442\u043E\u0433\u0435\u043D\u043E\u0432 \u0438 \u043F\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0438\u0445 \u0430\u043D\u0442\u0438\u0433\u0435\u043D\u043E\u0432" },
     aliases: { pl: ["makrofag"], ru: ["\u043C\u0430\u043A\u0440\u043E\u0444\u0430\u0433"] },
@@ -2760,6 +2931,7 @@ var immunityTemplates = pairFromTable({
   topicId: TOPIC2,
   slug: "immunity",
   rows: IMMUNITY,
+  paragraph: P.circulation.immunity,
   subtopic: DEFENCE,
   shift: 2,
   label: { pl: "Rodzaj odporno\u015Bci", ru: "\u0412\u0438\u0434 \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442\u0430" },
@@ -2772,6 +2944,7 @@ var transfusion = choiceFromTable({
   id: `${TOPIC2}.transfusion`,
   topicId: TOPIC2,
   rows: BLOOD_GROUPS,
+  paragraph: P.circulation.blood,
   subtopic: GROUPS,
   difficulty: tier2,
   shift: 0,
@@ -2788,6 +2961,7 @@ var antigens = choiceFromTable({
   id: `${TOPIC2}.group-to-antigens`,
   topicId: TOPIC2,
   rows: BLOOD_GROUPS,
+  paragraph: P.circulation.blood,
   subtopic: GROUPS,
   difficulty: tier2,
   shift: 2,
@@ -2799,6 +2973,7 @@ var antigens = choiceFromTable({
 var cardiacOutput = calcTemplate({
   id: `${TOPIC2}.cardiac-output`,
   topicId: TOPIC2,
+  paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
   difficulty: 1,
@@ -2813,6 +2988,7 @@ var cardiacOutput = calcTemplate({
 var strokeVolume = calcTemplate({
   id: `${TOPIC2}.stroke-volume`,
   topicId: TOPIC2,
+  paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
   difficulty: 2,
@@ -2826,6 +3002,7 @@ var strokeVolume = calcTemplate({
 var ejectionFraction = calcTemplate({
   id: `${TOPIC2}.ejection-fraction`,
   topicId: TOPIC2,
+  paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
   difficulty: 3,
@@ -2924,6 +3101,7 @@ var TISSUES = [
 var TRANSPORT_AND_REGULATION = [
   {
     id: "homeostaza",
+    paragraph: P.organism.homeostasis,
     name: { pl: "homeostaza", ru: "\u0433\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437" },
     role: { pl: "utrzymywanie sta\u0142o\u015Bci \u015Brodowiska wewn\u0119trznego mimo zmian na zewn\u0105trz", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u0441\u0442\u0432\u0430 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0440\u0435\u0434\u044B \u043D\u0435\u0441\u043C\u043E\u0442\u0440\u044F \u043D\u0430 \u0432\u043D\u0435\u0448\u043D\u0438\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F" },
     aliases: { pl: [], ru: [] },
@@ -2931,6 +3109,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "sprzezenie-ujemne",
+    paragraph: P.organism.homeostasis,
     name: { pl: "ujemne sprz\u0119\u017Cenie zwrotne", ru: "\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" },
     role: { pl: "wygaszanie odchylenia przez reakcj\u0119 dzia\u0142aj\u0105c\u0105 w przeciwnym kierunku", ru: "\u0433\u0430\u0448\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u0432\u0435\u0442\u043E\u043C, \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0432 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u0443\u044E \u0441\u0442\u043E\u0440\u043E\u043D\u0443" },
     aliases: { pl: ["sprz\u0119\u017Cenie zwrotne ujemne"], ru: ["\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C"] },
@@ -2938,6 +3117,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "sprzezenie-dodatnie",
+    paragraph: P.organism.homeostasis,
     name: { pl: "dodatnie sprz\u0119\u017Cenie zwrotne", ru: "\u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" },
     role: { pl: "wzmacnianie odchylenia a\u017C do zako\u0144czenia procesu, jak przy porodzie", ru: "\u0443\u0441\u0438\u043B\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044F \u0434\u043E \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430, \u043A\u0430\u043A \u043F\u0440\u0438 \u0440\u043E\u0434\u0430\u0445" },
     aliases: { pl: ["sprz\u0119\u017Cenie zwrotne dodatnie"], ru: ["\u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C"] },
@@ -2945,6 +3125,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "dyfuzja",
+    paragraph: P.organism.hierarchy,
     name: { pl: "dyfuzja", ru: "\u0434\u0438\u0444\u0444\u0443\u0437\u0438\u044F" },
     role: { pl: "samorzutny ruch cz\u0105steczek zgodnie z gradientem st\u0119\u017Ce\u0144, bez nak\u0142adu energii", ru: "\u0441\u0430\u043C\u043E\u043F\u0440\u043E\u0438\u0437\u0432\u043E\u043B\u044C\u043D\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u043C\u043E\u043B\u0435\u043A\u0443\u043B \u043F\u043E \u0433\u0440\u0430\u0434\u0438\u0435\u043D\u0442\u0443 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438, \u0431\u0435\u0437 \u0437\u0430\u0442\u0440\u0430\u0442 \u044D\u043D\u0435\u0440\u0433\u0438\u0438" },
     aliases: { pl: [], ru: [] },
@@ -2952,6 +3133,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "osmoza",
+    paragraph: P.organism.hierarchy,
     name: { pl: "osmoza", ru: "\u043E\u0441\u043C\u043E\u0441" },
     role: { pl: "przenikanie wody przez b\u0142on\u0119 p\xF3\u0142przepuszczaln\u0105 do roztworu bardziej st\u0119\u017Conego", ru: "\u043F\u0435\u0440\u0435\u0445\u043E\u0434 \u0432\u043E\u0434\u044B \u0447\u0435\u0440\u0435\u0437 \u043F\u043E\u043B\u0443\u043F\u0440\u043E\u043D\u0438\u0446\u0430\u0435\u043C\u0443\u044E \u043C\u0435\u043C\u0431\u0440\u0430\u043D\u0443 \u0432 \u0431\u043E\u043B\u0435\u0435 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u0440\u0430\u0441\u0442\u0432\u043E\u0440" },
     aliases: { pl: [], ru: [] },
@@ -2959,6 +3141,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "transport-aktywny",
+    paragraph: P.organism.hierarchy,
     name: { pl: "transport aktywny", ru: "\u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0439 \u0442\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442" },
     role: { pl: "przenoszenie substancji wbrew gradientowi st\u0119\u017Ce\u0144 kosztem ATP", ru: "\u043F\u0435\u0440\u0435\u043D\u043E\u0441 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 \u043F\u0440\u043E\u0442\u0438\u0432 \u0433\u0440\u0430\u0434\u0438\u0435\u043D\u0442\u0430 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438 \u0437\u0430 \u0441\u0447\u0451\u0442 \u0410\u0422\u0424" },
     aliases: { pl: [], ru: [] },
@@ -2966,6 +3149,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "endocytoza",
+    paragraph: P.organism.hierarchy,
     name: { pl: "endocytoza", ru: "\u044D\u043D\u0434\u043E\u0446\u0438\u0442\u043E\u0437" },
     role: { pl: "pobieranie du\u017Cych cz\u0105stek przez wpuklenie b\u0142ony kom\xF3rkowej", ru: "\u043F\u043E\u0433\u043B\u043E\u0449\u0435\u043D\u0438\u0435 \u043A\u0440\u0443\u043F\u043D\u044B\u0445 \u0447\u0430\u0441\u0442\u0438\u0446 \u0447\u0435\u0440\u0435\u0437 \u0432\u043F\u044F\u0447\u0438\u0432\u0430\u043D\u0438\u0435 \u043A\u043B\u0435\u0442\u043E\u0447\u043D\u043E\u0439 \u043C\u0435\u043C\u0431\u0440\u0430\u043D\u044B" },
     aliases: { pl: ["fagocytoza"], ru: ["\u0444\u0430\u0433\u043E\u0446\u0438\u0442\u043E\u0437"] },
@@ -2973,6 +3157,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "narzad",
+    paragraph: P.organism.hierarchy,
     name: { pl: "narz\u0105d", ru: "\u043E\u0440\u0433\u0430\u043D" },
     role: { pl: "zesp\xF3\u0142 r\xF3\u017Cnych tkanek pe\u0142ni\u0105cy wsp\xF3lnie okre\u015Blon\u0105 funkcj\u0119", ru: "\u0441\u043E\u0432\u043E\u043A\u0443\u043F\u043D\u043E\u0441\u0442\u044C \u0440\u0430\u0437\u043D\u044B\u0445 \u0442\u043A\u0430\u043D\u0435\u0439, \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u043D\u043E \u0432\u044B\u043F\u043E\u043B\u043D\u044F\u044E\u0449\u0438\u0445 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0451\u043D\u043D\u0443\u044E \u0444\u0443\u043D\u043A\u0446\u0438\u044E" },
     aliases: { pl: [], ru: [] },
@@ -2980,6 +3165,7 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "uklad-narzadow",
+    paragraph: P.organism.hierarchy,
     name: { pl: "uk\u0142ad narz\u0105d\xF3w", ru: "\u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u043E\u0440\u0433\u0430\u043D\u043E\u0432" },
     role: { pl: "zesp\xF3\u0142 narz\u0105d\xF3w wsp\xF3\u0142pracuj\u0105cych w jednym procesie \u017Cyciowym", ru: "\u0441\u043E\u0432\u043E\u043A\u0443\u043F\u043D\u043E\u0441\u0442\u044C \u043E\u0440\u0433\u0430\u043D\u043E\u0432, \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0449\u0438\u0445 \u0432\u043C\u0435\u0441\u0442\u0435 \u0432 \u043E\u0434\u043D\u043E\u043C \u0436\u0438\u0437\u043D\u0435\u043D\u043D\u043E\u043C \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435" },
     aliases: { pl: [], ru: [] },
@@ -3077,6 +3263,7 @@ var SKIN_PARTS = [
 var MOTION_PARTS = [
   {
     id: "okostna",
+    paragraph: P.motion.skeleton,
     name: { pl: "okostna", ru: "\u043D\u0430\u0434\u043A\u043E\u0441\u0442\u043D\u0438\u0446\u0430" },
     role: { pl: "od\u017Cywianie ko\u015Bci i odtwarzanie jej po z\u0142amaniu", ru: "\u043F\u0438\u0442\u0430\u043D\u0438\u0435 \u043A\u043E\u0441\u0442\u0438 \u0438 \u0435\u0451 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u043B\u043E\u043C\u0430" },
     aliases: { pl: [], ru: [] },
@@ -3084,6 +3271,7 @@ var MOTION_PARTS = [
   },
   {
     id: "istota-zbita",
+    paragraph: P.motion.skeleton,
     name: { pl: "istota zbita ko\u015Bci", ru: "\u043A\u043E\u043C\u043F\u0430\u043A\u0442\u043D\u043E\u0435 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u043E \u043A\u043E\u0441\u0442\u0438" },
     role: { pl: "przenoszenie obci\u0105\u017Ce\u0144 dzi\u0119ki g\u0119sto u\u0142o\u017Conym osteonom", ru: "\u0432\u043E\u0441\u043F\u0440\u0438\u044F\u0442\u0438\u0435 \u043D\u0430\u0433\u0440\u0443\u0437\u043E\u043A \u0431\u043B\u0430\u0433\u043E\u0434\u0430\u0440\u044F \u043F\u043B\u043E\u0442\u043D\u043E \u0443\u043B\u043E\u0436\u0435\u043D\u043D\u044B\u043C \u043E\u0441\u0442\u0435\u043E\u043D\u0430\u043C" },
     aliases: { pl: ["istota zbita"], ru: ["\u043A\u043E\u043C\u043F\u0430\u043A\u0442\u043D\u043E\u0435 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u043E"] },
@@ -3091,6 +3279,7 @@ var MOTION_PARTS = [
   },
   {
     id: "istota-gabczasta",
+    paragraph: P.motion.skeleton,
     name: { pl: "istota g\u0105bczasta ko\u015Bci", ru: "\u0433\u0443\u0431\u0447\u0430\u0442\u043E\u0435 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u043E \u043A\u043E\u0441\u0442\u0438" },
     role: { pl: "zmniejszanie masy ko\u015Bci przy zachowaniu wytrzyma\u0142o\u015Bci, z beleczkami wzd\u0142u\u017C linii si\u0142", ru: "\u0441\u043D\u0438\u0436\u0435\u043D\u0438\u0435 \u043C\u0430\u0441\u0441\u044B \u043A\u043E\u0441\u0442\u0438 \u043F\u0440\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438 \u043F\u0440\u043E\u0447\u043D\u043E\u0441\u0442\u0438, \u0441 \u0431\u0430\u043B\u043A\u0430\u043C\u0438 \u0432\u0434\u043E\u043B\u044C \u043B\u0438\u043D\u0438\u0439 \u043D\u0430\u0433\u0440\u0443\u0437\u043A\u0438" },
     aliases: { pl: ["istota g\u0105bczasta"], ru: ["\u0433\u0443\u0431\u0447\u0430\u0442\u043E\u0435 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u043E"] },
@@ -3098,6 +3287,7 @@ var MOTION_PARTS = [
   },
   {
     id: "szpik-czerwony",
+    paragraph: P.motion.skeleton,
     name: { pl: "szpik kostny czerwony", ru: "\u043A\u0440\u0430\u0441\u043D\u044B\u0439 \u043A\u043E\u0441\u0442\u043D\u044B\u0439 \u043C\u043E\u0437\u0433" },
     role: { pl: "wytwarzanie kom\xF3rek krwi", ru: "\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u0435 \u043A\u043B\u0435\u0442\u043E\u043A \u043A\u0440\u043E\u0432\u0438" },
     aliases: { pl: ["szpik czerwony"], ru: ["\u043A\u0440\u0430\u0441\u043D\u044B\u0439 \u043C\u043E\u0437\u0433"] },
@@ -3105,6 +3295,7 @@ var MOTION_PARTS = [
   },
   {
     id: "chrzastka-stawowa",
+    paragraph: P.motion.joints,
     name: { pl: "chrz\u0105stka stawowa", ru: "\u0441\u0443\u0441\u0442\u0430\u0432\u043D\u043E\u0439 \u0445\u0440\u044F\u0449" },
     role: { pl: "zmniejszanie tarcia mi\u0119dzy ko\u015B\u0107mi w stawie", ru: "\u0441\u043D\u0438\u0436\u0435\u043D\u0438\u0435 \u0442\u0440\u0435\u043D\u0438\u044F \u043C\u0435\u0436\u0434\u0443 \u043A\u043E\u0441\u0442\u044F\u043C\u0438 \u0432 \u0441\u0443\u0441\u0442\u0430\u0432\u0435" },
     aliases: { pl: [], ru: [] },
@@ -3112,6 +3303,7 @@ var MOTION_PARTS = [
   },
   {
     id: "maz-stawowa",
+    paragraph: P.motion.joints,
     name: { pl: "ma\u017A stawowa", ru: "\u0441\u0438\u043D\u043E\u0432\u0438\u0430\u043B\u044C\u043D\u0430\u044F \u0436\u0438\u0434\u043A\u043E\u0441\u0442\u044C" },
     role: { pl: "nawil\u017Canie i od\u017Cywianie chrz\u0105stki wewn\u0105trz jamy stawowej", ru: "\u0443\u0432\u043B\u0430\u0436\u043D\u0435\u043D\u0438\u0435 \u0438 \u043F\u0438\u0442\u0430\u043D\u0438\u0435 \u0445\u0440\u044F\u0449\u0430 \u0432\u043D\u0443\u0442\u0440\u0438 \u0441\u0443\u0441\u0442\u0430\u0432\u043D\u043E\u0439 \u043F\u043E\u043B\u043E\u0441\u0442\u0438" },
     aliases: { pl: ["p\u0142yn stawowy"], ru: ["\u0441\u0438\u043D\u043E\u0432\u0438\u044F"] },
@@ -3119,6 +3311,7 @@ var MOTION_PARTS = [
   },
   {
     id: "wiezadla",
+    paragraph: P.motion.joints,
     name: { pl: "wi\u0119zad\u0142a", ru: "\u0441\u0432\u044F\u0437\u043A\u0438" },
     role: { pl: "wzmacnianie stawu przez po\u0142\u0105czenie ko\u015Bci ze sob\u0105", ru: "\u0443\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0438\u0435 \u0441\u0443\u0441\u0442\u0430\u0432\u0430 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u0435\u043C \u043A\u043E\u0441\u0442\u0435\u0439 \u043C\u0435\u0436\u0434\u0443 \u0441\u043E\u0431\u043E\u0439" },
     aliases: { pl: ["wi\u0119zad\u0142o"], ru: ["\u0441\u0432\u044F\u0437\u043A\u0430"] },
@@ -3126,6 +3319,7 @@ var MOTION_PARTS = [
   },
   {
     id: "sciegno",
+    paragraph: P.motion.muscles,
     name: { pl: "\u015Bci\u0119gno", ru: "\u0441\u0443\u0445\u043E\u0436\u0438\u043B\u0438\u0435" },
     role: { pl: "przenoszenie si\u0142y skurczu mi\u0119\u015Bnia na ko\u015B\u0107", ru: "\u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u0441\u0438\u043B\u044B \u0441\u043E\u043A\u0440\u0430\u0449\u0435\u043D\u0438\u044F \u043C\u044B\u0448\u0446\u044B \u043D\u0430 \u043A\u043E\u0441\u0442\u044C" },
     aliases: { pl: ["\u015Bci\u0119gna"], ru: ["\u0441\u0443\u0445\u043E\u0436\u0438\u043B\u0438\u044F"] },
@@ -3133,6 +3327,7 @@ var MOTION_PARTS = [
   },
   {
     id: "sarkomer",
+    paragraph: P.motion.muscles,
     name: { pl: "sarkomer", ru: "\u0441\u0430\u0440\u043A\u043E\u043C\u0435\u0440" },
     role: { pl: "podstawowa jednostka kurczliwa mi\u0119\u015Bnia mi\u0119dzy dwiema liniami Z", ru: "\u043E\u0441\u043D\u043E\u0432\u043D\u0430\u044F \u0441\u043E\u043A\u0440\u0430\u0442\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0435\u0434\u0438\u043D\u0438\u0446\u0430 \u043C\u044B\u0448\u0446\u044B \u043C\u0435\u0436\u0434\u0443 \u0434\u0432\u0443\u043C\u044F Z-\u043B\u0438\u043D\u0438\u044F\u043C\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3140,6 +3335,7 @@ var MOTION_PARTS = [
   },
   {
     id: "aktyna-miozyna",
+    paragraph: P.motion.muscles,
     name: { pl: "aktyna i miozyna", ru: "\u0430\u043A\u0442\u0438\u043D \u0438 \u043C\u0438\u043E\u0437\u0438\u043D" },
     role: { pl: "wsuwanie si\u0119 filament\xF3w wzgl\u0119dem siebie, co skraca w\u0142\xF3kno mi\u0119\u015Bniowe", ru: "\u0441\u043A\u043E\u043B\u044C\u0436\u0435\u043D\u0438\u0435 \u0444\u0438\u043B\u0430\u043C\u0435\u043D\u0442\u043E\u0432 \u0434\u0440\u0443\u0433 \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u0434\u0440\u0443\u0433\u0430, \u0443\u043A\u043E\u0440\u0430\u0447\u0438\u0432\u0430\u044E\u0449\u0435\u0435 \u043C\u044B\u0448\u0435\u0447\u043D\u043E\u0435 \u0432\u043E\u043B\u043E\u043A\u043D\u043E" },
     aliases: { pl: ["miofilamenty"], ru: ["\u043C\u0438\u043E\u0444\u0438\u043B\u0430\u043C\u0435\u043D\u0442\u044B"] },
@@ -3147,6 +3343,7 @@ var MOTION_PARTS = [
   },
   {
     id: "antagonisci",
+    paragraph: P.motion.muscles,
     name: { pl: "mi\u0119\u015Bnie antagonistyczne", ru: "\u043C\u044B\u0448\u0446\u044B-\u0430\u043D\u0442\u0430\u0433\u043E\u043D\u0438\u0441\u0442\u044B" },
     role: { pl: "wykonywanie ruch\xF3w przeciwstawnych, jak zginanie i prostowanie", ru: "\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u044B\u0445 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0439, \u0442\u0430\u043A\u0438\u0445 \u043A\u0430\u043A \u0441\u0433\u0438\u0431\u0430\u043D\u0438\u0435 \u0438 \u0440\u0430\u0437\u0433\u0438\u0431\u0430\u043D\u0438\u0435" },
     aliases: { pl: ["antagoni\u015Bci"], ru: ["\u0430\u043D\u0442\u0430\u0433\u043E\u043D\u0438\u0441\u0442\u044B"] },
@@ -3154,6 +3351,7 @@ var MOTION_PARTS = [
   },
   {
     id: "szkielet-osiowy",
+    paragraph: P.motion.bones,
     name: { pl: "szkielet osiowy", ru: "\u043E\u0441\u0435\u0432\u043E\u0439 \u0441\u043A\u0435\u043B\u0435\u0442" },
     role: { pl: "czaszka, kr\u0119gos\u0142up i klatka piersiowa, os\u0142aniaj\u0105ce narz\u0105dy wewn\u0119trzne", ru: "\u0447\u0435\u0440\u0435\u043F, \u043F\u043E\u0437\u0432\u043E\u043D\u043E\u0447\u043D\u0438\u043A \u0438 \u0433\u0440\u0443\u0434\u043D\u0430\u044F \u043A\u043B\u0435\u0442\u043A\u0430, \u0437\u0430\u0449\u0438\u0449\u0430\u044E\u0449\u0438\u0435 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0435 \u043E\u0440\u0433\u0430\u043D\u044B" },
     aliases: { pl: [], ru: [] },
@@ -3163,6 +3361,7 @@ var MOTION_PARTS = [
 var DIGESTIVE_ORGANS = [
   {
     id: "slinianki",
+    paragraph: P.digestion.structure,
     name: { pl: "\u015Blinianki", ru: "\u0441\u043B\u044E\u043D\u043D\u044B\u0435 \u0436\u0435\u043B\u0435\u0437\u044B" },
     role: { pl: "wydzielanie \u015Bliny z amylaz\u0105, rozpoczynaj\u0105c\u0105 trawienie skrobi", ru: "\u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0441\u043B\u044E\u043D\u044B \u0441 \u0430\u043C\u0438\u043B\u0430\u0437\u043E\u0439, \u043D\u0430\u0447\u0438\u043D\u0430\u044E\u0449\u0435\u0439 \u043F\u0435\u0440\u0435\u0432\u0430\u0440\u0438\u0432\u0430\u043D\u0438\u0435 \u043A\u0440\u0430\u0445\u043C\u0430\u043B\u0430" },
     aliases: { pl: ["gruczo\u0142y \u015Blinowe"], ru: ["\u0441\u043B\u044E\u043D\u043D\u0430\u044F \u0436\u0435\u043B\u0435\u0437\u0430"] },
@@ -3170,6 +3369,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "przelyk",
+    paragraph: P.digestion.structure,
     name: { pl: "prze\u0142yk", ru: "\u043F\u0438\u0449\u0435\u0432\u043E\u0434" },
     role: { pl: "przesuwanie k\u0119sa do \u017Co\u0142\u0105dka ruchami perystaltycznymi", ru: "\u043F\u0440\u043E\u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u043F\u0438\u0449\u0435\u0432\u043E\u0433\u043E \u043A\u043E\u043C\u043A\u0430 \u0432 \u0436\u0435\u043B\u0443\u0434\u043E\u043A \u043F\u0435\u0440\u0438\u0441\u0442\u0430\u043B\u044C\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u043C\u0438 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u044F\u043C\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3177,6 +3377,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "zoladek",
+    paragraph: P.digestion.structure,
     name: { pl: "\u017Co\u0142\u0105dek", ru: "\u0436\u0435\u043B\u0443\u0434\u043E\u043A" },
     role: { pl: "trawienie bia\u0142ek w kwa\u015Bnym \u015Brodowisku kwasu solnego", ru: "\u043F\u0435\u0440\u0435\u0432\u0430\u0440\u0438\u0432\u0430\u043D\u0438\u0435 \u0431\u0435\u043B\u043A\u043E\u0432 \u0432 \u043A\u0438\u0441\u043B\u043E\u0439 \u0441\u0440\u0435\u0434\u0435 \u0441\u043E\u043B\u044F\u043D\u043E\u0439 \u043A\u0438\u0441\u043B\u043E\u0442\u044B" },
     aliases: { pl: [], ru: [] },
@@ -3184,6 +3385,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "dwunastnica",
+    paragraph: P.digestion.structure,
     name: { pl: "dwunastnica", ru: "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u0438\u043F\u0435\u0440\u0441\u0442\u043D\u0430\u044F \u043A\u0438\u0448\u043A\u0430" },
     role: { pl: "przyjmowanie soku trzustkowego i \u017C\xF3\u0142ci, gdzie zachodzi wi\u0119kszo\u015B\u0107 trawienia", ru: "\u043F\u0440\u0438\u0451\u043C \u043F\u0430\u043D\u043A\u0440\u0435\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0433\u043E \u0441\u043E\u043A\u0430 \u0438 \u0436\u0451\u043B\u0447\u0438, \u0433\u0434\u0435 \u0438\u0434\u0451\u0442 \u0431\u043E\u043B\u044C\u0448\u0430\u044F \u0447\u0430\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u0432\u0430\u0440\u0438\u0432\u0430\u043D\u0438\u044F" },
     aliases: { pl: [], ru: [] },
@@ -3191,6 +3393,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "jelito-cienkie",
+    paragraph: P.digestion.structure,
     name: { pl: "jelito cienkie", ru: "\u0442\u043E\u043D\u043A\u0430\u044F \u043A\u0438\u0448\u043A\u0430" },
     role: { pl: "wch\u0142anianie strawionych sk\u0142adnik\xF3w przez kosmki jelitowe", ru: "\u0432\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435 \u043F\u0435\u0440\u0435\u0432\u0430\u0440\u0435\u043D\u043D\u044B\u0445 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 \u0447\u0435\u0440\u0435\u0437 \u043A\u0438\u0448\u0435\u0447\u043D\u044B\u0435 \u0432\u043E\u0440\u0441\u0438\u043D\u043A\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3198,6 +3401,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "kosmki",
+    paragraph: P.digestion.structure,
     name: { pl: "kosmki jelitowe", ru: "\u043A\u0438\u0448\u0435\u0447\u043D\u044B\u0435 \u0432\u043E\u0440\u0441\u0438\u043D\u043A\u0438" },
     role: { pl: "wielokrotne zwi\u0119kszanie powierzchni wch\u0142aniania", ru: "\u043C\u043D\u043E\u0433\u043E\u043A\u0440\u0430\u0442\u043D\u043E\u0435 \u0443\u0432\u0435\u043B\u0438\u0447\u0435\u043D\u0438\u0435 \u043F\u043E\u0432\u0435\u0440\u0445\u043D\u043E\u0441\u0442\u0438 \u0432\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u044F" },
     aliases: { pl: ["kosmek jelitowy"], ru: ["\u0432\u043E\u0440\u0441\u0438\u043D\u043A\u0430"] },
@@ -3205,6 +3409,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "jelito-grube",
+    paragraph: P.digestion.structure,
     name: { pl: "jelito grube", ru: "\u0442\u043E\u043B\u0441\u0442\u0430\u044F \u043A\u0438\u0448\u043A\u0430" },
     role: { pl: "wch\u0142anianie wody i zag\u0119szczanie resztek pokarmowych", ru: "\u0432\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435 \u0432\u043E\u0434\u044B \u0438 \u0441\u0433\u0443\u0449\u0435\u043D\u0438\u0435 \u043D\u0435\u043F\u0435\u0440\u0435\u0432\u0430\u0440\u0435\u043D\u043D\u044B\u0445 \u043E\u0441\u0442\u0430\u0442\u043A\u043E\u0432" },
     aliases: { pl: [], ru: [] },
@@ -3212,6 +3417,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "watroba",
+    paragraph: P.digestion.structure,
     name: { pl: "w\u0105troba", ru: "\u043F\u0435\u0447\u0435\u043D\u044C" },
     role: { pl: "wytwarzanie \u017C\xF3\u0142ci, odtruwanie i magazynowanie glikogenu", ru: "\u0432\u044B\u0440\u0430\u0431\u043E\u0442\u043A\u0430 \u0436\u0451\u043B\u0447\u0438, \u043E\u0431\u0435\u0437\u0432\u0440\u0435\u0436\u0438\u0432\u0430\u043D\u0438\u0435 \u0438 \u0437\u0430\u043F\u0430\u0441\u0430\u043D\u0438\u0435 \u0433\u043B\u0438\u043A\u043E\u0433\u0435\u043D\u0430" },
     aliases: { pl: [], ru: [] },
@@ -3219,6 +3425,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "zolc",
+    paragraph: P.digestion.processes,
     name: { pl: "\u017C\xF3\u0142\u0107", ru: "\u0436\u0451\u043B\u0447\u044C" },
     role: { pl: "emulgowanie t\u0142uszcz\xF3w, bez udzia\u0142u w\u0142asnych enzym\xF3w", ru: "\u044D\u043C\u0443\u043B\u044C\u0433\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0436\u0438\u0440\u043E\u0432, \u0431\u0435\u0437 \u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0445 \u0444\u0435\u0440\u043C\u0435\u043D\u0442\u043E\u0432" },
     aliases: { pl: [], ru: ["\u0436\u0435\u043B\u0447\u044C"] },
@@ -3226,6 +3433,7 @@ var DIGESTIVE_ORGANS = [
   },
   {
     id: "trzustka",
+    paragraph: P.digestion.structure,
     name: { pl: "trzustka", ru: "\u043F\u043E\u0434\u0436\u0435\u043B\u0443\u0434\u043E\u0447\u043D\u0430\u044F \u0436\u0435\u043B\u0435\u0437\u0430" },
     role: { pl: "wydzielanie soku z enzymami trawi\u0105cymi wszystkie grupy sk\u0142adnik\xF3w pokarmowych", ru: "\u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0441\u043E\u043A\u0430 \u0441 \u0444\u0435\u0440\u043C\u0435\u043D\u0442\u0430\u043C\u0438, \u043F\u0435\u0440\u0435\u0432\u0430\u0440\u0438\u0432\u0430\u044E\u0449\u0438\u043C\u0438 \u0432\u0441\u0435 \u0433\u0440\u0443\u043F\u043F\u044B \u043F\u0438\u0442\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0432\u0435\u0449\u0435\u0441\u0442\u0432" },
     aliases: { pl: [], ru: [] },
@@ -3286,6 +3494,7 @@ var ENZYMES = [
 var NERVOUS_PARTS = [
   {
     id: "dendryt",
+    paragraph: P.nervous.structure,
     name: { pl: "dendryt", ru: "\u0434\u0435\u043D\u0434\u0440\u0438\u0442" },
     role: { pl: "odbieranie sygna\u0142\xF3w i przewodzenie ich w stron\u0119 cia\u0142a kom\xF3rki", ru: "\u043F\u0440\u0438\u0451\u043C \u0441\u0438\u0433\u043D\u0430\u043B\u043E\u0432 \u0438 \u043F\u0440\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u0438\u0445 \u043A \u0442\u0435\u043B\u0443 \u043A\u043B\u0435\u0442\u043A\u0438" },
     aliases: { pl: ["dendryty"], ru: ["\u0434\u0435\u043D\u0434\u0440\u0438\u0442\u044B"] },
@@ -3293,6 +3502,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "akson",
+    paragraph: P.nervous.structure,
     name: { pl: "akson", ru: "\u0430\u043A\u0441\u043E\u043D" },
     role: { pl: "przewodzenie impulsu od cia\u0142a kom\xF3rki do innych kom\xF3rek", ru: "\u043F\u0440\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u0438\u043C\u043F\u0443\u043B\u044C\u0441\u0430 \u043E\u0442 \u0442\u0435\u043B\u0430 \u043A\u043B\u0435\u0442\u043A\u0438 \u043A \u0434\u0440\u0443\u0433\u0438\u043C \u043A\u043B\u0435\u0442\u043A\u0430\u043C" },
     aliases: { pl: ["neuryt"], ru: ["\u043D\u0435\u0439\u0440\u0438\u0442"] },
@@ -3300,6 +3510,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "oslonka-mielinowa",
+    paragraph: P.nervous.structure,
     name: { pl: "os\u0142onka mielinowa", ru: "\u043C\u0438\u0435\u043B\u0438\u043D\u043E\u0432\u0430\u044F \u043E\u0431\u043E\u043B\u043E\u0447\u043A\u0430" },
     role: { pl: "przyspieszanie przewodzenia dzi\u0119ki przeskakiwaniu impulsu mi\u0119dzy przew\u0119\u017Ceniami", ru: "\u0443\u0441\u043A\u043E\u0440\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u0437\u0430 \u0441\u0447\u0451\u0442 \u0441\u043A\u0430\u0447\u043A\u043E\u0432 \u0438\u043C\u043F\u0443\u043B\u044C\u0441\u0430 \u043C\u0435\u0436\u0434\u0443 \u043F\u0435\u0440\u0435\u0445\u0432\u0430\u0442\u0430\u043C\u0438" },
     aliases: { pl: ["mielina"], ru: ["\u043C\u0438\u0435\u043B\u0438\u043D"] },
@@ -3307,6 +3518,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "synapsa",
+    paragraph: P.nervous.structure,
     name: { pl: "synapsa", ru: "\u0441\u0438\u043D\u0430\u043F\u0441" },
     role: { pl: "przekazywanie sygna\u0142u mi\u0119dzy kom\xF3rkami za pomoc\u0105 neuroprzeka\u017Anika", ru: "\u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u0441\u0438\u0433\u043D\u0430\u043B\u0430 \u043C\u0435\u0436\u0434\u0443 \u043A\u043B\u0435\u0442\u043A\u0430\u043C\u0438 \u0441 \u043F\u043E\u043C\u043E\u0449\u044C\u044E \u043D\u0435\u0439\u0440\u043E\u043C\u0435\u0434\u0438\u0430\u0442\u043E\u0440\u0430" },
     aliases: { pl: [], ru: [] },
@@ -3314,6 +3526,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "potencjal-spoczynkowy",
+    paragraph: P.nervous.structure,
     name: { pl: "potencja\u0142 spoczynkowy", ru: "\u043F\u043E\u0442\u0435\u043D\u0446\u0438\u0430\u043B \u043F\u043E\u043A\u043E\u044F" },
     role: { pl: "ujemny \u0142adunek wn\u0119trza kom\xF3rki utrzymywany przez pomp\u0119 sodowo-potasow\u0105", ru: "\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0437\u0430\u0440\u044F\u0434 \u0432\u043D\u0443\u0442\u0440\u0438 \u043A\u043B\u0435\u0442\u043A\u0438, \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0439 \u043D\u0430\u0442\u0440\u0438\u0439-\u043A\u0430\u043B\u0438\u0435\u0432\u044B\u043C \u043D\u0430\u0441\u043E\u0441\u043E\u043C" },
     aliases: { pl: [], ru: [] },
@@ -3321,6 +3534,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "potencjal-czynnosciowy",
+    paragraph: P.nervous.structure,
     name: { pl: "potencja\u0142 czynno\u015Bciowy", ru: "\u043F\u043E\u0442\u0435\u043D\u0446\u0438\u0430\u043B \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044F" },
     role: { pl: "gwa\u0142towna zmiana \u0142adunku po przekroczeniu progu, zgodna z zasad\u0105 wszystko albo nic", ru: "\u0440\u0435\u0437\u043A\u043E\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0437\u0430\u0440\u044F\u0434\u0430 \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u0435\u0432\u044B\u0448\u0435\u043D\u0438\u044F \u043F\u043E\u0440\u043E\u0433\u0430, \u043F\u043E \u043F\u0440\u0438\u043D\u0446\u0438\u043F\u0443 \xAB\u0432\u0441\u0451 \u0438\u043B\u0438 \u043D\u0438\u0447\u0435\u0433\u043E\xBB" },
     aliases: { pl: [], ru: [] },
@@ -3328,6 +3542,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "luk-odruchowy",
+    paragraph: P.nervous.peripheral,
     name: { pl: "\u0142uk odruchowy", ru: "\u0440\u0435\u0444\u043B\u0435\u043A\u0442\u043E\u0440\u043D\u0430\u044F \u0434\u0443\u0433\u0430" },
     role: { pl: "droga od receptora przez neurony do efektora, pomijaj\u0105ca \u015Bwiadom\u0105 decyzj\u0119", ru: "\u043F\u0443\u0442\u044C \u043E\u0442 \u0440\u0435\u0446\u0435\u043F\u0442\u043E\u0440\u0430 \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u0439\u0440\u043E\u043D\u044B \u043A \u044D\u0444\u0444\u0435\u043A\u0442\u043E\u0440\u0443, \u043C\u0438\u043D\u0443\u044E\u0449\u0438\u0439 \u0441\u043E\u0437\u043D\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0435 \u0440\u0435\u0448\u0435\u043D\u0438\u0435" },
     aliases: { pl: [], ru: [] },
@@ -3335,6 +3550,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "rdzen-kregowy",
+    paragraph: P.nervous.central,
     name: { pl: "rdze\u0144 kr\u0119gowy", ru: "\u0441\u043F\u0438\u043D\u043D\u043E\u0439 \u043C\u043E\u0437\u0433" },
     role: { pl: "o\u015Brodek odruch\xF3w bezwarunkowych i droga mi\u0119dzy m\xF3zgowiem a reszt\u0105 cia\u0142a", ru: "\u0446\u0435\u043D\u0442\u0440 \u0431\u0435\u0437\u0443\u0441\u043B\u043E\u0432\u043D\u044B\u0445 \u0440\u0435\u0444\u043B\u0435\u043A\u0441\u043E\u0432 \u0438 \u043F\u0443\u0442\u044C \u043C\u0435\u0436\u0434\u0443 \u0433\u043E\u043B\u043E\u0432\u043D\u044B\u043C \u043C\u043E\u0437\u0433\u043E\u043C \u0438 \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u043C \u0442\u0435\u043B\u043E\u043C" },
     aliases: { pl: [], ru: [] },
@@ -3342,6 +3558,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "kora-mozgu",
+    paragraph: P.nervous.central,
     name: { pl: "kora m\xF3zgu", ru: "\u043A\u043E\u0440\u0430 \u0431\u043E\u043B\u044C\u0448\u0438\u0445 \u043F\u043E\u043B\u0443\u0448\u0430\u0440\u0438\u0439" },
     role: { pl: "o\u015Brodki \u015Bwiadomych czynno\u015Bci, mowy i pami\u0119ci", ru: "\u0446\u0435\u043D\u0442\u0440\u044B \u0441\u043E\u0437\u043D\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439, \u0440\u0435\u0447\u0438 \u0438 \u043F\u0430\u043C\u044F\u0442\u0438" },
     aliases: { pl: ["kora m\xF3zgowa"], ru: ["\u043A\u043E\u0440\u0430 \u043C\u043E\u0437\u0433\u0430"] },
@@ -3349,6 +3566,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "mozdzek",
+    paragraph: P.nervous.central,
     name: { pl: "m\xF3\u017Cd\u017Cek", ru: "\u043C\u043E\u0437\u0436\u0435\u0447\u043E\u043A" },
     role: { pl: "koordynacja ruch\xF3w, napi\u0119cie mi\u0119\u015Bni i utrzymanie r\xF3wnowagi", ru: "\u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0446\u0438\u044F \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0439, \u0442\u043E\u043D\u0443\u0441 \u043C\u044B\u0448\u0446 \u0438 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u0440\u0430\u0432\u043D\u043E\u0432\u0435\u0441\u0438\u044F" },
     aliases: { pl: [], ru: [] },
@@ -3356,6 +3574,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "rdzen-przedluzony",
+    paragraph: P.nervous.central,
     name: { pl: "rdze\u0144 przed\u0142u\u017Cony", ru: "\u043F\u0440\u043E\u0434\u043E\u043B\u0433\u043E\u0432\u0430\u0442\u044B\u0439 \u043C\u043E\u0437\u0433" },
     role: { pl: "o\u015Brodki oddychania, pracy serca i odruch\xF3w kaszlu oraz kichania", ru: "\u0446\u0435\u043D\u0442\u0440\u044B \u0434\u044B\u0445\u0430\u043D\u0438\u044F, \u0440\u0430\u0431\u043E\u0442\u044B \u0441\u0435\u0440\u0434\u0446\u0430 \u0438 \u0440\u0435\u0444\u043B\u0435\u043A\u0441\u043E\u0432 \u043A\u0430\u0448\u043B\u044F \u0438 \u0447\u0438\u0445\u0430\u043D\u0438\u044F" },
     aliases: { pl: [], ru: [] },
@@ -3363,6 +3582,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "podwzgorze",
+    paragraph: P.nervous.central,
     name: { pl: "podwzg\xF3rze", ru: "\u0433\u0438\u043F\u043E\u0442\u0430\u043B\u0430\u043C\u0443\u0441" },
     role: { pl: "sterowanie temperatur\u0105, g\u0142odem, pragnieniem i przysadk\u0105", ru: "\u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u043E\u0439, \u0433\u043E\u043B\u043E\u0434\u043E\u043C, \u0436\u0430\u0436\u0434\u043E\u0439 \u0438 \u0433\u0438\u043F\u043E\u0444\u0438\u0437\u043E\u043C" },
     aliases: { pl: [], ru: [] },
@@ -3370,6 +3590,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "wspolczulny",
+    paragraph: P.nervous.autonomic,
     name: { pl: "uk\u0142ad wsp\xF3\u0142czulny", ru: "\u0441\u0438\u043C\u043F\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430" },
     role: { pl: "mobilizowanie organizmu do wysi\u0142ku: przyspieszenie serca, rozszerzenie \u017Arenic", ru: "\u043C\u043E\u0431\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u044F \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C\u0430 \u043A \u043D\u0430\u0433\u0440\u0443\u0437\u043A\u0435: \u0443\u0441\u043A\u043E\u0440\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0434\u0446\u0430, \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u0437\u0440\u0430\u0447\u043A\u043E\u0432" },
     aliases: { pl: ["sympatyczny"], ru: ["\u0441\u0438\u043C\u043F\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043E\u0442\u0434\u0435\u043B"] },
@@ -3377,6 +3598,7 @@ var NERVOUS_PARTS = [
   },
   {
     id: "przywspolczulny",
+    paragraph: P.nervous.autonomic,
     name: { pl: "uk\u0142ad przywsp\xF3\u0142czulny", ru: "\u043F\u0430\u0440\u0430\u0441\u0438\u043C\u043F\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430" },
     role: { pl: "sterowanie odpoczynkiem i trawieniem: zwolnienie serca, pobudzenie jelit", ru: "\u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043E\u0442\u0434\u044B\u0445\u043E\u043C \u0438 \u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0435\u043D\u0438\u0435\u043C: \u0437\u0430\u043C\u0435\u0434\u043B\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0434\u0446\u0430, \u0443\u0441\u0438\u043B\u0435\u043D\u0438\u0435 \u0440\u0430\u0431\u043E\u0442\u044B \u043A\u0438\u0448\u0435\u0447\u043D\u0438\u043A\u0430" },
     aliases: { pl: ["parasympatyczny"], ru: ["\u043F\u0430\u0440\u0430\u0441\u0438\u043C\u043F\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043E\u0442\u0434\u0435\u043B"] },
@@ -3386,6 +3608,7 @@ var NERVOUS_PARTS = [
 var SENSE_PARTS = [
   {
     id: "rogowka",
+    paragraph: P.senses.vision,
     name: { pl: "rog\xF3wka", ru: "\u0440\u043E\u0433\u043E\u0432\u0438\u0446\u0430" },
     role: { pl: "przezroczysta przednia cz\u0119\u015B\u0107 tward\xF3wki, najsilniej za\u0142amuj\u0105ca \u015Bwiat\u0142o", ru: "\u043F\u0440\u043E\u0437\u0440\u0430\u0447\u043D\u0430\u044F \u043F\u0435\u0440\u0435\u0434\u043D\u044F\u044F \u0447\u0430\u0441\u0442\u044C \u0441\u043A\u043B\u0435\u0440\u044B, \u0441\u0438\u043B\u044C\u043D\u0435\u0435 \u0432\u0441\u0435\u0433\u043E \u043F\u0440\u0435\u043B\u043E\u043C\u043B\u044F\u044E\u0449\u0430\u044F \u0441\u0432\u0435\u0442" },
     aliases: { pl: [], ru: [] },
@@ -3393,6 +3616,7 @@ var SENSE_PARTS = [
   },
   {
     id: "tecza",
+    paragraph: P.senses.vision,
     name: { pl: "t\u0119cz\xF3wka", ru: "\u0440\u0430\u0434\u0443\u0436\u043A\u0430" },
     role: { pl: "regulowanie ilo\u015Bci wpadaj\u0105cego \u015Bwiat\u0142a zmian\u0105 wielko\u015Bci \u017Arenicy", ru: "\u0440\u0435\u0433\u0443\u043B\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u043A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u0430 \u0432\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u0432\u0435\u0442\u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u043C \u0440\u0430\u0437\u043C\u0435\u0440\u0430 \u0437\u0440\u0430\u0447\u043A\u0430" },
     aliases: { pl: [], ru: [] },
@@ -3400,6 +3624,7 @@ var SENSE_PARTS = [
   },
   {
     id: "soczewka",
+    paragraph: P.senses.vision,
     name: { pl: "soczewka", ru: "\u0445\u0440\u0443\u0441\u0442\u0430\u043B\u0438\u043A" },
     role: { pl: "zmiana kszta\u0142tu podczas akomodacji, by ostro widzie\u0107 z r\xF3\u017Cnych odleg\u0142o\u015Bci", ru: "\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0444\u043E\u0440\u043C\u044B \u043F\u0440\u0438 \u0430\u043A\u043A\u043E\u043C\u043E\u0434\u0430\u0446\u0438\u0438, \u0447\u0442\u043E\u0431\u044B \u0440\u0435\u0437\u043A\u043E \u0432\u0438\u0434\u0435\u0442\u044C \u0441 \u0440\u0430\u0437\u043D\u044B\u0445 \u0440\u0430\u0441\u0441\u0442\u043E\u044F\u043D\u0438\u0439" },
     aliases: { pl: [], ru: [] },
@@ -3407,6 +3632,7 @@ var SENSE_PARTS = [
   },
   {
     id: "siatkowka",
+    paragraph: P.senses.vision,
     name: { pl: "siatk\xF3wka", ru: "\u0441\u0435\u0442\u0447\u0430\u0442\u043A\u0430" },
     role: { pl: "warstwa z czopkami i pr\u0119cikami, w kt\xF3rej powstaje obraz", ru: "\u0441\u043B\u043E\u0439 \u0441 \u043A\u043E\u043B\u0431\u043E\u0447\u043A\u0430\u043C\u0438 \u0438 \u043F\u0430\u043B\u043E\u0447\u043A\u0430\u043C\u0438, \u0432 \u043A\u043E\u0442\u043E\u0440\u043E\u043C \u0432\u043E\u0437\u043D\u0438\u043A\u0430\u0435\u0442 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435" },
     aliases: { pl: [], ru: [] },
@@ -3414,6 +3640,7 @@ var SENSE_PARTS = [
   },
   {
     id: "czopki",
+    paragraph: P.senses.vision,
     name: { pl: "czopki", ru: "\u043A\u043E\u043B\u0431\u043E\u0447\u043A\u0438" },
     role: { pl: "widzenie barw przy dobrym o\u015Bwietleniu, skupione w plamce \u017C\xF3\u0142tej", ru: "\u0446\u0432\u0435\u0442\u043D\u043E\u0435 \u0437\u0440\u0435\u043D\u0438\u0435 \u043F\u0440\u0438 \u0445\u043E\u0440\u043E\u0448\u0435\u043C \u043E\u0441\u0432\u0435\u0449\u0435\u043D\u0438\u0438, \u0441\u043E\u0441\u0440\u0435\u0434\u043E\u0442\u043E\u0447\u0435\u043D\u043D\u043E\u0435 \u0432 \u0436\u0451\u043B\u0442\u043E\u043C \u043F\u044F\u0442\u043D\u0435" },
     aliases: { pl: ["czopek"], ru: ["\u043A\u043E\u043B\u0431\u043E\u0447\u043A\u0430"] },
@@ -3421,6 +3648,7 @@ var SENSE_PARTS = [
   },
   {
     id: "preciki",
+    paragraph: P.senses.vision,
     name: { pl: "pr\u0119ciki", ru: "\u043F\u0430\u043B\u043E\u0447\u043A\u0438" },
     role: { pl: "widzenie o zmierzchu, wra\u017Cliwe na nat\u0119\u017Cenie, ale nie na barw\u0119", ru: "\u0441\u0443\u043C\u0435\u0440\u0435\u0447\u043D\u043E\u0435 \u0437\u0440\u0435\u043D\u0438\u0435, \u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0435 \u043A \u044F\u0440\u043A\u043E\u0441\u0442\u0438, \u043D\u043E \u043D\u0435 \u043A \u0446\u0432\u0435\u0442\u0443" },
     aliases: { pl: ["pr\u0119cik"], ru: ["\u043F\u0430\u043B\u043E\u0447\u043A\u0430"] },
@@ -3428,6 +3656,7 @@ var SENSE_PARTS = [
   },
   {
     id: "plamka-slepa",
+    paragraph: P.senses.vision,
     name: { pl: "plamka \u015Blepa", ru: "\u0441\u043B\u0435\u043F\u043E\u0435 \u043F\u044F\u0442\u043D\u043E" },
     role: { pl: "miejsce wyj\u015Bcia nerwu wzrokowego, pozbawione fotoreceptor\xF3w", ru: "\u043C\u0435\u0441\u0442\u043E \u0432\u044B\u0445\u043E\u0434\u0430 \u0437\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u043D\u0435\u0440\u0432\u0430, \u043B\u0438\u0448\u0451\u043D\u043D\u043E\u0435 \u0444\u043E\u0442\u043E\u0440\u0435\u0446\u0435\u043F\u0442\u043E\u0440\u043E\u0432" },
     aliases: { pl: ["tarcza nerwu wzrokowego"], ru: ["\u0434\u0438\u0441\u043A \u0437\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u043D\u0435\u0440\u0432\u0430"] },
@@ -3435,6 +3664,7 @@ var SENSE_PARTS = [
   },
   {
     id: "kosteczki",
+    paragraph: P.senses.ear,
     name: { pl: "kosteczki s\u0142uchowe", ru: "\u0441\u043B\u0443\u0445\u043E\u0432\u044B\u0435 \u043A\u043E\u0441\u0442\u043E\u0447\u043A\u0438" },
     role: { pl: "wzmacnianie drga\u0144 b\u0142ony b\u0119benkowej i przekazywanie ich do ucha wewn\u0119trznego", ru: "\u0443\u0441\u0438\u043B\u0435\u043D\u0438\u0435 \u043A\u043E\u043B\u0435\u0431\u0430\u043D\u0438\u0439 \u0431\u0430\u0440\u0430\u0431\u0430\u043D\u043D\u043E\u0439 \u043F\u0435\u0440\u0435\u043F\u043E\u043D\u043A\u0438 \u0438 \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u0438\u0445 \u0432\u043E \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0435 \u0443\u0445\u043E" },
     aliases: { pl: ["m\u0142oteczek", "kowade\u0142ko", "strzemi\u0105czko"], ru: ["\u043C\u043E\u043B\u043E\u0442\u043E\u0447\u0435\u043A", "\u043D\u0430\u043A\u043E\u0432\u0430\u043B\u044C\u043D\u044F", "\u0441\u0442\u0440\u0435\u043C\u0435\u0447\u043A\u043E"] },
@@ -3442,6 +3672,7 @@ var SENSE_PARTS = [
   },
   {
     id: "slimak",
+    paragraph: P.senses.ear,
     name: { pl: "\u015Blimak", ru: "\u0443\u043B\u0438\u0442\u043A\u0430" },
     role: { pl: "zamiana drga\u0144 p\u0142ynu na impulsy nerwowe w narz\u0105dzie Cortiego", ru: "\u043F\u0440\u0435\u0432\u0440\u0430\u0449\u0435\u043D\u0438\u0435 \u043A\u043E\u043B\u0435\u0431\u0430\u043D\u0438\u0439 \u0436\u0438\u0434\u043A\u043E\u0441\u0442\u0438 \u0432 \u043D\u0435\u0440\u0432\u043D\u044B\u0435 \u0438\u043C\u043F\u0443\u043B\u044C\u0441\u044B \u0432 \u043A\u043E\u0440\u0442\u0438\u0435\u0432\u043E\u043C \u043E\u0440\u0433\u0430\u043D\u0435" },
     aliases: { pl: ["narz\u0105d Cortiego"], ru: ["\u043A\u043E\u0440\u0442\u0438\u0435\u0432 \u043E\u0440\u0433\u0430\u043D"] },
@@ -3449,6 +3680,7 @@ var SENSE_PARTS = [
   },
   {
     id: "kanaly-polkoliste",
+    paragraph: P.senses.ear,
     name: { pl: "kana\u0142y p\xF3\u0142koliste", ru: "\u043F\u043E\u043B\u0443\u043A\u0440\u0443\u0436\u043D\u044B\u0435 \u043A\u0430\u043D\u0430\u043B\u044B" },
     role: { pl: "odbieranie ruch\xF3w obrotowych g\u0142owy jako narz\u0105d r\xF3wnowagi", ru: "\u0432\u043E\u0441\u043F\u0440\u0438\u044F\u0442\u0438\u0435 \u0432\u0440\u0430\u0449\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0439 \u0433\u043E\u043B\u043E\u0432\u044B \u043A\u0430\u043A \u043E\u0440\u0433\u0430\u043D \u0440\u0430\u0432\u043D\u043E\u0432\u0435\u0441\u0438\u044F" },
     aliases: { pl: ["narz\u0105d r\xF3wnowagi"], ru: ["\u0432\u0435\u0441\u0442\u0438\u0431\u0443\u043B\u044F\u0440\u043D\u044B\u0439 \u0430\u043F\u043F\u0430\u0440\u0430\u0442"] },
@@ -3456,6 +3688,7 @@ var SENSE_PARTS = [
   },
   {
     id: "traba-sluchowa",
+    paragraph: P.senses.ear,
     name: { pl: "tr\u0105bka s\u0142uchowa", ru: "\u0441\u043B\u0443\u0445\u043E\u0432\u0430\u044F \u0442\u0440\u0443\u0431\u0430" },
     role: { pl: "wyr\xF3wnywanie ci\u015Bnienia po obu stronach b\u0142ony b\u0119benkowej", ru: "\u0432\u044B\u0440\u0430\u0432\u043D\u0438\u0432\u0430\u043D\u0438\u0435 \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u043F\u043E \u043E\u0431\u0435 \u0441\u0442\u043E\u0440\u043E\u043D\u044B \u0431\u0430\u0440\u0430\u0431\u0430\u043D\u043D\u043E\u0439 \u043F\u0435\u0440\u0435\u043F\u043E\u043D\u043A\u0438" },
     aliases: { pl: ["tr\u0105bka Eustachiusza"], ru: ["\u0435\u0432\u0441\u0442\u0430\u0445\u0438\u0435\u0432\u0430 \u0442\u0440\u0443\u0431\u0430"] },
@@ -3463,6 +3696,7 @@ var SENSE_PARTS = [
   },
   {
     id: "kubki-smakowe",
+    paragraph: P.senses["taste-smell"],
     name: { pl: "kubki smakowe", ru: "\u0432\u043A\u0443\u0441\u043E\u0432\u044B\u0435 \u0441\u043E\u0441\u043E\u0447\u043A\u0438" },
     role: { pl: "odbieranie smaku substancji rozpuszczonych w \u015Blinie", ru: "\u0432\u043E\u0441\u043F\u0440\u0438\u044F\u0442\u0438\u0435 \u0432\u043A\u0443\u0441\u0430 \u0432\u0435\u0449\u0435\u0441\u0442\u0432, \u0440\u0430\u0441\u0442\u0432\u043E\u0440\u0451\u043D\u043D\u044B\u0445 \u0432 \u0441\u043B\u044E\u043D\u0435" },
     aliases: { pl: ["kubek smakowy"], ru: ["\u0432\u043A\u0443\u0441\u043E\u0432\u0430\u044F \u043F\u043E\u0447\u043A\u0430"] },
@@ -3509,6 +3743,7 @@ var VISION_DEFECTS = [
 var REPRODUCTION_PARTS = [
   {
     id: "jadro",
+    paragraph: P.reproduction.male,
     name: { pl: "j\u0105dro", ru: "\u0441\u0435\u043C\u0435\u043D\u043D\u0438\u043A" },
     role: { pl: "wytwarzanie plemnik\xF3w i testosteronu", ru: "\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u0435 \u0441\u043F\u0435\u0440\u043C\u0430\u0442\u043E\u0437\u043E\u0438\u0434\u043E\u0432 \u0438 \u0442\u0435\u0441\u0442\u043E\u0441\u0442\u0435\u0440\u043E\u043D\u0430" },
     aliases: { pl: ["j\u0105dra"], ru: ["\u0441\u0435\u043C\u0435\u043D\u043D\u0438\u043A\u0438", "\u044F\u0438\u0447\u043A\u043E"] },
@@ -3516,6 +3751,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "najadrze",
+    paragraph: P.reproduction.male,
     name: { pl: "naj\u0105drze", ru: "\u043F\u0440\u0438\u0434\u0430\u0442\u043E\u043A \u0441\u0435\u043C\u0435\u043D\u043D\u0438\u043A\u0430" },
     role: { pl: "dojrzewanie i magazynowanie plemnik\xF3w", ru: "\u0441\u043E\u0437\u0440\u0435\u0432\u0430\u043D\u0438\u0435 \u0438 \u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u0441\u043F\u0435\u0440\u043C\u0430\u0442\u043E\u0437\u043E\u0438\u0434\u043E\u0432" },
     aliases: { pl: [], ru: [] },
@@ -3523,6 +3759,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "jajnik",
+    paragraph: P.reproduction.female,
     name: { pl: "jajnik", ru: "\u044F\u0438\u0447\u043D\u0438\u043A" },
     role: { pl: "dojrzewanie kom\xF3rek jajowych i wydzielanie estrogen\xF3w", ru: "\u0441\u043E\u0437\u0440\u0435\u0432\u0430\u043D\u0438\u0435 \u044F\u0439\u0446\u0435\u043A\u043B\u0435\u0442\u043E\u043A \u0438 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u044D\u0441\u0442\u0440\u043E\u0433\u0435\u043D\u043E\u0432" },
     aliases: { pl: ["jajniki"], ru: ["\u044F\u0438\u0447\u043D\u0438\u043A\u0438"] },
@@ -3530,6 +3767,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "jajowod",
+    paragraph: P.reproduction.female,
     name: { pl: "jajow\xF3d", ru: "\u043C\u0430\u0442\u043E\u0447\u043D\u0430\u044F \u0442\u0440\u0443\u0431\u0430" },
     role: { pl: "miejsce zap\u0142odnienia i droga zarodka do macicy", ru: "\u043C\u0435\u0441\u0442\u043E \u043E\u043F\u043B\u043E\u0434\u043E\u0442\u0432\u043E\u0440\u0435\u043D\u0438\u044F \u0438 \u043F\u0443\u0442\u044C \u0437\u0430\u0440\u043E\u0434\u044B\u0448\u0430 \u043A \u043C\u0430\u0442\u043A\u0435" },
     aliases: { pl: [], ru: ["\u044F\u0439\u0446\u0435\u0432\u043E\u0434"] },
@@ -3537,6 +3775,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "macica",
+    paragraph: P.reproduction.female,
     name: { pl: "macica", ru: "\u043C\u0430\u0442\u043A\u0430" },
     role: { pl: "zagnie\u017Cd\u017Cenie zarodka i rozw\xF3j p\u0142odu", ru: "\u0438\u043C\u043F\u043B\u0430\u043D\u0442\u0430\u0446\u0438\u044F \u0437\u0430\u0440\u043E\u0434\u044B\u0448\u0430 \u0438 \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u0435 \u043F\u043B\u043E\u0434\u0430" },
     aliases: { pl: [], ru: [] },
@@ -3544,6 +3783,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "lozysko",
+    paragraph: P.reproduction.development,
     name: { pl: "\u0142o\u017Cysko", ru: "\u043F\u043B\u0430\u0446\u0435\u043D\u0442\u0430" },
     role: { pl: "wymiana gaz\xF3w i substancji mi\u0119dzy krwi\u0105 matki a krwi\u0105 p\u0142odu, bez ich mieszania", ru: "\u043E\u0431\u043C\u0435\u043D \u0433\u0430\u0437\u043E\u0432 \u0438 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 \u043C\u0435\u0436\u0434\u0443 \u043A\u0440\u043E\u0432\u044C\u044E \u043C\u0430\u0442\u0435\u0440\u0438 \u0438 \u043F\u043B\u043E\u0434\u0430, \u0431\u0435\u0437 \u0438\u0445 \u0441\u043C\u0435\u0448\u0438\u0432\u0430\u043D\u0438\u044F" },
     aliases: { pl: [], ru: [] },
@@ -3551,6 +3791,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "cialko-zolte",
+    paragraph: P.reproduction.female,
     name: { pl: "cia\u0142ko \u017C\xF3\u0142te", ru: "\u0436\u0451\u043B\u0442\u043E\u0435 \u0442\u0435\u043B\u043E" },
     role: { pl: "wydzielanie progesteronu po owulacji", ru: "\u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0433\u0435\u0441\u0442\u0435\u0440\u043E\u043D\u0430 \u043F\u043E\u0441\u043B\u0435 \u043E\u0432\u0443\u043B\u044F\u0446\u0438\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3558,6 +3799,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "owulacja",
+    paragraph: P.reproduction.female,
     name: { pl: "owulacja", ru: "\u043E\u0432\u0443\u043B\u044F\u0446\u0438\u044F" },
     role: { pl: "uwolnienie kom\xF3rki jajowej oko\u0142o 14 dni przed nast\u0119pn\u0105 miesi\u0105czk\u0105", ru: "\u0432\u044B\u0445\u043E\u0434 \u044F\u0439\u0446\u0435\u043A\u043B\u0435\u0442\u043A\u0438 \u043F\u0440\u0438\u043C\u0435\u0440\u043D\u043E \u0437\u0430 14 \u0434\u043D\u0435\u0439 \u0434\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0439 \u043C\u0435\u043D\u0441\u0442\u0440\u0443\u0430\u0446\u0438\u0438" },
     aliases: { pl: ["jajeczkowanie"], ru: [] },
@@ -3565,6 +3807,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "ektoderma",
+    paragraph: P.reproduction.development,
     name: { pl: "ektoderma", ru: "\u044D\u043A\u0442\u043E\u0434\u0435\u0440\u043C\u0430" },
     role: { pl: "listek zarodkowy daj\u0105cy nask\xF3rek i uk\u0142ad nerwowy", ru: "\u0437\u0430\u0440\u043E\u0434\u044B\u0448\u0435\u0432\u044B\u0439 \u043B\u0438\u0441\u0442\u043E\u043A, \u0434\u0430\u044E\u0449\u0438\u0439 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441 \u0438 \u043D\u0435\u0440\u0432\u043D\u0443\u044E \u0441\u0438\u0441\u0442\u0435\u043C\u0443" },
     aliases: { pl: [], ru: [] },
@@ -3572,6 +3815,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "mezoderma",
+    paragraph: P.reproduction.development,
     name: { pl: "mezoderma", ru: "\u043C\u0435\u0437\u043E\u0434\u0435\u0440\u043C\u0430" },
     role: { pl: "listek zarodkowy daj\u0105cy mi\u0119\u015Bnie, ko\u015Bci, krew i nerki", ru: "\u0437\u0430\u0440\u043E\u0434\u044B\u0448\u0435\u0432\u044B\u0439 \u043B\u0438\u0441\u0442\u043E\u043A, \u0434\u0430\u044E\u0449\u0438\u0439 \u043C\u044B\u0448\u0446\u044B, \u043A\u043E\u0441\u0442\u0438, \u043A\u0440\u043E\u0432\u044C \u0438 \u043F\u043E\u0447\u043A\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3579,6 +3823,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "endoderma",
+    paragraph: P.reproduction.development,
     name: { pl: "endoderma", ru: "\u044D\u043D\u0442\u043E\u0434\u0435\u0440\u043C\u0430" },
     role: { pl: "listek zarodkowy daj\u0105cy nab\u0142onek przewodu pokarmowego i p\u0142uc", ru: "\u0437\u0430\u0440\u043E\u0434\u044B\u0448\u0435\u0432\u044B\u0439 \u043B\u0438\u0441\u0442\u043E\u043A, \u0434\u0430\u044E\u0449\u0438\u0439 \u044D\u043F\u0438\u0442\u0435\u043B\u0438\u0439 \u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u0442\u0440\u0430\u043A\u0442\u0430 \u0438 \u043B\u0451\u0433\u043A\u0438\u0445" },
     aliases: { pl: [], ru: [] },
@@ -3586,6 +3831,7 @@ var REPRODUCTION_PARTS = [
   },
   {
     id: "zygota",
+    paragraph: P.reproduction.development,
     name: { pl: "zygota", ru: "\u0437\u0438\u0433\u043E\u0442\u0430" },
     role: { pl: "pierwsza kom\xF3rka nowego organizmu, powsta\u0142a z po\u0142\u0105czenia gamet", ru: "\u043F\u0435\u0440\u0432\u0430\u044F \u043A\u043B\u0435\u0442\u043A\u0430 \u043D\u043E\u0432\u043E\u0433\u043E \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C\u0430, \u0432\u043E\u0437\u043D\u0438\u043A\u0448\u0430\u044F \u043F\u0440\u0438 \u0441\u043B\u0438\u044F\u043D\u0438\u0438 \u0433\u0430\u043C\u0435\u0442" },
     aliases: { pl: [], ru: [] },
@@ -3599,6 +3845,7 @@ var organism = [
     topicId: "bio.lo3.organism",
     slug: "tissue",
     rows: TISSUES,
+    paragraph: P.organism.hierarchy,
     subtopic: { pl: "tkanki i poziomy organizacji", ru: "\u0442\u043A\u0430\u043D\u0438 \u0438 \u0443\u0440\u043E\u0432\u043D\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u0430\u0446\u0438\u0438" },
     shift: 0,
     label: { pl: "Tkanka", ru: "\u0422\u043A\u0430\u043D\u044C" },
@@ -3622,6 +3869,7 @@ var skin = pairFromTable({
   topicId: "bio.lo3.skin",
   slug: "skin",
   rows: SKIN_PARTS,
+  paragraph: P.skin.structure,
   subtopic: { pl: "budowa sk\xF3ry i termoregulacja", ru: "\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u043A\u043E\u0436\u0438 \u0438 \u0442\u0435\u0440\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F" },
   tags: ["homeostaza"],
   shift: 1,
@@ -3651,6 +3899,7 @@ var digestion = [
     topicId: "bio.lo3.digestion",
     slug: "enzyme",
     rows: ENZYMES,
+    paragraph: P.digestion.processes,
     subtopic: { pl: "enzymy trawienne", ru: "\u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u0444\u0435\u0440\u043C\u0435\u043D\u0442\u044B" },
     shift: 2,
     label: { pl: "Enzym", ru: "\u0424\u0435\u0440\u043C\u0435\u043D\u0442" },
@@ -3680,6 +3929,7 @@ var senses = [
     topicId: "bio.lo3.senses",
     slug: "defect",
     rows: VISION_DEFECTS,
+    paragraph: P.senses.vision,
     subtopic: { pl: "wady wzroku", ru: "\u0434\u0435\u0444\u0435\u043A\u0442\u044B \u0437\u0440\u0435\u043D\u0438\u044F" },
     tags: ["choroby"],
     shift: 3,
@@ -3699,6 +3949,7 @@ var reproduction = pairFromTable({
 var lensPower = calcTemplate({
   id: "bio.lo3.senses.lens-power",
   topicId: "bio.lo3.senses",
+  paragraph: P.senses.vision,
   subtopic: { pl: "wady wzroku", ru: "\u0434\u0435\u0444\u0435\u043A\u0442\u044B \u0437\u0440\u0435\u043D\u0438\u044F" },
   tags: ["obliczenia"],
   difficulty: 2,
@@ -3722,6 +3973,7 @@ var lensPower = calcTemplate({
 var ovulationDay = calcTemplate({
   id: "bio.lo3.reproduction.ovulation-day",
   topicId: "bio.lo3.reproduction",
+  paragraph: P.reproduction.female,
   subtopic: { pl: "cykl miesi\u0105czkowy", ru: "\u043C\u0435\u043D\u0441\u0442\u0440\u0443\u0430\u043B\u044C\u043D\u044B\u0439 \u0446\u0438\u043A\u043B" },
   tags: ["obliczenia"],
   difficulty: 2,
@@ -3748,6 +4000,7 @@ var lo3RemainingTemplates = [
 var AIRWAY_PARTS = [
   {
     id: "jama-nosowa",
+    paragraph: P.respiration.structure,
     part: { pl: "jama nosowa", ru: "\u043D\u043E\u0441\u043E\u0432\u0430\u044F \u043F\u043E\u043B\u043E\u0441\u0442\u044C" },
     role: { pl: "ogrzewanie, nawil\u017Canie i oczyszczanie wdychanego powietrza", ru: "\u0441\u043E\u0433\u0440\u0435\u0432\u0430\u043D\u0438\u0435, \u0443\u0432\u043B\u0430\u0436\u043D\u0435\u043D\u0438\u0435 \u0438 \u043E\u0447\u0438\u0449\u0435\u043D\u0438\u0435 \u0432\u0434\u044B\u0445\u0430\u0435\u043C\u043E\u0433\u043E \u0432\u043E\u0437\u0434\u0443\u0445\u0430" },
     aliases: { pl: ["nos"], ru: ["\u043F\u043E\u043B\u043E\u0441\u0442\u044C \u043D\u043E\u0441\u0430", "\u043D\u043E\u0441"] },
@@ -3755,6 +4008,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "gardlo",
+    paragraph: P.respiration.structure,
     part: { pl: "gard\u0142o", ru: "\u0433\u043B\u043E\u0442\u043A\u0430" },
     role: { pl: "wsp\xF3lny odcinek drogi oddechowej i pokarmowej", ru: "\u043E\u0431\u0449\u0438\u0439 \u0443\u0447\u0430\u0441\u0442\u043E\u043A \u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u0438 \u043F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u043F\u0443\u0442\u0435\u0439" },
     aliases: { pl: [], ru: [] },
@@ -3762,6 +4016,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "krtan",
+    paragraph: P.respiration.structure,
     part: { pl: "krta\u0144", ru: "\u0433\u043E\u0440\u0442\u0430\u043D\u044C" },
     role: { pl: "wytwarzanie d\u017Awi\u0119k\xF3w mowy dzi\u0119ki strunom g\u0142osowym", ru: "\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u0435 \u0437\u0432\u0443\u043A\u043E\u0432 \u0440\u0435\u0447\u0438 \u0431\u043B\u0430\u0433\u043E\u0434\u0430\u0440\u044F \u0433\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u043C \u0441\u0432\u044F\u0437\u043A\u0430\u043C" },
     aliases: { pl: [], ru: [] },
@@ -3769,6 +4024,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "nag\u0142o\u015Bnia",
+    paragraph: P.respiration.structure,
     part: { pl: "nag\u0142o\u015Bnia", ru: "\u043D\u0430\u0434\u0433\u043E\u0440\u0442\u0430\u043D\u043D\u0438\u043A" },
     role: { pl: "zamykanie wej\u015Bcia do krtani podczas po\u0142ykania", ru: "\u0437\u0430\u043A\u0440\u044B\u0442\u0438\u0435 \u0432\u0445\u043E\u0434\u0430 \u0432 \u0433\u043E\u0440\u0442\u0430\u043D\u044C \u0432\u043E \u0432\u0440\u0435\u043C\u044F \u0433\u043B\u043E\u0442\u0430\u043D\u0438\u044F" },
     aliases: { pl: [], ru: [] },
@@ -3776,6 +4032,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "tchawica",
+    paragraph: P.respiration.structure,
     part: { pl: "tchawica", ru: "\u0442\u0440\u0430\u0445\u0435\u044F" },
     role: { pl: "utrzymywanie dro\u017Cno\u015Bci drogi oddechowej przez chrz\u0119stne p\xF3\u0142pier\u015Bcienie", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u043F\u0443\u0442\u0438 \u0445\u0440\u044F\u0449\u0435\u0432\u044B\u043C\u0438 \u043F\u043E\u043B\u0443\u043A\u043E\u043B\u044C\u0446\u0430\u043C\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3783,6 +4040,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "oskrzela",
+    paragraph: P.respiration.structure,
     part: { pl: "oskrzela", ru: "\u0431\u0440\u043E\u043D\u0445\u0438" },
     role: { pl: "rozprowadzanie powietrza do obu p\u0142uc", ru: "\u0440\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0432\u043E\u0437\u0434\u0443\u0445\u0430 \u0432 \u043E\u0431\u0430 \u043B\u0451\u0433\u043A\u0438\u0445" },
     aliases: { pl: ["oskrzele"], ru: ["\u0431\u0440\u043E\u043D\u0445"] },
@@ -3790,6 +4048,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "oskrzeliki",
+    paragraph: P.respiration.structure,
     part: { pl: "oskrzeliki", ru: "\u0431\u0440\u043E\u043D\u0445\u0438\u043E\u043B\u044B" },
     role: { pl: "regulacja przep\u0142ywu powietrza mi\u0119\u015Bniami g\u0142adkimi, bez chrz\u0105stek", ru: "\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F \u043F\u043E\u0442\u043E\u043A\u0430 \u0432\u043E\u0437\u0434\u0443\u0445\u0430 \u0433\u043B\u0430\u0434\u043A\u0438\u043C\u0438 \u043C\u044B\u0448\u0446\u0430\u043C\u0438, \u0431\u0435\u0437 \u0445\u0440\u044F\u0449\u0435\u0439" },
     aliases: { pl: ["oskrzelik"], ru: ["\u0431\u0440\u043E\u043D\u0445\u0438\u043E\u043B\u0430"] },
@@ -3797,6 +4056,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "pecherzyki",
+    paragraph: P.respiration.structure,
     part: { pl: "p\u0119cherzyki p\u0142ucne", ru: "\u043B\u0451\u0433\u043E\u0447\u043D\u044B\u0435 \u0430\u043B\u044C\u0432\u0435\u043E\u043B\u044B" },
     role: { pl: "wymiana gazowa mi\u0119dzy powietrzem a krwi\u0105", ru: "\u0433\u0430\u0437\u043E\u043E\u0431\u043C\u0435\u043D \u043C\u0435\u0436\u0434\u0443 \u0432\u043E\u0437\u0434\u0443\u0445\u043E\u043C \u0438 \u043A\u0440\u043E\u0432\u044C\u044E" },
     aliases: { pl: ["alweole", "p\u0119cherzyk p\u0142ucny"], ru: ["\u0430\u043B\u044C\u0432\u0435\u043E\u043B\u044B", "\u0430\u043B\u044C\u0432\u0435\u043E\u043B\u0430"] },
@@ -3804,6 +4064,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "surfaktant",
+    paragraph: P.respiration.structure,
     part: { pl: "surfaktant", ru: "\u0441\u0443\u0440\u0444\u0430\u043A\u0442\u0430\u043D\u0442" },
     role: { pl: "obni\u017Canie napi\u0119cia powierzchniowego, zapobiegaj\u0105ce zapadaniu si\u0119 p\u0119cherzyk\xF3w", ru: "\u0441\u043D\u0438\u0436\u0435\u043D\u0438\u0435 \u043F\u043E\u0432\u0435\u0440\u0445\u043D\u043E\u0441\u0442\u043D\u043E\u0433\u043E \u043D\u0430\u0442\u044F\u0436\u0435\u043D\u0438\u044F, \u043F\u0440\u0435\u0434\u043E\u0442\u0432\u0440\u0430\u0449\u0430\u044E\u0449\u0435\u0435 \u0441\u043F\u0430\u0434\u0435\u043D\u0438\u0435 \u0430\u043B\u044C\u0432\u0435\u043E\u043B" },
     aliases: { pl: [], ru: [] },
@@ -3811,6 +4072,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "oplucna",
+    paragraph: P.respiration.structure,
     part: { pl: "op\u0142ucna", ru: "\u043F\u043B\u0435\u0432\u0440\u0430" },
     role: { pl: "utrzymywanie podci\u015Bnienia w jamie op\u0142ucnej wok\xF3\u0142 p\u0142uca", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0433\u043E \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u0432 \u043F\u043B\u0435\u0432\u0440\u0430\u043B\u044C\u043D\u043E\u0439 \u043F\u043E\u043B\u043E\u0441\u0442\u0438 \u0432\u043E\u043A\u0440\u0443\u0433 \u043B\u0451\u0433\u043A\u043E\u0433\u043E" },
     aliases: { pl: [], ru: [] },
@@ -3818,6 +4080,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "przepona",
+    paragraph: P.respiration.ventilation,
     part: { pl: "przepona", ru: "\u0434\u0438\u0430\u0444\u0440\u0430\u0433\u043C\u0430" },
     role: { pl: "powi\u0119kszanie obj\u0119to\u015Bci klatki piersiowej przez obni\u017Cenie si\u0119 przy skurczu", ru: "\u0443\u0432\u0435\u043B\u0438\u0447\u0435\u043D\u0438\u0435 \u043E\u0431\u044A\u0451\u043C\u0430 \u0433\u0440\u0443\u0434\u043D\u043E\u0439 \u043A\u043B\u0435\u0442\u043A\u0438 \u0437\u0430 \u0441\u0447\u0451\u0442 \u043E\u043F\u0443\u0441\u043A\u0430\u043D\u0438\u044F \u043F\u0440\u0438 \u0441\u043E\u043A\u0440\u0430\u0449\u0435\u043D\u0438\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3825,6 +4088,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "miesnie-miedzyzebrowe",
+    paragraph: P.respiration.ventilation,
     part: { pl: "mi\u0119\u015Bnie mi\u0119dzy\u017Cebrowe zewn\u0119trzne", ru: "\u043D\u0430\u0440\u0443\u0436\u043D\u044B\u0435 \u043C\u0435\u0436\u0440\u0451\u0431\u0435\u0440\u043D\u044B\u0435 \u043C\u044B\u0448\u0446\u044B" },
     role: { pl: "unoszenie \u017Ceber podczas wdechu", ru: "\u043F\u043E\u0434\u043D\u044F\u0442\u0438\u0435 \u0440\u0451\u0431\u0435\u0440 \u0432\u043E \u0432\u0440\u0435\u043C\u044F \u0432\u0434\u043E\u0445\u0430" },
     aliases: { pl: ["mi\u0119\u015Bnie mi\u0119dzy\u017Cebrowe"], ru: ["\u043C\u0435\u0436\u0440\u0451\u0431\u0435\u0440\u043D\u044B\u0435 \u043C\u044B\u0448\u0446\u044B"] },
@@ -3832,6 +4096,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "osrodek-oddechowy",
+    paragraph: P.respiration.ventilation,
     part: { pl: "o\u015Brodek oddechowy", ru: "\u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0446\u0435\u043D\u0442\u0440" },
     role: { pl: "reagowanie na wzrost st\u0119\u017Cenia dwutlenku w\u0119gla w rdzeniu przed\u0142u\u017Conym", ru: "\u0440\u0435\u0430\u043A\u0446\u0438\u044F \u043D\u0430 \u0440\u043E\u0441\u0442 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438 \u0443\u0433\u043B\u0435\u043A\u0438\u0441\u043B\u043E\u0433\u043E \u0433\u0430\u0437\u0430 \u0432 \u043F\u0440\u043E\u0434\u043E\u043B\u0433\u043E\u0432\u0430\u0442\u043E\u043C \u043C\u043E\u0437\u0433\u0435" },
     aliases: { pl: [], ru: [] },
@@ -3839,6 +4104,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "hemoglobina",
+    paragraph: P.respiration.ventilation,
     part: { pl: "hemoglobina", ru: "\u0433\u0435\u043C\u043E\u0433\u043B\u043E\u0431\u0438\u043D" },
     role: { pl: "wi\u0105zanie tlenu w p\u0142ucach i oddawanie go w tkankach", ru: "\u0441\u0432\u044F\u0437\u044B\u0432\u0430\u043D\u0438\u0435 \u043A\u0438\u0441\u043B\u043E\u0440\u043E\u0434\u0430 \u0432 \u043B\u0451\u0433\u043A\u0438\u0445 \u0438 \u043E\u0442\u0434\u0430\u0447\u0430 \u0435\u0433\u043E \u0432 \u0442\u043A\u0430\u043D\u044F\u0445" },
     aliases: { pl: ["Hb"], ru: ["Hb"] },
@@ -3846,6 +4112,7 @@ var AIRWAY_PARTS = [
   },
   {
     id: "wodoroweglany",
+    paragraph: P.respiration.ventilation,
     part: { pl: "jony wodorow\u0119glanowe", ru: "\u0433\u0438\u0434\u0440\u043E\u043A\u0430\u0440\u0431\u043E\u043D\u0430\u0442-\u0438\u043E\u043D\u044B" },
     role: { pl: "przenoszenie wi\u0119kszo\u015Bci dwutlenku w\u0119gla w osoczu krwi", ru: "\u043F\u0435\u0440\u0435\u043D\u043E\u0441 \u0431\u043E\u043B\u044C\u0448\u0435\u0439 \u0447\u0430\u0441\u0442\u0438 \u0443\u0433\u043B\u0435\u043A\u0438\u0441\u043B\u043E\u0433\u043E \u0433\u0430\u0437\u0430 \u0432 \u043F\u043B\u0430\u0437\u043C\u0435 \u043A\u0440\u043E\u0432\u0438" },
     aliases: { pl: ["wodorow\u0119glany", "HCO3-"], ru: ["\u0433\u0438\u0434\u0440\u043E\u043A\u0430\u0440\u0431\u043E\u043D\u0430\u0442\u044B", "HCO3-"] },
@@ -3936,6 +4203,7 @@ var volumeToDefinition = choiceFromTable({
   id: `${TOPIC3}.volume-to-definition`,
   topicId: TOPIC3,
   rows: LUNG_VOLUMES,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   difficulty: partTier,
   shift: 1,
@@ -3948,6 +4216,7 @@ var definitionToVolume = termFromTable({
   id: `${TOPIC3}.definition-to-volume`,
   topicId: TOPIC3,
   rows: LUNG_VOLUMES,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   difficulty: partTier,
   question: (v, lang) => lang === "pl" ? `Jak nazywa si\u0119 ${v.definition.pl}? Podaj nazw\u0119 w mianowniku.` : `\u041A\u0430\u043A \u043D\u0430\u0437\u044B\u0432\u0430\u0435\u0442\u0441\u044F ${v.definition.ru}? \u041D\u0430\u0437\u043E\u0432\u0438 \u0432 \u0438\u043C\u0435\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u043C \u043F\u0430\u0434\u0435\u0436\u0435.`,
@@ -3958,6 +4227,7 @@ var definitionToVolume = termFromTable({
 var vitalCapacity = calcTemplate({
   id: `${TOPIC3}.vital-capacity`,
   topicId: TOPIC3,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
   difficulty: 2,
@@ -3971,6 +4241,7 @@ var vitalCapacity = calcTemplate({
 var minuteVentilation = calcTemplate({
   id: `${TOPIC3}.minute-ventilation`,
   topicId: TOPIC3,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
   difficulty: 1,
@@ -3985,6 +4256,7 @@ var minuteVentilation = calcTemplate({
 var alveolarVentilation = calcTemplate({
   id: `${TOPIC3}.alveolar-ventilation`,
   topicId: TOPIC3,
+  paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
   difficulty: 3,
@@ -4133,6 +4405,7 @@ var partToRole2 = choiceFromTable({
   id: `${TOPIC4}.part-to-role`,
   topicId: TOPIC4,
   rows: NEPHRON_PARTS,
+  paragraph: P.urinary.structure,
   subtopic: ANATOMY2,
   difficulty: tier3,
   shift: 0,
@@ -4145,6 +4418,7 @@ var roleToPart2 = termFromTable({
   id: `${TOPIC4}.role-to-part`,
   topicId: TOPIC4,
   rows: NEPHRON_PARTS,
+  paragraph: P.urinary.structure,
   subtopic: ANATOMY2,
   difficulty: tier3,
   question: (r, lang) => lang === "pl" ? `Funkcja: ${r.role.pl}. Podaj nazw\u0119 struktury w mianowniku.` : `\u0424\u0443\u043D\u043A\u0446\u0438\u044F: ${r.role.ru}. \u041D\u0430\u0437\u043E\u0432\u0438 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0443 \u0432 \u0438\u043C\u0435\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u043C \u043F\u0430\u0434\u0435\u0436\u0435.`,
@@ -4156,6 +4430,7 @@ var processToDescription = choiceFromTable({
   id: `${TOPIC4}.process-to-description`,
   topicId: TOPIC4,
   rows: URINE_PROCESSES,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["homeostaza"],
   difficulty: tier3,
@@ -4169,6 +4444,7 @@ var descriptionToProcess = termFromTable({
   id: `${TOPIC4}.description-to-process`,
   topicId: TOPIC4,
   rows: URINE_PROCESSES,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["homeostaza"],
   difficulty: tier3,
@@ -4180,6 +4456,7 @@ var descriptionToProcess = termFromTable({
 var filteredLoad = calcTemplate({
   id: `${TOPIC4}.filtered-load`,
   topicId: TOPIC4,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia"],
   difficulty: 2,
@@ -4195,6 +4472,7 @@ var filteredLoad = calcTemplate({
 var clearance = calcTemplate({
   id: `${TOPIC4}.clearance`,
   topicId: TOPIC4,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia"],
   difficulty: 3,
@@ -4209,6 +4487,7 @@ var clearance = calcTemplate({
 var reabsorbedWater = calcTemplate({
   id: `${TOPIC4}.reabsorbed-water`,
   topicId: TOPIC4,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia", "homeostaza"],
   difficulty: 2,
@@ -4234,8 +4513,32 @@ var lo3UrinaryTemplates = [
 ];
 
 // packages/trainers/bio/src/server/templates/index.ts
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value).filter(([, v]) => v !== void 0);
+    return `{${entries.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+function contentId(templateId, lang, task) {
+  const { id: _id, ...content } = task;
+  return `${templateId}:${lang}:${createHash3("sha1").update(canonical(content)).digest("hex").slice(0, 12)}`;
+}
+var withContentIds = (templateId, tasks) => tasks.map(({ lang, task }) => ({ lang, task: { ...task, id: contentId(templateId, lang, task) } }));
 function renderTemplate2(template, opts) {
-  return renderTemplate(template, { ...opts, verify: verifyTask });
+  const outcome = renderTemplate(template, { ...opts, verify: verifyTask });
+  return { ...outcome, tasks: withContentIds(template.id, outcome.tasks) };
+}
+function renderTemplates(templates, opts) {
+  const tasks = [];
+  const perTemplate = [];
+  for (const template of templates) {
+    const outcome = renderTemplate2(template, opts);
+    tasks.push(...outcome.tasks);
+    perTemplate.push(outcome.stats);
+  }
+  return { tasks, perTemplate };
 }
 var ALL_TEMPLATES = [
   ...lo3HormonesTemplates,
@@ -4245,38 +4548,50 @@ var ALL_TEMPLATES = [
   ...lo3RemainingTemplates
 ];
 
-// packages/trainers/bio/src/server/seed.ts
+// packages/trainers/bio/src/server/content.ts
 var TARGET = 40;
 var GRADE = "lo3";
 var LEVEL = "R";
-var inFlight = /* @__PURE__ */ new WeakMap();
-var BATCH = 200;
-async function seed(pool, log) {
-  if (await pool.count("bio") > 0) return;
-  const byLang = new Map(BIO_LANGS.map((lang) => [lang, []]));
-  for (const template of ALL_TEMPLATES) {
-    if (!getTopic(template.topicId)) continue;
-    for (const { lang, task } of renderTemplate2(template, { langs: [...BIO_LANGS], targetCount: TARGET }).tasks) {
-      byLang.get(lang).push(task);
-    }
-  }
-  let stored = 0;
-  for (const [lang, tasks] of byLang) {
-    for (let i = 0; i < tasks.length; i += BATCH) {
-      const batch = tasks.slice(i, i + BATCH);
-      await pool.add(batch, { trainerId: "bio", lang, grade: GRADE, level: LEVEL });
-      stored += batch.length;
-    }
-  }
-  log?.info({ trainer: "bio", stored }, "seeded the biology pool from templates");
+function renderContent() {
+  return renderTemplates(ALL_TEMPLATES, { langs: [...BIO_LANGS], targetCount: TARGET });
 }
+
+// packages/trainers/bio/src/server/seed.ts
+var BATCH = 200;
+async function syncContent(pool, log) {
+  const { tasks } = renderContent();
+  const wanted = new Set(tasks.map((t) => t.task.id));
+  const stored = new Set(await pool.listIds("bio"));
+  const missing = /* @__PURE__ */ new Map();
+  for (const { lang, task } of tasks) {
+    if (stored.has(task.id)) continue;
+    missing.set(lang, [...missing.get(lang) ?? [], task]);
+  }
+  let added = 0;
+  for (const [lang, group] of missing) {
+    for (let i = 0; i < group.length; i += BATCH) {
+      const batch = group.slice(i, i + BATCH);
+      await pool.add(batch, { trainerId: "bio", lang, grade: GRADE, level: LEVEL });
+      added += batch.length;
+    }
+  }
+  const stale = [...stored].filter((id) => !wanted.has(id));
+  await pool.remove(stale);
+  const result = { added, removed: stale.length, total: wanted.size };
+  if (added > 0 || stale.length > 0) log?.info({ trainer: "bio", ...result }, "synced the biology pool with its templates");
+  return result;
+}
+var inFlight = /* @__PURE__ */ new WeakMap();
 function ensureContent(pool, log) {
   const running = inFlight.get(pool);
   if (running) return running;
-  const attempt = seed(pool, log).catch((err) => {
-    inFlight.delete(pool);
-    throw err;
-  });
+  const attempt = syncContent(pool, log).then(
+    () => void 0,
+    (err) => {
+      inFlight.delete(pool);
+      throw err;
+    }
+  );
   inFlight.set(pool, attempt);
   return attempt;
 }
@@ -4419,7 +4734,7 @@ function isAnswerCorrect(user, correct, type) {
 }
 
 // packages/trainers/math/src/curriculum/lo.ts
-var lo2 = [
+var lo = [
   // ---- klasa 1 ----
   topic(
     "lo1.real",
@@ -4941,9 +5256,9 @@ var sp = [
 ];
 
 // packages/trainers/math/src/curriculum/index.ts
-var TOPICS2 = [...sp, ...lo2];
-var byId3 = new Map(TOPICS2.map((t) => [t.id, t]));
-var getTopic2 = (id) => byId3.get(id);
+var TOPICS2 = [...sp, ...lo];
+var byId2 = new Map(TOPICS2.map((t) => [t.id, t]));
+var getTopic2 = (id) => byId2.get(id);
 function topicsFor2(grade, level) {
   return TOPICS2.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
 }

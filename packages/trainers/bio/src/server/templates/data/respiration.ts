@@ -1,8 +1,10 @@
 // Content tables for dział 5, Układ oddechowy (LO3, zakres rozszerzony).
 import type { Difficulty } from "@portal/core";
 import type { Bi } from "./hormones.ts";
+import { P } from "../../../curriculum/lo.ts";
+import type { InParagraph } from "../tableTemplate.ts";
 
-export interface PartEntry {
+export interface PartEntry extends InParagraph {
   id: string;
   /** anatomical structure, singular nominative so questions can be phrased once */
   part: Bi;
@@ -19,6 +21,7 @@ export interface PartEntry {
 export const AIRWAY_PARTS: readonly PartEntry[] = [
   {
     id: "jama-nosowa",
+    paragraph: P.respiration.structure,
     part: { pl: "jama nosowa", ru: "носовая полость" },
     role: { pl: "ogrzewanie, nawilżanie i oczyszczanie wdychanego powietrza", ru: "согревание, увлажнение и очищение вдыхаемого воздуха" },
     aliases: { pl: ["nos"], ru: ["полость носа", "нос"] },
@@ -26,6 +29,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "gardlo",
+    paragraph: P.respiration.structure,
     part: { pl: "gardło", ru: "глотка" },
     role: { pl: "wspólny odcinek drogi oddechowej i pokarmowej", ru: "общий участок дыхательного и пищеварительного путей" },
     aliases: { pl: [], ru: [] },
@@ -33,6 +37,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "krtan",
+    paragraph: P.respiration.structure,
     part: { pl: "krtań", ru: "гортань" },
     role: { pl: "wytwarzanie dźwięków mowy dzięki strunom głosowym", ru: "образование звуков речи благодаря голосовым связкам" },
     aliases: { pl: [], ru: [] },
@@ -40,6 +45,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "nagłośnia",
+    paragraph: P.respiration.structure,
     part: { pl: "nagłośnia", ru: "надгортанник" },
     role: { pl: "zamykanie wejścia do krtani podczas połykania", ru: "закрытие входа в гортань во время глотания" },
     aliases: { pl: [], ru: [] },
@@ -47,6 +53,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "tchawica",
+    paragraph: P.respiration.structure,
     part: { pl: "tchawica", ru: "трахея" },
     role: { pl: "utrzymywanie drożności drogi oddechowej przez chrzęstne półpierścienie", ru: "поддержание проходимости дыхательного пути хрящевыми полукольцами" },
     aliases: { pl: [], ru: [] },
@@ -54,6 +61,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "oskrzela",
+    paragraph: P.respiration.structure,
     part: { pl: "oskrzela", ru: "бронхи" },
     role: { pl: "rozprowadzanie powietrza do obu płuc", ru: "распределение воздуха в оба лёгких" },
     aliases: { pl: ["oskrzele"], ru: ["бронх"] },
@@ -61,6 +69,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "oskrzeliki",
+    paragraph: P.respiration.structure,
     part: { pl: "oskrzeliki", ru: "бронхиолы" },
     role: { pl: "regulacja przepływu powietrza mięśniami gładkimi, bez chrząstek", ru: "регуляция потока воздуха гладкими мышцами, без хрящей" },
     aliases: { pl: ["oskrzelik"], ru: ["бронхиола"] },
@@ -68,6 +77,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "pecherzyki",
+    paragraph: P.respiration.structure,
     part: { pl: "pęcherzyki płucne", ru: "лёгочные альвеолы" },
     role: { pl: "wymiana gazowa między powietrzem a krwią", ru: "газообмен между воздухом и кровью" },
     aliases: { pl: ["alweole", "pęcherzyk płucny"], ru: ["альвеолы", "альвеола"] },
@@ -75,6 +85,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "surfaktant",
+    paragraph: P.respiration.structure,
     part: { pl: "surfaktant", ru: "сурфактант" },
     role: { pl: "obniżanie napięcia powierzchniowego, zapobiegające zapadaniu się pęcherzyków", ru: "снижение поверхностного натяжения, предотвращающее спадение альвеол" },
     aliases: { pl: [], ru: [] },
@@ -82,6 +93,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "oplucna",
+    paragraph: P.respiration.structure,
     part: { pl: "opłucna", ru: "плевра" },
     role: { pl: "utrzymywanie podciśnienia w jamie opłucnej wokół płuca", ru: "поддержание отрицательного давления в плевральной полости вокруг лёгкого" },
     aliases: { pl: [], ru: [] },
@@ -89,6 +101,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "przepona",
+    paragraph: P.respiration.ventilation,
     part: { pl: "przepona", ru: "диафрагма" },
     role: { pl: "powiększanie objętości klatki piersiowej przez obniżenie się przy skurczu", ru: "увеличение объёма грудной клетки за счёт опускания при сокращении" },
     aliases: { pl: [], ru: [] },
@@ -96,6 +109,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "miesnie-miedzyzebrowe",
+    paragraph: P.respiration.ventilation,
     part: { pl: "mięśnie międzyżebrowe zewnętrzne", ru: "наружные межрёберные мышцы" },
     role: { pl: "unoszenie żeber podczas wdechu", ru: "поднятие рёбер во время вдоха" },
     aliases: { pl: ["mięśnie międzyżebrowe"], ru: ["межрёберные мышцы"] },
@@ -103,6 +117,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "osrodek-oddechowy",
+    paragraph: P.respiration.ventilation,
     part: { pl: "ośrodek oddechowy", ru: "дыхательный центр" },
     role: { pl: "reagowanie na wzrost stężenia dwutlenku węgla w rdzeniu przedłużonym", ru: "реакция на рост концентрации углекислого газа в продолговатом мозге" },
     aliases: { pl: [], ru: [] },
@@ -110,6 +125,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "hemoglobina",
+    paragraph: P.respiration.ventilation,
     part: { pl: "hemoglobina", ru: "гемоглобин" },
     role: { pl: "wiązanie tlenu w płucach i oddawanie go w tkankach", ru: "связывание кислорода в лёгких и отдача его в тканях" },
     aliases: { pl: ["Hb"], ru: ["Hb"] },
@@ -117,6 +133,7 @@ export const AIRWAY_PARTS: readonly PartEntry[] = [
   },
   {
     id: "wodoroweglany",
+    paragraph: P.respiration.ventilation,
     part: { pl: "jony wodorowęglanowe", ru: "гидрокарбонат-ионы" },
     role: { pl: "przenoszenie większości dwutlenku węgla w osoczu krwi", ru: "перенос большей части углекислого газа в плазме крови" },
     aliases: { pl: ["wodorowęglany", "HCO3-"], ru: ["гидрокарбонаты", "HCO3-"] },

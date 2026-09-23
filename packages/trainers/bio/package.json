@@ -12,7 +12,8 @@
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "vitest run",
-    "render:templates": "node --env-file-if-exists=../../../.env --import tsx scripts/renderTemplates.ts"
+    "render:templates": "node --env-file-if-exists=../../../.env --import tsx scripts/renderTemplates.ts",
+    "gen:coverage": "node --import tsx scripts/genCoverage.ts"
   },
   "dependencies": {
     "@portal/ai": "*",

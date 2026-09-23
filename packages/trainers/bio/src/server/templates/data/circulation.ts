@@ -1,8 +1,10 @@
 // Content tables for dział 6, Układ krążenia. Odporność (LO3, zakres rozszerzony).
 import type { Difficulty } from "@portal/core";
 import type { Bi } from "./hormones.ts";
+import { P } from "../../../curriculum/lo.ts";
+import type { InParagraph } from "../tableTemplate.ts";
 
-export interface StructureEntry {
+export interface StructureEntry extends InParagraph {
   id: string;
   name: Bi;
   /** noun phrase, so plural names ("zastawki") still fit the singular question frame */
@@ -14,6 +16,7 @@ export interface StructureEntry {
 export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   {
     id: "przedsionek-prawy",
+    paragraph: P.circulation.structure,
     name: { pl: "prawy przedsionek", ru: "правое предсердие" },
     role: { pl: "przyjmowanie krwi odtlenowanej z żył głównych", ru: "приём венозной крови из полых вен" },
     aliases: { pl: [], ru: [] },
@@ -21,6 +24,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "komora-prawa",
+    paragraph: P.circulation.structure,
     name: { pl: "prawa komora", ru: "правый желудочек" },
     role: { pl: "tłoczenie krwi do pnia płucnego, czyli do krwiobiegu małego", ru: "нагнетание крови в лёгочный ствол, то есть в малый круг" },
     aliases: { pl: [], ru: [] },
@@ -28,6 +32,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "przedsionek-lewy",
+    paragraph: P.circulation.structure,
     name: { pl: "lewy przedsionek", ru: "левое предсердие" },
     role: { pl: "przyjmowanie krwi utlenowanej z żył płucnych", ru: "приём артериальной крови из лёгочных вен" },
     aliases: { pl: [], ru: [] },
@@ -35,6 +40,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "komora-lewa",
+    paragraph: P.circulation.structure,
     name: { pl: "lewa komora", ru: "левый желудочек" },
     role: { pl: "tłoczenie krwi do aorty pod najwyższym ciśnieniem", ru: "нагнетание крови в аорту под наибольшим давлением" },
     aliases: { pl: [], ru: [] },
@@ -42,6 +48,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "zastawki-przedsionkowo-komorowe",
+    paragraph: P.circulation.structure,
     name: { pl: "zastawki przedsionkowo-komorowe", ru: "предсердно-желудочковые клапаны" },
     role: { pl: "zapobieganie cofaniu się krwi z komór do przedsionków", ru: "предотвращение возврата крови из желудочков в предсердия" },
     aliases: { pl: ["zastawka dwudzielna", "zastawka trójdzielna"], ru: ["митральный клапан", "трёхстворчатый клапан"] },
@@ -49,6 +56,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "wezel-zatokowo-przedsionkowy",
+    paragraph: P.circulation.function,
     name: { pl: "węzeł zatokowo-przedsionkowy", ru: "синусно-предсердный узел" },
     role: { pl: "narzucanie rytmu skurczów jako naturalny rozrusznik serca", ru: "задание ритма сокращений как естественный водитель ритма" },
     aliases: { pl: ["węzeł zatokowy", "rozrusznik serca"], ru: ["синусовый узел", "водитель ритма"] },
@@ -56,6 +64,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "tetnice",
+    paragraph: P.circulation.structure,
     name: { pl: "tętnice", ru: "артерии" },
     role: { pl: "prowadzenie krwi z serca, z grubą warstwą mięśniową i bez zastawek", ru: "проведение крови от сердца, с толстым мышечным слоем и без клапанов" },
     aliases: { pl: ["tętnica"], ru: ["артерия"] },
@@ -63,6 +72,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "zyly",
+    paragraph: P.circulation.structure,
     name: { pl: "żyły", ru: "вены" },
     role: { pl: "prowadzenie krwi do serca, z zastawkami zapobiegającymi cofaniu", ru: "проведение крови к сердцу, с клапанами против обратного тока" },
     aliases: { pl: ["żyła"], ru: ["вена"] },
@@ -70,6 +80,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "naczynia-wlosowate",
+    paragraph: P.circulation.structure,
     name: { pl: "naczynia włosowate", ru: "капилляры" },
     role: { pl: "wymiana gazów i substancji między krwią a tkankami przez jedną warstwę komórek", ru: "обмен газов и веществ между кровью и тканями через один слой клеток" },
     aliases: { pl: ["kapilary", "naczynie włosowate"], ru: ["капилляр"] },
@@ -77,6 +88,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
   },
   {
     id: "uklad-limfatyczny",
+    paragraph: P.circulation.lymph,
     name: { pl: "naczynia limfatyczne", ru: "лимфатические сосуды" },
     role: { pl: "odprowadzanie nadmiaru płynu tkankowego z powrotem do krwiobiegu", ru: "отведение избытка тканевой жидкости обратно в кровоток" },
     aliases: { pl: ["układ limfatyczny"], ru: ["лимфатическая система"] },
@@ -87,6 +99,7 @@ export const HEART_AND_VESSELS: readonly StructureEntry[] = [
 export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   {
     id: "erytrocyty",
+    paragraph: P.circulation.blood,
     name: { pl: "erytrocyty", ru: "эритроциты" },
     role: { pl: "transport tlenu dzięki hemoglobinie, bez jądra komórkowego", ru: "транспорт кислорода благодаря гемоглобину, без клеточного ядра" },
     aliases: { pl: ["krwinki czerwone", "erytrocyt"], ru: ["красные кровяные клетки", "эритроцит"] },
@@ -94,6 +107,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "leukocyty",
+    paragraph: P.circulation.blood,
     name: { pl: "leukocyty", ru: "лейкоциты" },
     role: { pl: "obrona organizmu przed patogenami", ru: "защита организма от патогенов" },
     aliases: { pl: ["krwinki białe", "leukocyt"], ru: ["белые кровяные клетки", "лейкоцит"] },
@@ -101,6 +115,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "trombocyty",
+    paragraph: P.circulation.blood,
     name: { pl: "trombocyty", ru: "тромбоциты" },
     role: { pl: "udział w krzepnięciu krwi jako fragmenty komórek szpiku", ru: "участие в свёртывании крови как фрагменты клеток костного мозга" },
     aliases: { pl: ["płytki krwi", "trombocyt"], ru: ["кровяные пластинки", "тромбоцит"] },
@@ -108,6 +123,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "osocze",
+    paragraph: P.circulation.blood,
     name: { pl: "osocze", ru: "плазма крови" },
     role: { pl: "płynna część krwi, w ponad 90% złożona z wody", ru: "жидкая часть крови, более чем на 90% состоящая из воды" },
     aliases: { pl: [], ru: ["плазма"] },
@@ -115,6 +131,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "fibrynogen",
+    paragraph: P.circulation.blood,
     name: { pl: "fibrynogen", ru: "фибриноген" },
     role: { pl: "białko osocza przekształcane w fibrynę podczas krzepnięcia", ru: "белок плазмы, превращающийся в фибрин при свёртывании" },
     aliases: { pl: [], ru: [] },
@@ -122,6 +139,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "limfocyty-b",
+    paragraph: P.circulation.immune,
     name: { pl: "limfocyty B", ru: "B-лимфоциты" },
     role: { pl: "wytwarzanie przeciwciał po przekształceniu w komórki plazmatyczne", ru: "выработка антител после превращения в плазматические клетки" },
     aliases: { pl: ["limfocyt B"], ru: ["B-лимфоцит"] },
@@ -129,6 +147,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "limfocyty-t",
+    paragraph: P.circulation.immune,
     name: { pl: "limfocyty T", ru: "T-лимфоциты" },
     role: { pl: "niszczenie komórek zakażonych i sterowanie odpowiedzią odpornościową", ru: "уничтожение заражённых клеток и управление иммунным ответом" },
     aliases: { pl: ["limfocyt T"], ru: ["T-лимфоцит"] },
@@ -136,6 +155,7 @@ export const BLOOD_COMPONENTS: readonly StructureEntry[] = [
   },
   {
     id: "makrofagi",
+    paragraph: P.circulation.immune,
     name: { pl: "makrofagi", ru: "макрофаги" },
     role: { pl: "fagocytoza patogenów i prezentowanie ich antygenów", ru: "фагоцитоз патогенов и представление их антигенов" },
     aliases: { pl: ["makrofag"], ru: ["макрофаг"] },

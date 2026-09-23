@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { checkAnswer, topicIdsForTags } from "../../index.ts";
 import { toBioLang, type BioLang } from "../../lang.ts";
 import { api, ApiRequestError } from "../api/client.ts";
+import { migrateSettings, type Persisted } from "./migrate.ts";
 
 /**
  * Biology is a single-year course: class and level are not choices, they are what the trainer is.
@@ -172,6 +173,8 @@ export const useSession = create<State>()(
       name: "matema-bio-settings",
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ settings: s.settings, seenTaskIds: s.seenTaskIds }),
+      version: 1,
+      migrate: (persisted, version) => migrateSettings(persisted as Persisted, version),
     },
   ),
 );

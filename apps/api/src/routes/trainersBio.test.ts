@@ -3,9 +3,8 @@
 import { type LLMClient } from "@portal/ai";
 import type { Task } from "@portal/core";
 import { TaskPool } from "@portal/task-pool";
-import { topicsFor } from "@portal/trainer-bio";
+import { PARAGRAPH_TASKS, paragraphsOf, PARAGRAPHS, topicsFor } from "@portal/trainer-bio";
 import { bioTrainer } from "@portal/trainer-bio/server";
-import { ALL_TEMPLATES, renderTemplate } from "@portal/trainer-bio/server/templates";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app.ts";
 
@@ -27,20 +26,13 @@ describe("trainer API (bio, offline)", () => {
   beforeEach(async () => {
     pool = new TaskPool(":memory:");
     client = new ForbiddenClient();
+    // no seeding step: the trainer syncs the pool with its templates on the first session
     app = await buildApp(client, { logger: false, pool, serveWeb: false });
-    // seed the pool the way scripts/renderTemplates.ts does
-    for (const template of ALL_TEMPLATES) {
-      const { tasks } = renderTemplate(template, { langs: ["pl"], targetCount: 60, attemptBudget: 500 });
-      await pool.add(
-        tasks.map((t) => t.task),
-        { trainerId: "bio", lang: "pl", grade: "lo3", level: "R" },
-      );
-    }
   });
 
-  it("serves the extended-level topics and nothing on the basic level", async () => {
+  it("serves the textbook's paragraphs on the extended level and nothing on the basic one", async () => {
     const r = await app.inject("/api/trainers/bio/topics?grade=lo3&level=R");
-    expect(r.json().topics).toHaveLength(11);
+    expect(r.json().topics).toHaveLength(54);
     const basic = await app.inject("/api/trainers/bio/topics?grade=lo3&level=P");
     expect(basic.json().topics).toEqual([]);
   });
@@ -77,14 +69,14 @@ describe("trainer API (bio, offline)", () => {
         grade: "lo3",
         level: "R",
         results: [
-          { taskId: "1", topicId: "bio.lo3.hormones", subtopic: "gruczoły dokrewne i hormony", difficulty: 1, question: "q", correct: false, userAnswer: "a", correctAnswer: "b", usedHint: false },
-          { taskId: "2", topicId: "bio.lo3.hormones", subtopic: "gruczoły dokrewne i hormony", difficulty: 1, question: "q", correct: false, userAnswer: "a", correctAnswer: "b", usedHint: false },
+          { taskId: "1", topicId: "bio.lo3.hormones.structure", subtopic: "gruczoły dokrewne i hormony", difficulty: 1, question: "q", correct: false, userAnswer: "a", correctAnswer: "b", usedHint: false },
+          { taskId: "2", topicId: "bio.lo3.hormones.structure", subtopic: "gruczoły dokrewne i hormony", difficulty: 1, question: "q", correct: false, userAnswer: "a", correctAnswer: "b", usedHint: false },
         ],
       },
     });
     expect(res.statusCode).toBe(200);
     expect(client.calls).toBe(0);
-    expect(res.json()).toMatchObject({ weakTopics: [{ topicId: "bio.lo3.hormones" }], suggestedTopicIds: ["bio.lo3.hormones"] });
+    expect(res.json()).toMatchObject({ weakTopics: [{ topicId: "bio.lo3.hormones.structure" }], suggestedTopicIds: ["bio.lo3.hormones.structure"] });
     expect(res.json().recommendations.length).toBeGreaterThan(0);
   });
 
@@ -112,7 +104,34 @@ describe("trainer API (bio, offline)", () => {
   });
 
   it("exposes biology topics to the curriculum helper", () => {
-    expect(topicsFor("lo3", "R")).toHaveLength(11);
+    expect(topicsFor("lo3", "R")).toHaveLength(54);
+  });
+
+  it("no longer builds a session from a whole-chapter id", async () => {
+    const res = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...body, topicIds: ["bio.lo3.hormones"] } });
+    expect(res.json()).toMatchObject({ code: "BAD_TOPICS" });
+  });
+
+  it("accepts the whole book in one request", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/trainers/bio/generate",
+      payload: { ...body, topicIds: PARAGRAPHS.map((p) => p.id), count: 20 },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().tasks).toHaveLength(20);
+  });
+
+  it("fills a full session from a chapter whose paragraphs are thin", async () => {
+    // Układ ruchu: 3.4 has two tasks per language, so its share of 20 comes from the other paragraphs
+    const motion = paragraphsOf("bio.lo3.motion").filter((p) => PARAGRAPH_TASKS[p.id]).map((p) => p.id);
+    expect(motion).toContain("bio.lo3.motion.bones");
+    for (let run = 0; run < 5; run++) {
+      const res = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...body, topicIds: motion, count: 20 } });
+      const tasks = res.json().tasks as Task[];
+      expect(tasks).toHaveLength(20);
+      for (const t of tasks) expect(motion).toContain(t.topicId);
+    }
   });
   it("fills an empty pool by itself, so a deploy needs no seeding step", async () => {
     const empty = new TaskPool(":memory:");
@@ -123,7 +142,7 @@ describe("trainer API (bio, offline)", () => {
       expect(res.statusCode).toBe(200);
       expect(res.json().tasks).toHaveLength(10);
       // both content languages, not just the one that was asked for
-      expect(await empty.count("bio")).toBeGreaterThan(100);
+      expect(await empty.count("bio")).toBe(2 * Object.values(PARAGRAPH_TASKS).reduce((a, b) => a + b, 0));
     } finally {
       await fresh.close();
       empty.close();
@@ -138,7 +157,8 @@ describe("trainer API (bio, offline)", () => {
     lang: "pl",
     grade: "lo3",
     level: "R",
-    topicIds: ["bio.lo3.hormones"],
+    // Układ hormonalny — its three paragraphs with tasks
+    topicIds: ["bio.lo3.hormones.structure", "bio.lo3.hormones.regulation", "bio.lo3.hormones.disorders"],
     count: 10,
     answerMode: "mixed",
   };

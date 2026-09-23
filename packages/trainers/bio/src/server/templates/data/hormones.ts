@@ -3,6 +3,8 @@
 // hormone -> gland. Distractors are drawn from this same table, which is what makes them
 // pedagogically useful (a neighbouring gland's hormone is exactly the confusion worth testing).
 import type { Difficulty } from "@portal/core";
+import { P } from "../../../curriculum/lo.ts";
+import type { InParagraph } from "../tableTemplate.ts";
 
 /** Biology content is authored in Polish and Russian only — see the trainer's BioLang. */
 export interface Bi {
@@ -312,7 +314,7 @@ export const DISORDERS: readonly DisorderEntry[] = [
 ];
 
 /** Homeostatic loops taught as "co się stanie, gdy…" — the core of ujemne sprzężenie zwrotne. */
-export interface LoopEntry {
+export interface LoopEntry extends InParagraph {
   id: string;
   /** the disturbance the body detects */
   stimulus: Bi;
@@ -326,6 +328,7 @@ export interface LoopEntry {
 export const LOOPS: readonly LoopEntry[] = [
   {
     id: "glukoza-wzrost",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom glukozy we krwi rośnie po posiłku", ru: "уровень глюкозы в крови растёт после еды" },
     hormone: { pl: "insulina", ru: "инсулин" },
     response: { pl: "glukoza wnika do komórek i jest magazynowana jako glikogen", ru: "глюкоза поступает в клетки и запасается в виде гликогена" },
@@ -333,6 +336,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "glukoza-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom glukozy we krwi spada między posiłkami", ru: "уровень глюкозы в крови падает между приёмами пищи" },
     hormone: { pl: "glukagon", ru: "глюкагон" },
     response: { pl: "glikogen wątroby jest rozkładany do glukozy", ru: "гликоген печени расщепляется до глюкозы" },
@@ -340,6 +344,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "wapn-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom wapnia we krwi spada", ru: "уровень кальция в крови падает" },
     hormone: { pl: "parathormon", ru: "паратгормон" },
     response: { pl: "wapń jest uwalniany z kości i silniej wchłaniany w jelicie", ru: "кальций высвобождается из костей и сильнее всасывается в кишечнике" },
@@ -347,6 +352,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "wapn-wzrost",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom wapnia we krwi rośnie", ru: "уровень кальция в крови растёт" },
     hormone: { pl: "kalcytonina", ru: "кальцитонин" },
     response: { pl: "wapń jest odkładany w kościach, a jego stężenie we krwi spada", ru: "кальций откладывается в костях, и его концентрация в крови падает" },
@@ -354,6 +360,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "woda-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "organizm traci wodę i osmolarność krwi rośnie", ru: "организм теряет воду и осмолярность крови растёт" },
     hormone: { pl: "wazopresyna", ru: "вазопрессин" },
     response: { pl: "nerki zagęszczają mocz, oddając mniej wody", ru: "почки концентрируют мочу, отдавая меньше воды" },
@@ -361,6 +368,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "sod-spadek",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "poziom sodu we krwi spada, a wraz z nim ciśnienie", ru: "уровень натрия в крови падает, а вместе с ним давление" },
     hormone: { pl: "aldosteron", ru: "альдостерон" },
     response: { pl: "nerki zatrzymują sód, a za nim wodę", ru: "почки задерживают натрий, а вслед за ним воду" },
@@ -368,6 +376,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "stres",
+    paragraph: P.hormones.disorders,
     stimulus: { pl: "organizm reaguje na nagłe zagrożenie", ru: "организм реагирует на внезапную угрозу" },
     hormone: { pl: "adrenalina", ru: "адреналин" },
     response: { pl: "serce bije szybciej, a do krwi trafia dodatkowa glukoza", ru: "сердце бьётся чаще, а в кровь поступает дополнительная глюкоза" },
@@ -375,6 +384,7 @@ export const LOOPS: readonly LoopEntry[] = [
   },
   {
     id: "zimno",
+    paragraph: P.hormones.regulation,
     stimulus: { pl: "temperatura otoczenia spada i organizm się wychładza", ru: "температура среды падает и организм охлаждается" },
     hormone: { pl: "tyroksyna", ru: "тироксин" },
     response: { pl: "tempo przemiany materii rośnie i wytwarza się więcej ciepła", ru: "скорость обмена веществ растёт и вырабатывается больше тепла" },

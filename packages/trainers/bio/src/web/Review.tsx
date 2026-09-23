@@ -1,6 +1,6 @@
 import type { TrainerReviewProps } from "@portal/trainer-sdk";
 import { useTranslation } from "react-i18next";
-import { getTopic } from "../index.ts";
+import { topicLabel } from "../index.ts";
 import { correctAnswerText } from "./components/format.ts";
 
 /** Read-only review of a past biology session (portal history page). */
@@ -21,7 +21,7 @@ export default function BioReview({ lang, tasks }: TrainerReviewProps) {
             className={`rounded-xl p-4 ring-1 ${record.correct ? "bg-emerald-50/60 ring-emerald-200" : "bg-rose-50/60 ring-rose-200"}`}
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-xs text-slate-500">
-              <span>{getTopic(task.topicId)?.name[lang] ?? task.topicId}</span>
+              <span>{topicLabel(task.topicId, lang)}</span>
               <span aria-hidden>{record.correct ? "✓" : record.userAnswer == null ? "—" : "✗"}</span>
             </div>
             <p className="text-slate-900">{task.question}</p>

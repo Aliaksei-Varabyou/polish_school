@@ -1,6 +1,6 @@
 // Web entry of the biology trainer: catalog metadata and translations load eagerly, the app lazily.
 import type { TrainerWeb } from "@portal/trainer-sdk";
-import { getTopic } from "../curriculum/index.ts";
+import { topicLabel } from "../curriculum/index.ts";
 import { BIO_LANGS } from "../lang.ts";
 import en from "./i18n/en.json";
 import pl from "./i18n/pl.json";
@@ -19,7 +19,7 @@ export const bioTrainerWeb: TrainerWeb = {
   // the UI speaks all three portal languages; the tasks themselves exist only in these two
   contentLangs: [...BIO_LANGS],
   translations: { ru, en, pl },
-  topicName: (topicId, lang) => getTopic(topicId)?.name[lang] ?? topicId,
+  topicName: (topicId, lang) => topicLabel(topicId, lang),
   load: () => import("./App.tsx"),
   loadReview: () => import("./Review.tsx"),
 };

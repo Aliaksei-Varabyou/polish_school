@@ -4,6 +4,7 @@ import { intRange } from "@portal/trainer-sdk/templates";
 import { calcTemplate, cap, choiceFromTable, termFromTable, type BioTemplate } from "../tableTemplate.ts";
 import type { StructureEntry } from "../data/circulation.ts";
 import { NEPHRON_PARTS, URINE_PROCESSES, type ProcessEntry } from "../data/urinary.ts";
+import { P } from "../../../curriculum/lo.ts";
 
 const TOPIC = "bio.lo3.urinary";
 const ANATOMY = { pl: "budowa nerki i nefronu", ru: "строение почки и нефрона" };
@@ -15,6 +16,7 @@ const partToRole = choiceFromTable<StructureEntry>({
   id: `${TOPIC}.part-to-role`,
   topicId: TOPIC,
   rows: NEPHRON_PARTS,
+  paragraph: P.urinary.structure,
   subtopic: ANATOMY,
   difficulty: tier,
   shift: 0,
@@ -29,6 +31,7 @@ const roleToPart = termFromTable<StructureEntry>({
   id: `${TOPIC}.role-to-part`,
   topicId: TOPIC,
   rows: NEPHRON_PARTS,
+  paragraph: P.urinary.structure,
   subtopic: ANATOMY,
   difficulty: tier,
   question: (r, lang) =>
@@ -44,6 +47,7 @@ const processToDescription = choiceFromTable<ProcessEntry>({
   id: `${TOPIC}.process-to-description`,
   topicId: TOPIC,
   rows: URINE_PROCESSES,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["homeostaza"],
   difficulty: tier,
@@ -59,6 +63,7 @@ const descriptionToProcess = termFromTable<ProcessEntry>({
   id: `${TOPIC}.description-to-process`,
   topicId: TOPIC,
   rows: URINE_PROCESSES,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["homeostaza"],
   difficulty: tier,
@@ -76,6 +81,7 @@ const descriptionToProcess = termFromTable<ProcessEntry>({
 const filteredLoad = calcTemplate({
   id: `${TOPIC}.filtered-load`,
   topicId: TOPIC,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia"],
   difficulty: 2,
@@ -101,6 +107,7 @@ const filteredLoad = calcTemplate({
 const clearance = calcTemplate({
   id: `${TOPIC}.clearance`,
   topicId: TOPIC,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia"],
   difficulty: 3,
@@ -125,6 +132,7 @@ const clearance = calcTemplate({
 const reabsorbedWater = calcTemplate({
   id: `${TOPIC}.reabsorbed-water`,
   topicId: TOPIC,
+  paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia", "homeostaza"],
   difficulty: 2,

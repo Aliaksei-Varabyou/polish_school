@@ -1,76 +1,79 @@
-// Fills the task pool from the templates when it is empty.
+// Keeps the task pool in step with the templates.
 //
-// Biology has no LLM to fall back on, so an empty pool means an empty session. Rather than making
-// every deploy depend on someone remembering to run scripts/renderTemplates.ts against production,
-// the trainer seeds itself on first use: the rendering is pure computation with no network calls,
-// so it is something the server can simply do.
-import type { Grade, Level, Task } from "@portal/core";
+// Biology has no LLM to fall back on: the templates are the content, and the pool is only a copy of
+// them the session pipeline can query. So on first use each server instance reconciles the two by
+// id — task ids are content hashes (see contentId), which makes "different id" mean "different
+// task". Rows the templates no longer produce are dropped and new ones stored, so a deploy with
+// edited content, content moved to another paragraph, or a first deploy onto an empty pool all go
+// live without anyone running a script against production.
+import type { Task } from "@portal/core";
 import type { TaskPoolStore } from "@portal/task-pool";
-import { getTopic } from "../curriculum/index.ts";
-import { BIO_LANGS, type BioLang } from "../lang.ts";
-import { ALL_TEMPLATES, renderTemplate } from "./templates/index.ts";
+import type { BioLang } from "../lang.ts";
+import { GRADE, LEVEL, renderContent } from "./content.ts";
 
-/** Tasks kept per template. Matches the default of the offline script. */
-const TARGET = 40;
+type InfoLog = { info(obj: object, msg: string): void };
 
-/** The whole trainer is one year of one track — see curriculum/lo.ts. */
-const GRADE: Grade = "lo3";
-const LEVEL: Level = "R";
-
-/**
- * One attempt per pool, not per request. Keyed by the store rather than by the process so that two
- * pools (tests, or a server that swaps its backend) don't shadow each other, and dropped again if
- * the attempt fails, so a transient database error doesn't leave the trainer permanently convinced
- * it has content.
- */
-const inFlight = new WeakMap<TaskPoolStore, Promise<void>>();
-
-/** Rows per insert. Everything is rendered first and written in a few batches rather than one call
- *  per template: against Postgres each call is a network round trip, and there are ~50 templates. */
+/** Rows per insert: against Postgres each call is a network round trip. */
 const BATCH = 200;
 
-async function seed(pool: TaskPoolStore, log?: { info(obj: object, msg: string): void }): Promise<void> {
-  if ((await pool.count("bio")) > 0) return;
-
-  // every biology topic shares a grade and level, so the pool context differs only by language
-  const byLang = new Map<BioLang, Task[]>(BIO_LANGS.map((lang) => [lang, []]));
-  for (const template of ALL_TEMPLATES) {
-    if (!getTopic(template.topicId)) continue;
-    for (const { lang, task } of renderTemplate(template, { langs: [...BIO_LANGS], targetCount: TARGET }).tasks) {
-      byLang.get(lang)!.push(task);
-    }
-  }
-
-  let stored = 0;
-  for (const [lang, tasks] of byLang) {
-    for (let i = 0; i < tasks.length; i += BATCH) {
-      const batch = tasks.slice(i, i + BATCH);
-      await pool.add(batch, { trainerId: "bio", lang, grade: GRADE, level: LEVEL });
-      stored += batch.length;
-    }
-  }
-  log?.info({ trainer: "bio", stored }, "seeded the biology pool from templates");
+export interface SyncResult {
+  added: number;
+  removed: number;
+  total: number;
 }
 
 /**
- * Called by the generation pipeline before it takes anything from the pool.
- *
- * Only the first empty pool costs anything: afterwards this is one `count` query per process, and
- * writes are idempotent (task ids are a hash of the substitution), so two instances racing each
- * other duplicate the work but not the rows.
- *
- * It deliberately does *not* re-seed after the content changes — ids stay the same, so the pool
- * would ignore the new text. Rolling out edited content is still `npm run render:templates` plus
- * deleting the affected rows, or a new template id.
+ * Makes the pool's biology rows exactly the rendered content. New rows go in before stale ones come
+ * out, so a session running meanwhile sees extra tasks at worst, never missing ones. Two instances
+ * doing this at once is harmless: inserts ignore duplicates and deleting a row twice is a no-op.
  */
-export function ensureContent(pool: TaskPoolStore, log?: { info(obj: object, msg: string): void }): Promise<void> {
+export async function syncContent(pool: TaskPoolStore, log?: InfoLog): Promise<SyncResult> {
+  const { tasks } = renderContent();
+  const wanted = new Set(tasks.map((t) => t.task.id));
+  const stored = new Set(await pool.listIds("bio"));
+
+  const missing = new Map<BioLang, Task[]>();
+  for (const { lang, task } of tasks) {
+    if (stored.has(task.id)) continue;
+    missing.set(lang, [...(missing.get(lang) ?? []), task]);
+  }
+  let added = 0;
+  for (const [lang, group] of missing) {
+    for (let i = 0; i < group.length; i += BATCH) {
+      const batch = group.slice(i, i + BATCH);
+      await pool.add(batch, { trainerId: "bio", lang, grade: GRADE, level: LEVEL });
+      added += batch.length;
+    }
+  }
+
+  const stale = [...stored].filter((id) => !wanted.has(id));
+  await pool.remove(stale);
+
+  const result = { added, removed: stale.length, total: wanted.size };
+  if (added > 0 || stale.length > 0) log?.info({ trainer: "bio", ...result }, "synced the biology pool with its templates");
+  return result;
+}
+
+/**
+ * One sync per pool, not per request. Keyed by the store rather than by the process so that two
+ * pools (tests, or a server that swaps its backend) don't shadow each other, and dropped again if
+ * the attempt fails, so a transient database error is retried on the next session instead of
+ * leaving the pool out of date for the life of the instance.
+ */
+const inFlight = new WeakMap<TaskPoolStore, Promise<void>>();
+
+/** Called by the generation pipeline before it takes anything from the pool. */
+export function ensureContent(pool: TaskPoolStore, log?: InfoLog): Promise<void> {
   const running = inFlight.get(pool);
   if (running) return running;
 
-  const attempt = seed(pool, log).catch((err: unknown) => {
-    inFlight.delete(pool);
-    throw err;
-  });
+  const attempt = syncContent(pool, log).then(
+    () => undefined,
+    (err: unknown) => {
+      inFlight.delete(pool);
+      throw err;
+    },
+  );
   inFlight.set(pool, attempt);
   return attempt;
 }
