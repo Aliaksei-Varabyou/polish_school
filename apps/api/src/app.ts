@@ -34,6 +34,11 @@ export interface AppOptions {
   publicUrl?: string;
   /** serve apps/web/dist when it exists (disabled in tests) */
   serveWeb?: boolean;
+  /**
+   * Per-IP request limits. Off only for the end-to-end suite (DISABLE_RATE_LIMIT=1): it runs every
+   * flow from one address within seconds, page assets included, and would trip them by volume alone.
+   */
+  rateLimit?: boolean;
 }
 
 export async function buildApp(
@@ -47,12 +52,13 @@ export async function buildApp(
     mailer = createMailer(),
     publicUrl = process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 8787}`,
     serveWeb = true,
+    rateLimit: limitRequests = process.env.DISABLE_RATE_LIMIT !== "1",
   }: AppOptions = {},
 ) {
   const app = Fastify({ logger, bodyLimit: 256 * 1024 });
 
   await app.register(cors, { origin: process.env.CORS_ORIGIN?.split(",") ?? true });
-  await app.register(rateLimit, { global: true, max: 120, timeWindow: "1 minute" });
+  if (limitRequests) await app.register(rateLimit, { global: true, max: 120, timeWindow: "1 minute" });
   registerAuth(app, db);
 
   app.get("/api/health", async () => {

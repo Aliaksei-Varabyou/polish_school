@@ -22,6 +22,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 300_000,
-    env: { LLM_PROVIDER: "mock", PORT: String(PORT), TASK_DB_PATH: ":memory:" },
+    // the whole suite runs from one address in seconds; the API's per-IP limits would trip on volume
+    env: { LLM_PROVIDER: "mock", PORT: String(PORT), TASK_DB_PATH: ":memory:", DISABLE_RATE_LIMIT: "1" },
   },
 });
