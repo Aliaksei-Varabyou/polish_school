@@ -2,6 +2,11 @@ import type { Task } from "@portal/core";
 import { ANSWER_TYPES, MAX_REPORTS, type PoolContext, type PoolQuery, type TaskPoolStore, type TaskReport } from "@portal/task-pool";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** Rows per page when listing ids; PostgREST's default max-rows is 1000. */
+const ID_PAGE = 1000;
+/** Ids per delete request. */
+const REMOVE_BATCH = 100;
+
 /** Task pool in Postgres (Supabase), shared by all API instances. Requires the service-role client. */
 export class SupabaseTaskPool implements TaskPoolStore {
   constructor(private admin: SupabaseClient) {}
@@ -49,6 +54,30 @@ export class SupabaseTaskPool implements TaskPoolStore {
     const { count, error } = await query;
     if (error) throw new Error(`pool count: ${error.message}`);
     return count ?? 0;
+  }
+
+  async listIds(trainerId: string): Promise<string[]> {
+    const ids: string[] = [];
+    // PostgREST caps a response (1000 rows by default), so read in pages until one comes back short
+    for (let from = 0; ; from += ID_PAGE) {
+      const { data, error } = await this.admin
+        .from("tasks")
+        .select("id")
+        .eq("trainer_id", trainerId)
+        .order("id")
+        .range(from, from + ID_PAGE - 1);
+      if (error) throw new Error(`pool listIds: ${error.message}`);
+      ids.push(...(data as { id: string }[]).map((r) => r.id));
+      if (data.length < ID_PAGE) return ids;
+    }
+  }
+
+  async remove(ids: readonly string[]): Promise<void> {
+    // the ids travel in the query string (`id=in.(…)`), so batches keep the URL well under proxy limits
+    for (let i = 0; i < ids.length; i += REMOVE_BATCH) {
+      const { error } = await this.admin.from("tasks").delete().in("id", ids.slice(i, i + REMOVE_BATCH));
+      if (error) throw new Error(`pool remove: ${error.message}`);
+    }
   }
 
   async report(taskId: string, report: TaskReport): Promise<boolean> {

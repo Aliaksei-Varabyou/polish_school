@@ -113,6 +113,26 @@ describe("renderTemplate", () => {
     for (const { task } of tasks) expect([1, 2, 3]).toContain(task.difficulty);
   });
 
+  it("lets topicOf place each substitution in its own topic, and verifies against that topic", () => {
+    const split = defineTemplate({
+      ...arithmetic,
+      id: "test.split",
+      topicOf: (p) => (p.a <= 2 ? "topic.low" : "topic.high"),
+    });
+    const { tasks, stats } = renderTemplate(split, { langs: ["ru"], targetCount: 25, attemptBudget: 25, verify: shapeOnly });
+    // the verifier's allow-list is the resolved topic: had it stayed `topicId`, every task would fail
+    expect(stats.rejected).toBe(0);
+    for (const { task } of tasks) {
+      const a = Number(task.question.split(" + ")[0]);
+      expect(task.topicId).toBe(a <= 2 ? "topic.low" : "topic.high");
+    }
+  });
+
+  it("keeps `topicId` for every task when topicOf is absent", () => {
+    const { tasks } = renderTemplate(arithmetic, { langs: ["ru"], targetCount: 5, verify: shapeOnly });
+    for (const { task } of tasks) expect(task.topicId).toBe("sp5.natural");
+  });
+
   it("renders a template authored in a subset of the portal languages", () => {
     const ruPlOnly = defineTemplate({
       id: "test.two-langs",

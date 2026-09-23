@@ -88,6 +88,18 @@ describe("TaskPool (SQLite)", () => {
     expect(await pool.report("missing", {})).toBe(false);
   });
 
+  it("lists one trainer's ids and removes tasks by id", async () => {
+    await pool.add([task("b"), task("a"), task("c")], ctx);
+    await pool.add([task("x")], { ...ctx, trainerId: "bio" });
+    expect(await pool.listIds("math")).toEqual(["a", "b", "c"]);
+    expect(await pool.listIds("bio")).toEqual(["x"]);
+
+    await pool.remove(["a", "c", "missing"]);
+    await pool.remove([]);
+    expect(await pool.listIds("math")).toEqual(["b"]);
+    expect(await pool.count()).toBe(2);
+  });
+
   it("returns the full task object and exports everything", async () => {
     const t = task("x", { answerType: "choice", correctChoice: "B", correctAnswer: "B", hint: "h" });
     await pool.add([t], { ...ctx, grade: "lo2", level: "R" });

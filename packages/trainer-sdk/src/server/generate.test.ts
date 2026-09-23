@@ -166,6 +166,43 @@ describe("generateTasks", () => {
     expect(outcome.ok && outcome.tasks).toHaveLength(10);
   });
 
+  describe("a topic that runs dry", () => {
+    // fake.t1 holds 1 task, fake.t2 holds 10: planSlots gives each 5 slots
+    async function lopsidedPool() {
+      const pool = newPool();
+      const make = (topicId: string, n: number): Task[] =>
+        Array.from({ length: n }, (_, i) => ({
+          id: `${topicId}:${i}`,
+          topicId,
+          subtopic: "x",
+          difficulty: 2,
+          question: `${i} + 1`,
+          answerType: "number",
+          correctAnswer: String(i + 1),
+          solution: "…",
+        }));
+      await pool.add([...make("fake.t1", 1), ...make("fake.t2", 10)], { trainerId: "fake", lang: "pl", grade: "sp7" });
+      return pool;
+    }
+    const twoTopics = { topicIds: ["fake.t1", "fake.t2"] };
+
+    it("hands its slots to the other chosen topics when the trainer is offline", async () => {
+      const offline: TrainerServer = { ...fakeTrainer, usesLLM: false, reuseRatio: 1 };
+      const outcome = await generateTasks(request(twoTopics), { trainer: offline, client: new FailingClient(), pool: await lopsidedPool() });
+
+      expect(outcome.ok && outcome.tasks).toHaveLength(10);
+      const byTopic = outcome.ok ? outcome.tasks.map((t) => t.topicId) : [];
+      expect(byTopic.filter((id) => id === "fake.t1")).toHaveLength(1);
+      expect(new Set(outcome.ok ? outcome.tasks.map((t) => t.id) : []).size).toBe(10); // nothing served twice
+    });
+
+    it("leaves an LLM-backed trainer's gaps alone (it generates for the requested topic instead)", async () => {
+      // the AI is down, so only the pool answers — and each slot keeps to its own topic, as before
+      const outcome = await generateTasks(request(twoTopics), { trainer: fakeTrainer, client: new FailingClient(), pool: await lopsidedPool(), reuseRatio: 0.5 });
+      expect(outcome.ok && outcome.tasks).toHaveLength(6); // t1: 1 of 5, t2: 5 of 5
+    });
+  });
+
   it("keeps the LLM rounds for trainers that do not opt out", async () => {
     const mock = new MockClient();
     const { outcome } = await run(mock, newPool());

@@ -62,6 +62,12 @@ export interface TaskTemplate<P extends Record<string, ParamSpec> = Record<strin
   /** stable id prefix; combined with the substitution values to form each rendered task's id */
   id: string;
   topicId: string;
+  /**
+   * Picks the topic per substitution, overriding `topicId`. For content tables whose rows belong to
+   * different topics (biology: one table spans several textbook paragraphs) — the rows keep sharing
+   * one template, so wrong answers are still drawn from the whole table.
+   */
+  topicOf?: (p: ParamsOf<P>, d: Derived) => string;
   /** a function when difficulty varies per substitution (e.g. one row of a term table per item) */
   difficulty: Difficulty | ((p: ParamsOf<P>, d: Derived) => Difficulty);
   answerType: AnswerType;

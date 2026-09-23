@@ -45,12 +45,18 @@ const paramsHash = (params: Record<string, unknown>): string =>
     .digest("hex")
     .slice(0, 10);
 
-function buildRaw<P extends Record<string, ParamSpec>, L extends Lang>(template: TaskTemplate<P, L>, p: ParamsOf<P>, d: Derived, lang: L) {
+function buildRaw<P extends Record<string, ParamSpec>, L extends Lang>(
+  template: TaskTemplate<P, L>,
+  p: ParamsOf<P>,
+  d: Derived,
+  lang: L,
+  topicId: string,
+) {
   const isChoice = template.answerType === "choice";
   const choices = isChoice ? template.choices?.(p, d, lang) : undefined;
   const correctChoice = isChoice ? template.correctChoiceLabel?.(p, d) : undefined;
   return {
-    topicId: template.topicId,
+    topicId,
     subtopic: template.subtopic[lang],
     difficulty: typeof template.difficulty === "function" ? template.difficulty(p, d) : template.difficulty,
     question: template.question(p, d, lang),
@@ -93,13 +99,14 @@ export function renderTemplate<P extends Record<string, ParamSpec>, L extends La
     }
     const derived = template.derive?.(p) ?? {};
     const hash = paramsHash(p as Record<string, unknown>);
+    const topicId = template.topicOf?.(p, derived) ?? template.topicId;
 
     const perLang: RenderedTask<L>[] = [];
     let failReason: string | null = null;
     for (const lang of opts.langs) {
-      const raw = buildRaw(template, p, derived, lang);
+      const raw = buildRaw(template, p, derived, lang, topicId);
       const id = `${template.id}:${lang}:${hash}`;
-      const result = opts.verify(raw, { allowedTopicIds: [template.topicId], answerMode, id });
+      const result = opts.verify(raw, { allowedTopicIds: [topicId], answerMode, id });
       if (!result.ok) {
         failReason = `[${lang}] ${result.reason}`;
         break;

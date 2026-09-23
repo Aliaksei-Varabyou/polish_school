@@ -202,6 +202,28 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
     if (await takeFromPool(slot, false)) pending = pending.filter((s) => s !== slot);
   }
 
+  // 4) an offline trainer has no other source: a topic that ran dry (a thin textbook paragraph, or
+  // one without tasks carrying the requested tag) hands its remaining slots to the other chosen
+  // topics. An LLM-backed trainer never gets here with gaps it could fill — it generates instead.
+  if (pool && !usesLLM && pending.length > 0) {
+    for (const topic of shuffle(topics)) {
+      if (pending.length === 0) break;
+      const taken = await pool.take({
+        ...ctx,
+        topicId: topic.id,
+        answerMode: req.answerMode,
+        tags: req.tagIds,
+        excludeIds: [...exclude],
+        limit: pending.length,
+      });
+      for (const task of taken) {
+        exclude.add(task.id);
+        fromPool.push(task);
+      }
+      pending = pending.slice(taken.length);
+    }
+  }
+
   const stats: GenerateStats = {
     requested: req.count,
     reused,

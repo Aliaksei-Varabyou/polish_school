@@ -56,7 +56,7 @@ describe.skipIf(!available)("SupabaseTaskPool (local Supabase)", () => {
   });
 
   afterAll(async () => {
-    await db.admin.from("tasks").delete().eq("trainer_id", trainerId);
+    await db.admin.from("tasks").delete().like("trainer_id", `${trainerId}%`);
   });
 
   it("adds tasks once and filters by context, topic and answer type", async () => {
@@ -99,6 +99,24 @@ describe.skipIf(!available)("SupabaseTaskPool (local Supabase)", () => {
 
     const { data } = await db.admin.from("task_reports").select("reason").eq("task_id", bad.id);
     expect(data?.map((r) => r.reason).sort()).toEqual(["wrong answer", null].sort());
+  });
+
+  it("lists ids past PostgREST's 1000-row page and removes them in batches, reports included", async () => {
+    // a trainer of its own, so the other tests' rows don't count
+    const listCtx = { ...ctx, trainerId: `${trainerId}-list` };
+    const many = Array.from({ length: 1150 }, (_, i) => task(`many-${String(i).padStart(4, "0")}`));
+    for (let i = 0; i < many.length; i += 500) await pool.add(many.slice(i, i + 500), listCtx);
+
+    const listed = await pool.listIds(listCtx.trainerId);
+    expect(listed).toHaveLength(1150);
+    expect(new Set(listed).size).toBe(1150);
+
+    const reported = many[0].id;
+    expect(await pool.report(reported, { reason: "x" })).toBe(true);
+    await pool.remove(many.slice(0, 250).map((t) => t.id)); // three delete requests
+    expect(await pool.listIds(listCtx.trainerId)).toHaveLength(900);
+    const { data } = await db.admin.from("task_reports").select("id").eq("task_id", reported);
+    expect(data).toEqual([]); // on delete cascade
   });
 
   // keep this in step with the SQLite pool's equivalent test: the two implementations must agree

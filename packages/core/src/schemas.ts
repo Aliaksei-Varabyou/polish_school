@@ -24,7 +24,8 @@ export const GenerateRequest = z
     lang: Lang,
     grade: Grade,
     level: Level.optional(),
-    topicIds: z.array(z.string().min(1)).min(1).max(30),
+    // room for a whole textbook: biology selects paragraphs, 54 of them in LO3
+    topicIds: z.array(z.string().min(1)).min(1).max(64),
     count: z.number().int().refine((n) => (TASK_COUNTS as readonly number[]).includes(n), {
       message: "count must be one of 5, 10, 15, 20",
     }),

@@ -34,6 +34,10 @@ export interface TaskPoolStore {
   count(trainerId?: string): Promise<number>;
   /** Returns false when the task is not in the pool. Tasks with too many reports are no longer served. */
   report(taskId: string, report: TaskReport): Promise<boolean>;
+  /** Ids of every stored task of one trainer: lets a trainer with rendered content reconcile the pool with it. */
+  listIds(trainerId: string): Promise<string[]>;
+  /** Deletes tasks by id, together with their reports. Unknown ids are ignored. */
+  remove(ids: readonly string[]): Promise<void>;
 }
 
 /** Tasks with this many reports are not served anymore. */
@@ -169,6 +173,16 @@ export class TaskPool implements TaskPoolStore {
 
   async report(taskId: string, _report: TaskReport): Promise<boolean> {
     return this.db.prepare("UPDATE tasks SET reports = reports + 1 WHERE id = ?").run(taskId).changes > 0;
+  }
+
+  async listIds(trainerId: string): Promise<string[]> {
+    const rows = this.db.prepare("SELECT id FROM tasks WHERE trainer_id = ? ORDER BY id").all(trainerId) as { id: string }[];
+    return rows.map((r) => r.id);
+  }
+
+  async remove(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) return;
+    this.db.prepare("DELETE FROM tasks WHERE id IN (SELECT value FROM json_each(?))").run(JSON.stringify(ids));
   }
 
   /** All stored tasks (used to copy a local pool into Postgres). */
