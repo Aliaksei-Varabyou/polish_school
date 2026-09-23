@@ -1,15 +1,8 @@
 // Dział 6: Układ krążenia. Odporność. The largest dział of the year — heart and vessels, blood,
 // blood groups and immunity — plus the cardiac-output calculations.
 import { intRange } from "@portal/trainer-sdk/templates";
-import { calcTemplate, cap, choiceFromTable, termFromTable, type BioTemplate } from "../tableTemplate.ts";
-import {
-  BLOOD_COMPONENTS,
-  BLOOD_GROUPS,
-  HEART_AND_VESSELS,
-  IMMUNITY,
-  type BloodGroupEntry,
-  type StructureEntry,
-} from "../data/circulation.ts";
+import { calcTemplate, choiceFromTable, pairFromTable, type BioTemplate } from "../tableTemplate.ts";
+import { BLOOD_COMPONENTS, BLOOD_GROUPS, HEART_AND_VESSELS, IMMUNITY, type BloodGroupEntry } from "../data/circulation.ts";
 
 const TOPIC = "bio.lo3.circulation";
 const HEART = { pl: "budowa i praca serca, naczynia krwionośne", ru: "строение и работа сердца, кровеносные сосуды" };
@@ -17,53 +10,42 @@ const BLOOD = { pl: "skład i funkcje krwi", ru: "состав и функции
 const GROUPS = { pl: "grupy krwi i transfuzje", ru: "группы крови и переливание" };
 const DEFENCE = { pl: "odporność nieswoista i swoista", ru: "неспецифический и специфический иммунитет" };
 
-const tier = (row: { tier: StructureEntry["tier"] }) => row.tier;
+const tier = (row: BloodGroupEntry) => row.tier;
 
-/** structure -> role and role -> structure, over any of the three anatomy/blood tables */
-function structurePair(idPrefix: string, rows: readonly StructureEntry[], subtopic: { pl: string; ru: string }, shift: number, misconception: { pl: string; ru: string }) {
-  return [
-    choiceFromTable<StructureEntry>({
-      id: `${TOPIC}.${idPrefix}-to-role`,
-      topicId: TOPIC,
-      rows,
-      subtopic,
-      difficulty: tier,
-      shift,
-      question: (r, lang) => (lang === "pl" ? `Element: ${r.name.pl}. Jaka jest jego rola?` : `Элемент: ${r.name.ru}. Какова его роль?`),
-      optionText: (r, lang) => r.role[lang],
-      misconception,
-      solution: (r, lang) => (lang === "pl" ? `${cap(r.name.pl)} — ${r.role.pl}.` : `${cap(r.name.ru)} — ${r.role.ru}.`),
-    }),
-    termFromTable<StructureEntry>({
-      id: `${TOPIC}.role-to-${idPrefix}`,
-      topicId: TOPIC,
-      rows,
-      subtopic,
-      difficulty: tier,
-      question: (r, lang) =>
-        lang === "pl"
-          ? `Funkcja: ${r.role.pl}. Podaj nazwę w mianowniku.`
-          : `Функция: ${r.role.ru}. Назови в именительном падеже.`,
-      term: (r, lang) => r.name[lang],
-      aliases: (r) => [r.name.pl, r.name.ru, ...r.aliases.pl, ...r.aliases.ru],
-      solution: (r, lang) => (lang === "pl" ? `Odpowiedź: ${r.name.pl}.` : `Ответ: ${r.name.ru}.`),
-    }),
-  ];
-}
-
-const heartTemplates = structurePair("heart", HEART_AND_VESSELS, HEART, 0, {
-  pl: "rola sąsiedniej jamy serca albo innego rodzaju naczynia",
-  ru: "роль соседней камеры сердца или другого типа сосуда",
+const heartTemplates = pairFromTable({
+  topicId: TOPIC,
+  slug: "heart",
+  rows: HEART_AND_VESSELS,
+  subtopic: HEART,
+  shift: 0,
+  label: { pl: "Element", ru: "Элемент" },
+  misconception: {
+    pl: "rola sąsiedniej jamy serca albo innego rodzaju naczynia",
+    ru: "роль соседней камеры сердца или другого типа сосуда",
+  },
 });
 
-const bloodTemplates = structurePair("blood", BLOOD_COMPONENTS, BLOOD, 1, {
-  pl: "rola innego składnika krwi",
-  ru: "роль другого компонента крови",
+const bloodTemplates = pairFromTable({
+  topicId: TOPIC,
+  slug: "blood",
+  rows: BLOOD_COMPONENTS,
+  subtopic: BLOOD,
+  shift: 1,
+  label: { pl: "Składnik krwi", ru: "Компонент крови" },
+  misconception: { pl: "rola innego składnika krwi", ru: "роль другого компонента крови" },
 });
 
-const immunityTemplates = structurePair("immunity", IMMUNITY, DEFENCE, 2, {
-  pl: "inny rodzaj odporności — czynna zamiast biernej albo naturalna zamiast sztucznej",
-  ru: "другой вид иммунитета — активный вместо пассивного или естественный вместо искусственного",
+const immunityTemplates = pairFromTable({
+  topicId: TOPIC,
+  slug: "immunity",
+  rows: IMMUNITY,
+  subtopic: DEFENCE,
+  shift: 2,
+  label: { pl: "Rodzaj odporności", ru: "Вид иммунитета" },
+  misconception: {
+    pl: "inny rodzaj odporności — czynna zamiast biernej albo naturalna zamiast sztucznej",
+    ru: "другой вид иммунитета — активный вместо пассивного или естественный вместо искусственного",
+  },
 });
 
 const transfusion = choiceFromTable<BloodGroupEntry>({

@@ -67,6 +67,12 @@ export interface TaskTemplate<P extends Record<string, ParamSpec> = Record<strin
   answerType: AnswerType;
   /** cross-cutting themes every task from this template carries (homeostaza, obliczenia, …) */
   tags?: string[];
+  /**
+   * Upper bound on how many tasks this template contributes, whatever the render target is. A
+   * template over a wide numeric range can otherwise outproduce the hand-written tables in its
+   * topic several times over, and the pool would serve mostly its kind of question.
+   */
+  maxTasks?: number;
   params: P;
   /** reject a substitution if it doesn't hold (e.g. keep answers integer, avoid degenerate cases) */
   constraint?: (p: ParamsOf<P>) => boolean;

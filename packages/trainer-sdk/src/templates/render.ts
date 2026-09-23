@@ -77,6 +77,7 @@ export function renderTemplate<P extends Record<string, ParamSpec>, L extends La
   template: TaskTemplate<P, L>,
   opts: RenderOptions<L>,
 ): RenderOutcome<L> {
+  const targetCount = Math.min(opts.targetCount, template.maxTasks ?? Number.POSITIVE_INFINITY);
   const attemptBudget = opts.attemptBudget ?? opts.targetCount * 8;
   const answerMode = template.answerType === "choice" ? "choice" : "input";
   const tasks: RenderedTask<L>[] = [];
@@ -85,7 +86,7 @@ export function renderTemplate<P extends Record<string, ParamSpec>, L extends La
   const rejectionReasons: string[] = [];
 
   for (const p of enumerateParams(template.params, attemptBudget)) {
-    if (accepted >= opts.targetCount) break;
+    if (accepted >= targetCount) break;
     if (template.constraint && !template.constraint(p)) {
       rejected++;
       continue;

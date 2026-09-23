@@ -2,6 +2,7 @@
 import type { Difficulty } from "@portal/core";
 import { choiceParam, type ChoiceParamSpec, type ParamSpec, type ParamsOf, type TaskTemplate } from "@portal/trainer-sdk/templates";
 import type { BioLang } from "../../lang.ts";
+import { normalizeTerm } from "../../answer.ts";
 import { LABELS, pickDistractors, placeChoices } from "./choices.ts";
 
 /** A piece of content written in both languages the trainer serves. */
@@ -116,8 +117,17 @@ export function termFromTable<T>(spec: TermSpec<T>): RowTemplate {
     correctAnswer: (p, _d, lang) => spec.term(spec.rows[p.i], lang),
     acceptedAnswers: (p, _d, lang) => {
       const row = spec.rows[p.i];
-      const canonical = spec.term(row, lang);
-      return [...new Set(spec.aliases(row, lang))].filter((a) => a && a !== canonical);
+      // deduplicated on the *normalized* form, not the raw string: listing both "жёлчь" and "желчь"
+      // is reasonable of an author, but the two fold together and the verifier rejects the collision
+      const seen = new Set([normalizeTerm(spec.term(row, lang))]);
+      const out: string[] = [];
+      for (const alias of spec.aliases(row, lang)) {
+        const key = normalizeTerm(alias);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(alias);
+      }
+      return out;
     },
     hint: spec.hint && {
       pl: (p) => spec.hint!(spec.rows[p.i], "pl"),
@@ -140,6 +150,8 @@ export interface CalcSpec<P extends Record<string, ParamSpec>> {
   constraint?: (p: ParamsOf<P>) => boolean;
   /** decimal places in the shown answer; omitted means the result is a whole number */
   decimals?: number;
+  /** overrides the default cap on how many tasks this calculation contributes */
+  maxTasks?: number;
   /** the calculation written out as a mathjs expression, built from the parameters */
   formula: (p: ParamsOf<P>) => string;
   /** the same quantity computed independently in TypeScript — the verifier compares the two */
@@ -166,6 +178,9 @@ export function calcTemplate<P extends Record<string, ParamSpec>>(spec: CalcSpec
     topicId: spec.topicId,
     answerType: "number",
     tags: spec.tags,
+    // a numeric range yields far more substitutions than a hand-written table has rows, so without
+    // a cap one calculation would crowd out every term question in its dział
+    maxTasks: spec.maxTasks ?? 12,
     params: spec.params,
     constraint: spec.constraint,
     difficulty: spec.difficulty,
@@ -183,4 +198,66 @@ export function calcTemplate<P extends Record<string, ParamSpec>>(spec: CalcSpec
       ru: (p) => spec.solution(p, show(spec.value(p)), "ru"),
     },
   };
+}
+
+/** A row of any "name / what it does" table — the shape most of the curriculum takes. */
+export interface NamedEntry {
+  id: string;
+  name: Bi;
+  /** noun phrase, not a verb phrase: plural names must fit the same singular question frame */
+  role: Bi;
+  aliases: { pl: string[]; ru: string[] };
+  tier: Difficulty;
+}
+
+export interface PairSpec {
+  topicId: string;
+  /** used in the template ids: `<topicId>.<slug>-to-role` and `<topicId>.role-to-<slug>` */
+  slug: string;
+  rows: readonly NamedEntry[];
+  subtopic: Bi;
+  tags?: string[];
+  /** rotates which letter holds the answer, so the position carries no information */
+  shift?: number;
+  misconception: Bi;
+  /** how the multiple-choice question names the thing being asked about */
+  label?: Bi;
+}
+
+/**
+ * The pair of templates almost every dział needs: recognise what a structure does, and recall the
+ * structure from what it does. One table, both directions, both languages.
+ */
+export function pairFromTable(spec: PairSpec): BioTemplate[] {
+  const label = spec.label ?? { pl: "Struktura", ru: "Структура" };
+  return [
+    choiceFromTable<NamedEntry>({
+      id: `${spec.topicId}.${spec.slug}-to-role`,
+      topicId: spec.topicId,
+      rows: spec.rows,
+      subtopic: spec.subtopic,
+      tags: spec.tags,
+      difficulty: (r) => r.tier,
+      shift: spec.shift ?? 0,
+      question: (r, lang) => `${label[lang]}: ${r.name[lang]}. ${lang === "pl" ? "Jaka jest jej rola?" : "Какова её роль?"}`,
+      optionText: (r, lang) => r.role[lang],
+      misconception: spec.misconception,
+      solution: (r, lang) => `${cap(r.name[lang])} — ${r.role[lang]}.`,
+    }),
+    termFromTable<NamedEntry>({
+      id: `${spec.topicId}.role-to-${spec.slug}`,
+      topicId: spec.topicId,
+      rows: spec.rows,
+      subtopic: spec.subtopic,
+      tags: spec.tags,
+      difficulty: (r) => r.tier,
+      question: (r, lang) =>
+        lang === "pl"
+          ? `Funkcja: ${r.role.pl}. Podaj nazwę w mianowniku.`
+          : `Функция: ${r.role.ru}. Назови в именительном падеже.`,
+      term: (r, lang) => r.name[lang],
+      aliases: (r) => [r.name.pl, r.name.ru, ...r.aliases.pl, ...r.aliases.ru],
+      solution: (r, lang) => (lang === "pl" ? `Odpowiedź: ${r.name.pl}.` : `Ответ: ${r.name.ru}.`),
+    }),
+  ];
 }

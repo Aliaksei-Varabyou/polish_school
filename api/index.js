@@ -1583,7 +1583,7 @@ var TAGS = [
   {
     id: "homeostaza",
     name: { pl: "Homeostaza i sprz\u0119\u017Cenie zwrotne", ru: "\u0413\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", en: "Homeostasis and feedback" },
-    topicIds: ["bio.lo3.hormones", "bio.lo3.urinary"]
+    topicIds: ["bio.lo3.hormones", "bio.lo3.urinary", "bio.lo3.organism", "bio.lo3.skin"]
   },
   {
     id: "regulacja-hormonalna",
@@ -1593,12 +1593,12 @@ var TAGS = [
   {
     id: "choroby",
     name: { pl: "Choroby i zaburzenia", ru: "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u0438 \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F", en: "Diseases and disorders" },
-    topicIds: ["bio.lo3.hormones"]
+    topicIds: ["bio.lo3.hormones", "bio.lo3.senses"]
   },
   {
     id: "obliczenia",
     name: { pl: "Zadania obliczeniowe", ru: "\u0420\u0430\u0441\u0447\u0451\u0442\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u044F", en: "Calculation tasks" },
-    topicIds: ["bio.lo3.respiration", "bio.lo3.circulation", "bio.lo3.urinary"]
+    topicIds: ["bio.lo3.respiration", "bio.lo3.circulation", "bio.lo3.urinary", "bio.lo3.senses", "bio.lo3.reproduction"]
   }
 ];
 var byId = new Map(TAGS.map((t) => [t.id, t]));

@@ -13,6 +13,7 @@ import { verifyTask } from "../verifyTask.ts";
 import type { BioTemplate } from "./tableTemplate.ts";
 import { lo3HormonesTemplates } from "./topics/lo3Hormones.ts";
 import { lo3CirculationTemplates } from "./topics/lo3Circulation.ts";
+import { lo3RemainingTemplates } from "./topics/lo3Remaining.ts";
 import { lo3RespirationTemplates } from "./topics/lo3Respiration.ts";
 import { lo3UrinaryTemplates } from "./topics/lo3Urinary.ts";
 
@@ -39,4 +40,5 @@ export const ALL_TEMPLATES: BioTemplate[] = [
   ...lo3RespirationTemplates,
   ...lo3CirculationTemplates,
   ...lo3UrinaryTemplates,
+  ...lo3RemainingTemplates,
 ];
