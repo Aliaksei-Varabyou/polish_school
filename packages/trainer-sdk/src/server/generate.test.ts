@@ -203,6 +203,61 @@ describe("generateTasks", () => {
     });
   });
 
+  describe("when the student has seen everything in the chosen topics", () => {
+    const offline: TrainerServer = { ...fakeTrainer, usesLLM: false, reuseRatio: 1 };
+    const make = (n: number, prefix = "t"): Task[] =>
+      Array.from({ length: n }, (_, i) => ({
+        id: `${prefix}${i}`,
+        topicId: "fake.t1",
+        subtopic: "x",
+        difficulty: 2,
+        question: `${prefix}${i}`,
+        answerType: "number",
+        correctAnswer: "1",
+        solution: "…",
+      }));
+    async function poolOf(tasks: Task[]) {
+      const pool = newPool();
+      await pool.add(tasks, { trainerId: "fake", lang: "pl", grade: "sp7" });
+      return pool;
+    }
+    const ask = (pool: TaskPool, trainer: TrainerServer, count: number, excludeIds: string[]) =>
+      generateTasks(request({ topicIds: ["fake.t1"], count, excludeIds }), { trainer, client: new FailingClient(), pool, reuseRatio: 0.5 });
+    const idsOf = (o: Awaited<ReturnType<typeof ask>>) => (o.ok ? o.tasks.map((t) => t.id).sort() : []);
+
+    it("repeats seen tasks instead of serving an empty session, never one twice within it", async () => {
+      const seen = make(3);
+      const outcome = await ask(await poolOf(seen), offline, 5, seen.map((t) => t.id));
+      expect(idsOf(outcome)).toEqual(["t0", "t1", "t2"]);
+      expect(outcome).toMatchObject({ ok: true, stats: { repeated: 3 } });
+    });
+
+    it("goes round the topic: the next session repeats the tasks shown least", async () => {
+      const seen = make(4);
+      const pool = await poolOf(seen);
+      const all = seen.map((t) => t.id);
+      const first = idsOf(await ask(pool, offline, 2, all));
+      const second = idsOf(await ask(pool, offline, 2, all));
+      expect([...first, ...second].sort()).toEqual(all);
+    });
+
+    it("serves unseen tasks before any repeat", async () => {
+      const seen = make(3, "old");
+      const fresh = make(2, "new");
+      const outcome = await ask(await poolOf([...seen, ...fresh]), offline, 3, seen.map((t) => t.id));
+      const ids = idsOf(outcome);
+      expect(ids).toContain("new0");
+      expect(ids).toContain("new1");
+      expect(outcome).toMatchObject({ stats: { repeated: 1 } });
+    });
+
+    it("leaves an LLM-backed trainer's exclusions alone", async () => {
+      const seen = make(3);
+      const outcome = await ask(await poolOf(seen), fakeTrainer, 5, seen.map((t) => t.id));
+      expect(outcome).toMatchObject({ ok: false, code: "RATE_LIMIT" });
+    });
+  });
+
   it("keeps the LLM rounds for trainers that do not opt out", async () => {
     const mock = new MockClient();
     const { outcome } = await run(mock, newPool());

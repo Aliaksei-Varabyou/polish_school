@@ -42,7 +42,8 @@
     "NETWORK": "Brak połączenia z serwerem. Sprawdź internet.",
     "LLM_ERROR": "Brak zadań dla wybranych działów. Wybierz inne albo spróbuj później.",
     "generic": "Coś poszło nie tak. Spróbuj ponownie.",
-    "partial": "Przygotowano {{got}} z {{count}} zadań."
+    "partial": "Przygotowano {{got}} z {{count}} zadań.",
+    "repeated": "Nowe zadania z wybranych paragrafów się skończyły — {{count}} z nich się powtarza."
   },
   "trainer": {
     "taskOf": "Zadanie {{n}} z {{total}}",

@@ -1375,23 +1375,32 @@ async function generateTasks(req, deps) {
   for (const slot of [...pending]) {
     if (await takeFromPool(slot, false)) pending = pending.filter((s) => s !== slot);
   }
-  if (pool && !usesLLM && pending.length > 0) {
+  const fillFromTopics = async (skip) => {
+    let filled = 0;
     for (const topic2 of shuffle(topics)) {
-      if (pending.length === 0) break;
+      if (!pool || pending.length === 0) break;
       const taken = await pool.take({
         ...ctx,
         topicId: topic2.id,
         answerMode: req.answerMode,
         tags: req.tagIds,
-        excludeIds: [...exclude],
+        excludeIds: [...skip],
         limit: pending.length
       });
       for (const task of taken) {
+        skip.add(task.id);
         exclude.add(task.id);
         fromPool.push(task);
       }
       pending = pending.slice(taken.length);
+      filled += taken.length;
     }
+    return filled;
+  };
+  if (pool && !usesLLM && pending.length > 0) await fillFromTopics(exclude);
+  let repeated = 0;
+  if (pool && !usesLLM && pending.length > 0) {
+    repeated = await fillFromTopics(new Set([...fromPool, ...generated].map((t) => t.id)));
   }
   const stats = {
     requested: req.count,
@@ -1399,7 +1408,8 @@ async function generateTasks(req, deps) {
     poolTopUp: fromPool.length - reused,
     generated: generated.length,
     rejected,
-    llmCalls
+    llmCalls,
+    repeated
   };
   log.info({ trainer: trainer.id, provider: client.name, ...stats }, "generate done");
   const tasks = [...fromPool, ...generated];
@@ -5578,11 +5588,12 @@ async function buildApp(client, {
   db,
   mailer = createMailer(),
   publicUrl = process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 8787}`,
-  serveWeb = true
+  serveWeb = true,
+  rateLimit: limitRequests = process.env.DISABLE_RATE_LIMIT !== "1"
 } = {}) {
   const app = Fastify({ logger, bodyLimit: 256 * 1024 });
   await app.register(cors, { origin: process.env.CORS_ORIGIN?.split(",") ?? true });
-  await app.register(rateLimit, { global: true, max: 120, timeWindow: "1 minute" });
+  if (limitRequests) await app.register(rateLimit, { global: true, max: 120, timeWindow: "1 minute" });
   registerAuth(app, db);
   app.get("/api/health", async () => {
     const inner = client instanceof LimitedClient ? client.inner : client;

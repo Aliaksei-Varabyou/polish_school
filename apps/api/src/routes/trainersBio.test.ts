@@ -133,6 +133,18 @@ describe("trainer API (bio, offline)", () => {
       for (const t of tasks) expect(motion).toContain(t.topicId);
     }
   });
+  it("serves a finished paragraph again instead of an empty session", async () => {
+    // §3.4 holds two tasks per language: after one session there is nothing unseen left in it
+    const bones = { ...body, topicIds: ["bio.lo3.motion.bones"], count: 5 };
+    const first = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: bones });
+    const seen = (first.json().tasks as Task[]).map((t) => t.id);
+    expect(seen).toHaveLength(2);
+
+    const again = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...bones, excludeIds: seen } });
+    expect(again.statusCode).toBe(200);
+    expect((again.json().tasks as Task[]).map((t) => t.id).sort()).toEqual([...seen].sort());
+  });
+
   it("fills an empty pool by itself, so a deploy needs no seeding step", async () => {
     const empty = new TaskPool(":memory:");
     const fresh = await buildApp(new ForbiddenClient(), { logger: false, pool: empty, serveWeb: false });

@@ -101,6 +101,8 @@ export interface GenerateStats {
   generated: number;
   rejected: number;
   llmCalls: number;
+  /** offline trainers: tasks the student had seen, served again because nothing unseen was left */
+  repeated: number;
 }
 
 export type GenerateOutcome =
@@ -202,26 +204,43 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
     if (await takeFromPool(slot, false)) pending = pending.filter((s) => s !== slot);
   }
 
-  // 4) an offline trainer has no other source: a topic that ran dry (a thin textbook paragraph, or
-  // one without tasks carrying the requested tag) hands its remaining slots to the other chosen
-  // topics. An LLM-backed trainer never gets here with gaps it could fill — it generates instead.
-  if (pool && !usesLLM && pending.length > 0) {
+  // Offline trainers only (steps 4 and 5): pending slots go to whichever chosen topic still has a
+  // task outside `skip`, one query per topic.
+  const fillFromTopics = async (skip: Set<string>): Promise<number> => {
+    let filled = 0;
     for (const topic of shuffle(topics)) {
-      if (pending.length === 0) break;
+      if (!pool || pending.length === 0) break;
       const taken = await pool.take({
         ...ctx,
         topicId: topic.id,
         answerMode: req.answerMode,
         tags: req.tagIds,
-        excludeIds: [...exclude],
+        excludeIds: [...skip],
         limit: pending.length,
       });
       for (const task of taken) {
+        skip.add(task.id);
         exclude.add(task.id);
         fromPool.push(task);
       }
       pending = pending.slice(taken.length);
+      filled += taken.length;
     }
+    return filled;
+  };
+
+  // 4) an offline trainer has no other source: a topic that ran dry (a thin textbook paragraph, or
+  // one without tasks carrying the requested tag) hands its remaining slots to the other chosen
+  // topics. An LLM-backed trainer never gets here with gaps it could fill — it generates instead.
+  if (pool && !usesLLM && pending.length > 0) await fillFromTopics(exclude);
+
+  // 5) still short: the student has seen everything the chosen topics hold. Repeat rather than
+  // serve a half-empty session (a paragraph with six tasks would otherwise go blank after one
+  // pass). Only this session's own tasks are skipped; the pool hands out the least-served first,
+  // so repeats go round the topic instead of returning to the same few.
+  let repeated = 0;
+  if (pool && !usesLLM && pending.length > 0) {
+    repeated = await fillFromTopics(new Set([...fromPool, ...generated].map((t) => t.id)));
   }
 
   const stats: GenerateStats = {
@@ -231,6 +250,7 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
     generated: generated.length,
     rejected,
     llmCalls,
+    repeated,
   };
   log.info({ trainer: trainer.id, provider: client.name, ...stats }, "generate done");
 

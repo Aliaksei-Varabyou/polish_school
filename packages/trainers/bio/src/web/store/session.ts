@@ -5,6 +5,7 @@ import { checkAnswer, topicIdsForTags } from "../../index.ts";
 import { toBioLang, type BioLang } from "../../lang.ts";
 import { api, ApiRequestError } from "../api/client.ts";
 import { migrateSettings, type Persisted } from "./migrate.ts";
+import { countRepeats, rememberSeen } from "./seen.ts";
 
 /**
  * Biology is a single-year course: class and level are not choices, they are what the trainer is.
@@ -41,6 +42,8 @@ interface State {
   error: string | null;
   /** set when fewer tasks were served than requested (the pool ran dry for those topics) */
   partial: { got: number; count: number } | null;
+  /** tasks served again because the chosen paragraphs had nothing new left */
+  repeated: number;
   tasks: Task[];
   index: number;
   answers: Record<string, AnswerRecord>;
@@ -82,6 +85,7 @@ export const useSession = create<State>()(
       status: "idle",
       error: null,
       partial: null,
+      repeated: 0,
       tasks: [],
       index: 0,
       answers: {},
@@ -118,7 +122,8 @@ export const useSession = create<State>()(
             answers: {},
             hints: {},
             partial: tasks.length < settings.count ? { got: tasks.length, count: settings.count } : null,
-            seenTaskIds: [...get().seenTaskIds, ...tasks.map((t) => t.id)].slice(-1000),
+            repeated: countRepeats(get().seenTaskIds, tasks.map((t) => t.id)),
+            seenTaskIds: rememberSeen(get().seenTaskIds, tasks.map((t) => t.id)),
           });
         } catch (err) {
           set({ status: "idle", error: err instanceof ApiRequestError ? err.code : "generic" });

@@ -40,7 +40,8 @@
     "NETWORK": "No connection to the server. Check your internet.",
     "LLM_ERROR": "No tasks for the selected sections yet. Pick others or try later.",
     "generic": "Something went wrong. Try again.",
-    "partial": "Prepared {{got}} of {{count}} tasks."
+    "partial": "Prepared {{got}} of {{count}} tasks.",
+    "repeated": "You have done every new task in these sections — {{count}} of them are repeats."
   },
   "trainer": {
     "taskOf": "Task {{n}} of {{total}}",

@@ -15,7 +15,7 @@ const DIFFICULTY_STYLE = {
 
 export function TrainerPage() {
   const { t } = useTranslation("bio");
-  const { tasks, index, answers, hints, partial, settings } = useSession();
+  const { tasks, index, answers, hints, partial, repeated, settings } = useSession();
   const { submitAnswer, revealHint, next, quit } = useSession.getState();
   const [solutionOpen, setSolutionOpen] = useState<string | null>(null);
 
@@ -40,6 +40,12 @@ export function TrainerPage() {
       {partial && index === 0 && !answered && (
         <div className="rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
           {t("errors.partial", partial)}
+        </div>
+      )}
+
+      {repeated > 0 && index === 0 && !answered && (
+        <div className="rounded-xl bg-sky-50 px-4 py-2 text-sm text-sky-800 ring-1 ring-sky-200">
+          {t("errors.repeated", { count: repeated })}
         </div>
       )}
 

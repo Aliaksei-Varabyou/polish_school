@@ -89,3 +89,26 @@ test("biology session can be picked by cross-cutting theme instead of by paragra
 
   expect(errors).toEqual([]);
 });
+
+test("a finished paragraph comes back as repeats instead of an empty session", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/t/bio");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+
+  // §3.4 has only two tasks, so the first session uses it up
+  await page.getByText("3. Опорно-двигательная система").click();
+  await page.getByRole("checkbox", { name: /Элементы скелета/ }).check();
+  await page.locator("select").selectOption("5");
+
+  for (const round of [1, 2]) {
+    await page.getByRole("button", { name: "Начать" }).click();
+    await expect(page.getByText("Задание 1 из 2")).toBeVisible();
+    await expect(page.getByText("Подготовлено 2 из 5 заданий.")).toBeVisible();
+    const notice = page.getByText(/Новые задания в выбранных параграфах закончились — 2 из них повторяются/);
+    await expect(notice).toHaveCount(round === 1 ? 0 : 1);
+    await page.getByRole("button", { name: "Выйти", exact: true }).click(); // the confirm is accepted by collectErrors
+  }
+
+  expect(errors).toEqual([]);
+});
+
