@@ -1,13 +1,14 @@
-// "Hobbit, czyli tam i z powrotem" — J.R.R. Tolkien. Lektura klasy 6 (wcześniej lektura uzupełniająca
-// klasy 4). Pytania są autorskim opracowaniem fabuły książki, nieopartym na żadnym konkretnym,
-// istniejącym zestawie testowym.
+// "Hobbit, czyli tam i z powrotem" — J.R.R. Tolkien. Lektura obowiązkowa klas 4–6 (rozporządzenie MEN
+// z 28.06.2024), najczęściej czytana w klasie 6. Pytania są autorskim opracowaniem fabuły książki,
+// nieopartym na żadnym konkretnym, istniejącym zestawie testowym.
 import type { Book } from "../types.ts";
 
 export const hobbit: Book = {
   id: "hobbit",
   title: { ru: "Хоббит, туда и обратно", pl: "Hobbit, czyli tam i z powrotem", en: "The Hobbit" },
   author: "J.R.R. Tolkien",
-  grades: ["sp6"],
+  grades: ["sp4", "sp5", "sp6"],
+  typicalGrade: "sp6",
   questions: [
     {
       id: "hobbit.001",

@@ -2,16 +2,16 @@
 // unlike the math trainer this session runs fully client-side: no /generate round trip, no task pool.
 // That also means lecture sessions aren't written to portal history yet — a follow-up once the shared
 // generation pipeline (built for AI-generated, pooled tasks) grows a story for static content too.
-import type { ChoiceLabel, Grade } from "@portal/core";
+import { Grade, type ChoiceLabel } from "@portal/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { booksFor, getBook } from "../../content/index.ts";
+import { booksForStage, DEFAULT_STAGE, getBook, isStageId, stageOf, type StageId } from "../../content/index.ts";
 import type { LectureQuestion } from "../../content/types.ts";
 
 // Questions are always in Polish regardless of the portal's interface language (see content/types.ts),
 // so — unlike the math trainer — this session never needs to lock or track a generation language.
 export interface Settings {
-  grade: Grade;
+  stage: StageId;
   bookId: string | null;
   count: number;
 }
@@ -37,6 +37,20 @@ interface State {
   quit: () => void;
 }
 
+const DEFAULT_SETTINGS: Settings = { stage: DEFAULT_STAGE, bookId: null, count: 10 };
+
+const keepBook = (stage: StageId, bookId: unknown): string | null =>
+  typeof bookId === "string" && booksForStage(stage).some((b) => b.id === bookId) ? bookId : null;
+
+/** Stored state is untrusted: v0 kept a single `grade`, v1 keeps the school stage that grade belongs to. */
+export function migrateSettings(persisted: unknown): { settings: Settings } {
+  const old = (persisted as { settings?: Record<string, unknown> } | null)?.settings ?? {};
+  const grade = Grade.safeParse(old.grade);
+  const stage = isStageId(old.stage) ? old.stage : ((grade.success && stageOf(grade.data)) || DEFAULT_STAGE);
+  const count = typeof old.count === "number" && old.count > 0 ? old.count : DEFAULT_SETTINGS.count;
+  return { settings: { stage, bookId: keepBook(stage, old.bookId), count } };
+}
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -49,7 +63,7 @@ function shuffle<T>(arr: T[]): T[] {
 export const useSession = create<State>()(
   persist(
     (set, get) => ({
-      settings: { grade: "sp6", bookId: null, count: 10 },
+      settings: DEFAULT_SETTINGS,
       status: "idle",
       questions: [],
       index: 0,
@@ -58,8 +72,8 @@ export const useSession = create<State>()(
       setSettings: (patch) =>
         set((s) => {
           const settings = { ...s.settings, ...patch };
-          // switching grade may drop the previously selected book
-          if (patch.grade && !booksFor(settings.grade).some((b) => b.id === settings.bookId)) settings.bookId = null;
+          // switching stage may drop the previously selected book
+          if (patch.stage) settings.bookId = keepBook(settings.stage, settings.bookId);
           return { settings };
         }),
 
@@ -91,8 +105,10 @@ export const useSession = create<State>()(
     }),
     {
       name: "matema-lectures-settings",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ settings: s.settings }),
+      migrate: (persisted) => migrateSettings(persisted),
     },
   ),
 );
