@@ -12,6 +12,7 @@
     "books": "Лектуры",
     "noBooks": "Для этого этапа пока нет ни одной лектуры. Загляни позже.",
     "typicalGrade": "обычно в {{n}} классе",
+    "supplementary": "необязательная лектура",
     "questionCount_one": "{{count}} вопрос",
     "questionCount_few": "{{count}} вопроса",
     "questionCount_many": "{{count}} вопросов",

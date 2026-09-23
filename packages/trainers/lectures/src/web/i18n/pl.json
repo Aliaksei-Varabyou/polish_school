@@ -12,6 +12,7 @@
     "books": "Lektury",
     "noBooks": "Dla tego etapu nie ma jeszcze żadnej lektury. Wróć tu wkrótce.",
     "typicalGrade": "zwykle w klasie {{n}}",
+    "supplementary": "lektura uzupełniająca",
     "questionCount_one": "{{count}} pytanie",
     "questionCount_few": "{{count}} pytania",
     "questionCount_many": "{{count}} pytań",

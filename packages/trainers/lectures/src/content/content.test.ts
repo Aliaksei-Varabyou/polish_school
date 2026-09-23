@@ -39,9 +39,9 @@ describe("question banks", () => {
     expect(BOOKS.every((b) => listed.has(b.id))).toBe(true);
   });
 
-  it("stage lists are sorted by typical grade", () => {
-    const grades = booksForStage("sp4-6").map((b) => b.typicalGrade ?? "zz");
-    expect(grades).toEqual([...grades].sort());
+  it("stage lists put obligatory books first, each group sorted by typical grade", () => {
+    const keys = booksForStage("sp4-6").map((b) => `${b.supplementary ? 1 : 0}-${b.typicalGrade ?? "zz"}`);
+    expect(keys).toEqual([...keys].sort());
   });
 });
 

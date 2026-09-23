@@ -21,11 +21,14 @@ export const booksFor = (grade: Grade): Book[] => BOOKS.filter((b) => b.grades.i
 
 const gradeRank = (book: Book) => (book.typicalGrade ? GRADES.indexOf(book.typicalGrade) : GRADES.length);
 
-/** Books listed for any grade of the stage, in the order schools usually read them. */
+/** Books listed for any grade of the stage: obligatory first, each group in the order schools usually read them. */
 export function booksForStage(stage: StageId): Book[] {
   const grades = stageGrades(stage);
   return BOOKS.filter((b) => b.grades.some((g) => grades.includes(g))).sort(
-    (a, b) => gradeRank(a) - gradeRank(b) || a.title.pl.localeCompare(b.title.pl, "pl"),
+    (a, b) =>
+      Number(!!a.supplementary) - Number(!!b.supplementary) ||
+      gradeRank(a) - gradeRank(b) ||
+      a.title.pl.localeCompare(b.title.pl, "pl"),
   );
 }
 

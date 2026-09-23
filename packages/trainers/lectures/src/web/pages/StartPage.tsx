@@ -47,6 +47,11 @@ export function StartPage() {
                     <span className="block text-sm text-slate-500">{book.author}</span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1 text-sm text-slate-500">
+                    {book.supplementary && (
+                      <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-800 ring-1 ring-amber-200">
+                        {t("start.supplementary")}
+                      </span>
+                    )}
                     {book.typicalGrade && (
                       <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">
                         {t("start.typicalGrade", { n: book.typicalGrade.slice(2) })}

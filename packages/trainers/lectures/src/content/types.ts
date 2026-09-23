@@ -30,5 +30,7 @@ export interface Book {
   grades: Grade[];
   /** the grade schools most often read it in; only a hint for sorting and a badge, since each school decides */
   typicalGrade?: Grade;
+  /** MEN splits the list into obowiązkowe and uzupełniające; set for the latter */
+  supplementary?: true;
   questions: LectureQuestion[];
 }
