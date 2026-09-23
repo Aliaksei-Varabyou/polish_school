@@ -1,6 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { migrateSettings } from "../web/store/session.ts";
+import { migrateSettings, shuffleChoices } from "../web/store/session.ts";
 import { BOOKS, booksForStage, STAGES } from "./index.ts";
+
+describe("shuffleChoices", () => {
+  const q = BOOKS[0].questions[0];
+  const correctText = (x: typeof q) => x.choices.find((c) => c.label === x.correctChoice)?.text;
+
+  it("keeps the right answer and relabels A–D", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = shuffleChoices(q);
+      expect(s.choices.map((c) => c.label)).toEqual(["A", "B", "C", "D"]);
+      expect(correctText(s)).toBe(correctText(q));
+      expect(new Set(s.choices.map((c) => c.text))).toEqual(new Set(q.choices.map((c) => c.text)));
+    }
+  });
+
+  it("moves the right answer around", () => {
+    const labels = new Set(Array.from({ length: 200 }, () => shuffleChoices(q).correctChoice));
+    expect(labels.size).toBe(4);
+  });
+});
 
 describe("question banks", () => {
   it.each(BOOKS.map((b) => [b.id, b] as const))("%s: unique ids, answers among A–D, typical grade listed", (_, book) => {

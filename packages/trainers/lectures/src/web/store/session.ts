@@ -51,13 +51,22 @@ export function migrateSettings(persisted: unknown): { settings: Settings } {
   return { settings: { stage, bookId: keepBook(stage, old.bookId), count } };
 }
 
-function shuffle<T>(arr: T[]): T[] {
+function shuffle<T>(arr: readonly T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+const LABELS = ["A", "B", "C", "D"] as const;
+
+/** Authored banks put the right answer first most of the time, so options are reshuffled per session. */
+export function shuffleChoices(q: LectureQuestion): LectureQuestion {
+  const order = shuffle(q.choices);
+  const choices = order.map((c, i) => ({ label: LABELS[i], text: c.text })) as LectureQuestion["choices"];
+  return { ...q, choices, correctChoice: LABELS[order.findIndex((c) => c.label === q.correctChoice)] };
 }
 
 export const useSession = create<State>()(
@@ -83,7 +92,7 @@ export const useSession = create<State>()(
         if (!book) return;
         set({
           status: "active",
-          questions: shuffle(book.questions).slice(0, Math.min(count, book.questions.length)),
+          questions: shuffle(book.questions).slice(0, Math.min(count, book.questions.length)).map(shuffleChoices),
           index: 0,
           answers: {},
         });
