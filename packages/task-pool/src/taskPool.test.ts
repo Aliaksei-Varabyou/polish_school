@@ -61,6 +61,15 @@ describe("TaskPool (SQLite)", () => {
     expect(ids(await pool.take({ ...query, answerMode: "choice" }))).toEqual(["ch"]);
   });
 
+  it("narrows by cross-cutting tag only when the query asks for one", async () => {
+    await pool.add([task("homeo", { tags: ["homeostaza", "regulacja"] }), task("plain"), task("other", { tags: ["choroby"] })], ctx);
+    expect(ids(await pool.take(query))).toEqual(["homeo", "other", "plain"]);
+    expect(ids(await pool.take({ ...query, tags: [] }))).toEqual(["homeo", "other", "plain"]);
+    expect(ids(await pool.take({ ...query, tags: ["homeostaza"] }))).toEqual(["homeo"]);
+    expect(ids(await pool.take({ ...query, tags: ["choroby", "homeostaza"] }))).toEqual(["homeo", "other"]);
+    expect(await pool.take({ ...query, tags: ["nieznany"] })).toEqual([]);
+  });
+
   it("prefers the requested difficulty and least served tasks", async () => {
     await pool.add([task("easy", { difficulty: 1 }), task("hard1", { difficulty: 3 }), task("hard2", { difficulty: 3 })], ctx);
     const [first] = await pool.take({ ...query, difficulty: 3, limit: 1 });

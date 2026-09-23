@@ -1,7 +1,7 @@
 import type { AnswerMode, FeedbackResponse, Lang, Task, TaskResult } from "@portal/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { checkAnswer } from "../../index.ts";
+import { checkAnswer, topicIdsForTags } from "../../index.ts";
 import { toBioLang, type BioLang } from "../../lang.ts";
 import { api, ApiRequestError } from "../api/client.ts";
 
@@ -13,10 +13,15 @@ import { api, ApiRequestError } from "../api/client.ts";
 export const GRADE = "lo3" as const;
 export const LEVEL = "R" as const;
 
+/** Pick tasks by dział, or by a theme that cuts across several of them (homeostaza, choroby, …). */
+export type SelectionMode = "topics" | "tags";
+
 export interface Settings {
   /** session language; only the languages biology has content in */
   lang: BioLang;
+  mode: SelectionMode;
   topicIds: string[];
+  tagIds: string[];
   count: number;
   answerMode: AnswerMode;
 }
@@ -72,7 +77,7 @@ const browserLang = (): BioLang => toBioLang(navigator.language.slice(0, 2) as L
 export const useSession = create<State>()(
   persist(
     (set, get) => ({
-      settings: { lang: browserLang(), topicIds: [], count: 10, answerMode: "mixed" },
+      settings: { lang: browserLang(), mode: "topics", topicIds: [], tagIds: [], count: 10, answerMode: "mixed" },
       status: "idle",
       error: null,
       partial: null,
@@ -89,12 +94,17 @@ export const useSession = create<State>()(
       generate: async (override) => {
         const settings = { ...get().settings, ...override };
         set({ settings, status: "loading", error: null, partial: null, feedback: { status: "idle" }, sessionId: null });
+        // a theme is expanded client-side into the topics that carry it: the server keeps receiving
+        // an ordinary topic list, so its allow-list and verification are untouched
+        const byTag = settings.mode === "tags" && settings.tagIds.length > 0;
+        const topicIds = byTag ? topicIdsForTags(settings.tagIds) : settings.topicIds;
         try {
           const { tasks, sessionId } = await api.generate({
             lang: settings.lang,
             grade: GRADE,
             level: LEVEL,
-            topicIds: settings.topicIds,
+            topicIds,
+            ...(byTag ? { tagIds: settings.tagIds } : {}),
             count: settings.count,
             answerMode: settings.answerMode,
             excludeIds: get().seenTaskIds,

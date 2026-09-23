@@ -27,6 +27,7 @@ const glandToHormone = choiceFromTable<HormoneEntry>({
   topicId: TOPIC,
   rows: HORMONES,
   subtopic: SUBTOPIC,
+  tags: ["regulacja-hormonalna"],
   difficulty: tier,
   shift: 0,
   question: (h, lang) =>
@@ -50,6 +51,7 @@ const hormoneToAction = choiceFromTable<HormoneEntry>({
   topicId: TOPIC,
   rows: HORMONES,
   subtopic: SUBTOPIC,
+  tags: ["regulacja-hormonalna"],
   difficulty: tier,
   shift: 1,
   question: (h, lang) =>
@@ -69,6 +71,7 @@ const hormoneToGland = choiceFromTable<HormoneEntry>({
   topicId: TOPIC,
   rows: HORMONES,
   subtopic: SUBTOPIC,
+  tags: ["regulacja-hormonalna"],
   difficulty: tier,
   shift: 2,
   question: (h, lang) =>
@@ -86,6 +89,7 @@ const actionToHormone = termFromTable<HormoneEntry>({
   topicId: TOPIC,
   rows: HORMONES,
   subtopic: SUBTOPIC,
+  tags: ["regulacja-hormonalna"],
   difficulty: tier,
   question: (h, lang) =>
     lang === "pl"
@@ -107,6 +111,7 @@ const disorderToDisease = choiceFromTable<DisorderEntry>({
   topicId: TOPIC,
   rows: DISORDERS,
   subtopic: DISEASES,
+  tags: ["choroby", "regulacja-hormonalna"],
   difficulty: tier,
   shift: 0,
   question: (dz, lang) =>
@@ -130,6 +135,7 @@ const symptomToDisease = choiceFromTable<DisorderEntry>({
   topicId: TOPIC,
   rows: DISORDERS,
   subtopic: DISEASES,
+  tags: ["choroby", "regulacja-hormonalna"],
   difficulty: tier,
   shift: 2,
   question: (dz, lang) =>
@@ -147,6 +153,7 @@ const feedbackLoop = choiceFromTable<LoopEntry>({
   topicId: TOPIC,
   rows: LOOPS,
   subtopic: REGULATION,
+  tags: ["homeostaza", "regulacja-hormonalna"],
   difficulty: tier,
   shift: 1,
   question: (l, lang) =>
@@ -169,6 +176,7 @@ const loopToEffect = choiceFromTable<LoopEntry>({
   topicId: TOPIC,
   rows: LOOPS,
   subtopic: REGULATION,
+  tags: ["homeostaza", "regulacja-hormonalna"],
   difficulty: tier,
   shift: 3,
   question: (l, lang) =>

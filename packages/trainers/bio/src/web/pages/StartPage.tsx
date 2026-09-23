@@ -2,9 +2,9 @@ import { TASK_COUNTS, type AnswerMode } from "@portal/core";
 import { Button, Card, Label, Segmented } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { topicsFor } from "../../index.ts";
+import { TAGS, topicsFor } from "../../index.ts";
 import { BIO_LANGS, isBioLang, type BioLang } from "../../lang.ts";
-import { GRADE, LEVEL, useSession } from "../store/session.ts";
+import { GRADE, LEVEL, useSession, type SelectionMode } from "../store/session.ts";
 
 export function StartPage({ portalLang }: { portalLang: string }) {
   const { t } = useTranslation("bio");
@@ -19,6 +19,12 @@ export function StartPage({ portalLang }: { portalLang: string }) {
 
   const toggle = (id: string) =>
     setSettings({ topicIds: selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id] });
+
+  const byTag = settings.mode === "tags";
+  const selectedTags = settings.tagIds;
+  const toggleTag = (id: string) =>
+    setSettings({ tagIds: selectedTags.includes(id) ? selectedTags.filter((x) => x !== id) : [...selectedTags, id] });
+  const ready = byTag ? selectedTags.length > 0 : selected.length > 0;
 
   // the portal offers English, biology's content does not — so ask instead of serving an empty session
   const needsLangChoice = !isBioLang(portalLang as BioLang);
@@ -39,6 +45,46 @@ export function StartPage({ portalLang }: { portalLang: string }) {
         </Card>
       )}
 
+      <Card>
+        <Label>{t("start.mode")}</Label>
+        <Segmented<SelectionMode>
+          value={settings.mode}
+          onChange={(mode) => setSettings({ mode })}
+          options={[
+            { value: "topics", label: t("start.modeTopics") },
+            { value: "tags", label: t("start.modeTags") },
+          ]}
+        />
+      </Card>
+
+      {byTag ? (
+        <Card>
+          <h2 className="mb-1 text-lg font-semibold text-slate-800">{t("start.themes")}</h2>
+          <p className="mb-3 text-sm text-slate-500">{t("start.themesHint")}</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {TAGS.map((tag) => {
+              const checked = selectedTags.includes(tag.id);
+              return (
+                <li key={tag.id}>
+                  <label
+                    className={`flex h-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 ring-1 transition-colors ${
+                      checked ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleTag(tag.id)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600"
+                    />
+                    <span className="text-sm leading-snug text-slate-700">{tag.name[settings.lang]}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : (
       <Card>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <h2 className="text-lg font-semibold text-slate-800">
@@ -83,6 +129,7 @@ export function StartPage({ portalLang }: { portalLang: string }) {
           })}
         </ul>
       </Card>
+      )}
 
       <Card className="grid gap-5 sm:grid-cols-[auto_1fr]">
         <div>
@@ -120,12 +167,8 @@ export function StartPage({ portalLang }: { portalLang: string }) {
       )}
 
       <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/90 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0">
-        <Button
-          className="w-full py-3.5 text-lg"
-          disabled={selected.length === 0}
-          onClick={() => void generate({ topicIds: selected })}
-        >
-          {selected.length === 0 ? t("start.pickTopic") : t("start.generate")}
+        <Button className="w-full py-3.5 text-lg" disabled={!ready} onClick={() => void generate({ topicIds: selected })}>
+          {ready ? t("start.generate") : t(byTag ? "start.pickTheme" : "start.pickTopic")}
         </Button>
       </div>
     </div>

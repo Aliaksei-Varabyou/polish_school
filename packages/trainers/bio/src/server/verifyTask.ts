@@ -22,7 +22,7 @@ export function verifyTask(raw: unknown, ctx: VerifyContext): VerifyResult {
   if (!raw || typeof raw !== "object") return { ok: false, reason: "not an object" };
 
   const r = raw as Record<string, unknown>;
-  for (const key of ["verifyExpression", "acceptedAnswers", "choices", "correctChoice", "hint"]) {
+  for (const key of ["verifyExpression", "acceptedAnswers", "tags", "choices", "correctChoice", "hint"]) {
     if (r[key] === null || r[key] === "") delete r[key];
   }
 

@@ -65,6 +65,8 @@ export interface TaskTemplate<P extends Record<string, ParamSpec> = Record<strin
   /** a function when difficulty varies per substitution (e.g. one row of a term table per item) */
   difficulty: Difficulty | ((p: ParamsOf<P>, d: Derived) => Difficulty);
   answerType: AnswerType;
+  /** cross-cutting themes every task from this template carries (homeostaza, obliczenia, …) */
+  tags?: string[];
   params: P;
   /** reject a substitution if it doesn't hold (e.g. keep answers integer, avoid degenerate cases) */
   constraint?: (p: ParamsOf<P>) => boolean;

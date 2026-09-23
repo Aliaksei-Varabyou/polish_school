@@ -18,6 +18,7 @@ export class SupabaseTaskPool implements TaskPoolStore {
       difficulty: t.difficulty,
       answer_type: t.answerType,
       data: t,
+      tags: t.tags ?? [],
     }));
     const { error } = await this.admin.from("tasks").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
     if (error) throw new Error(`pool add: ${error.message}`);
@@ -32,6 +33,7 @@ export class SupabaseTaskPool implements TaskPoolStore {
       p_level: q.level ?? "",
       p_topic_id: q.topicId,
       p_answer_types: ANSWER_TYPES[q.answerMode],
+      p_tags: [...(q.tags ?? [])],
       p_difficulty: q.difficulty ?? 0,
       p_exclude: [...q.excludeIds],
       p_limit: q.limit,

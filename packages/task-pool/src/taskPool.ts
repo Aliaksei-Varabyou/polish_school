@@ -13,6 +13,8 @@ export interface PoolContext {
 export interface PoolQuery extends PoolContext {
   topicId: string;
   answerMode: AnswerMode;
+  /** cross-cutting themes; a task matches if it carries any of them. Empty/absent = no narrowing. */
+  tags?: readonly string[];
   /** preferred difficulty; other difficulties are used when there are not enough */
   difficulty?: Difficulty;
   excludeIds: readonly string[];
@@ -68,6 +70,7 @@ export class TaskPool implements TaskPoolStore {
         difficulty  INTEGER NOT NULL,
         answer_type TEXT NOT NULL,
         data        TEXT NOT NULL,
+        tags        TEXT NOT NULL DEFAULT '[]',
         created_at  INTEGER NOT NULL,
         served      INTEGER NOT NULL DEFAULT 0,
         reports     INTEGER NOT NULL DEFAULT 0
@@ -80,23 +83,36 @@ export class TaskPool implements TaskPoolStore {
     `);
   }
 
-  /** Older pools: no trainer column (they only contained math tasks), no reports column. */
+  /** Older pools: no trainer column (they only contained math tasks), no reports, no tags. */
   private migrate() {
     const columns = (this.db.prepare("PRAGMA table_info(tasks)").all() as { name: string }[]).map((c) => c.name);
     if (!columns.includes("trainer_id")) this.db.exec("ALTER TABLE tasks ADD COLUMN trainer_id TEXT NOT NULL DEFAULT 'math'");
     if (!columns.includes("reports")) this.db.exec("ALTER TABLE tasks ADD COLUMN reports INTEGER NOT NULL DEFAULT 0");
+    if (!columns.includes("tags")) this.db.exec("ALTER TABLE tasks ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'");
   }
 
   async add(tasks: Task[], ctx: PoolContext): Promise<void> {
     const insert = this.db.prepare(
-      `INSERT OR IGNORE INTO tasks (id, trainer_id, lang, grade, level, topic_id, difficulty, answer_type, data, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR IGNORE INTO tasks (id, trainer_id, lang, grade, level, topic_id, difficulty, answer_type, data, tags, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     const now = Date.now();
     this.db.exec("BEGIN");
     try {
       for (const t of tasks) {
-        insert.run(t.id, ctx.trainerId, ctx.lang, ctx.grade, ctx.level ?? "", t.topicId, t.difficulty, t.answerType, JSON.stringify(t), now);
+        insert.run(
+          t.id,
+          ctx.trainerId,
+          ctx.lang,
+          ctx.grade,
+          ctx.level ?? "",
+          t.topicId,
+          t.difficulty,
+          t.answerType,
+          JSON.stringify(t),
+          JSON.stringify(t.tags ?? []),
+          now,
+        );
       }
       this.db.exec("COMMIT");
     } catch (err) {
@@ -108,6 +124,10 @@ export class TaskPool implements TaskPoolStore {
   async take(q: PoolQuery): Promise<Task[]> {
     if (q.limit <= 0) return [];
     const types = ANSWER_TYPES[q.answerMode];
+    const tags = q.tags ?? [];
+    // narrowing by theme is optional, so the clause only appears when asked for and the hot path
+    // (no tags) keeps using tasks_lookup_v2 unchanged
+    const tagClause = tags.length > 0 ? "AND EXISTS (SELECT 1 FROM json_each(tasks.tags) WHERE value IN (SELECT value FROM json_each(?)))" : "";
     const rows = this.db
       .prepare(
         `SELECT id, data FROM tasks
@@ -115,6 +135,7 @@ export class TaskPool implements TaskPoolStore {
            AND answer_type IN (${types.map(() => "?").join(",")})
            AND id NOT IN (SELECT value FROM json_each(?))
            AND reports < ?
+           ${tagClause}
          ORDER BY (difficulty = ?) DESC, served ASC, random()
          LIMIT ?`,
       )
@@ -127,6 +148,7 @@ export class TaskPool implements TaskPoolStore {
         ...types,
         JSON.stringify(q.excludeIds),
         MAX_REPORTS,
+        ...(tags.length > 0 ? [JSON.stringify(tags)] : []),
         q.difficulty ?? 0,
         q.limit,
       ) as { id: string; data: string }[];

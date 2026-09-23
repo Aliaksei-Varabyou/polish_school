@@ -2,7 +2,7 @@
 // catches missing translations, colliding distractors, broken table lookups and empty questions.
 import { describe, expect, it } from "vitest";
 import { checkAnswer } from "../../answer.ts";
-import { TOPICS, getTopic } from "../../curriculum/index.ts";
+import { TAGS, TOPICS, getTopic, topicIdsForTags } from "../../curriculum/index.ts";
 import { BIO_LANGS } from "../../lang.ts";
 import { ALL_TEMPLATES, renderTemplate } from "./index.ts";
 
@@ -76,6 +76,41 @@ describe("biology templates", () => {
     const { tasks } = renderTemplate(template, { langs: ["pl"], targetCount: TARGET, attemptBudget: 500 });
     // "adrenalina" sits well past the point a four-way position parameter would have stopped at
     expect(tasks.some((t) => t.task.question.includes("adrenalina"))).toBe(true);
+  });
+});
+
+describe("cross-cutting tags", () => {
+  /** which topics actually produce tasks for each tag, straight from the templates */
+  const actual = new Map<string, Set<string>>();
+  for (const template of ALL_TEMPLATES) {
+    for (const tag of template.tags ?? []) {
+      actual.set(tag, (actual.get(tag) ?? new Set()).add(template.topicId));
+    }
+  }
+
+  it("declares every tag the templates use", () => {
+    for (const tag of actual.keys()) {
+      expect(TAGS.map((t) => t.id), `template tag "${tag}" is missing from the catalog`).toContain(tag);
+    }
+  });
+
+  it("keeps each tag's topic list exactly in step with the templates", () => {
+    // the catalog is what the start page expands a theme into; if it drifts, choosing a theme
+    // either misses topics that have content or asks for topics that have none
+    for (const tag of TAGS) {
+      expect([...(actual.get(tag.id) ?? [])].sort(), `tag "${tag.id}"`).toEqual([...tag.topicIds].sort());
+    }
+  });
+
+  it("expands a theme into the topics that carry it", () => {
+    expect(topicIdsForTags(["homeostaza"])).toEqual(["bio.lo3.hormones"]);
+    expect(topicIdsForTags(["nie-ma-takiego"])).toEqual([]);
+  });
+
+  it("puts the tags on the rendered tasks, not just on the templates", () => {
+    const template = ALL_TEMPLATES.find((t) => t.id.endsWith("feedback-loop"))!;
+    const { tasks } = renderTemplate(template, { langs: ["pl"], targetCount: TARGET, attemptBudget: 500 });
+    for (const { task } of tasks) expect(task.tags).toContain("homeostaza");
   });
 });
 

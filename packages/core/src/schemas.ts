@@ -29,6 +29,12 @@ export const GenerateRequest = z
       message: "count must be one of 5, 10, 15, 20",
     }),
     answerMode: AnswerMode,
+    /**
+     * Cross-cutting themes to narrow the selection to (homeostaza, obliczenia, …). Empty or absent
+     * means the whole topic. `topicIds` stays required: the client expands a theme into the topics
+     * that carry it, so the server's allow-list and verification are unchanged.
+     */
+    tagIds: z.array(z.string().min(1).max(64)).max(10).optional(),
     /** ids of tasks the student has already seen — not served again from the pool */
     excludeIds: z.array(z.string().max(64)).max(1000).optional(),
   })
@@ -74,6 +80,8 @@ export const Task = z
     correctAnswer: z.string().min(1),
     /** answerType "text": other spellings/inflections accepted as correct, alongside correctAnswer */
     acceptedAnswers: z.array(z.string().min(1)).max(12).optional(),
+    /** cross-cutting themes this task belongs to, independent of its topic (see GenerateRequest.tagIds) */
+    tags: z.array(z.string().min(1).max(64)).max(8).optional(),
     verifyExpression: z.string().optional(),
     choices: z.array(Choice).length(4).optional(),
     correctChoice: ChoiceLabel.optional(),

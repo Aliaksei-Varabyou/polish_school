@@ -137,6 +137,7 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
       ...ctx,
       topicId: slot.topic.id,
       answerMode: strictKind ? slot.kind : req.answerMode,
+      tags: req.tagIds,
       difficulty: slot.difficulty,
       excludeIds: [...exclude],
       limit: 1,

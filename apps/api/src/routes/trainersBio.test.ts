@@ -101,6 +101,24 @@ describe("trainer API (bio, offline)", () => {
     expect(res.json().recommendations.length).toBeGreaterThan(0);
   });
 
+  it("narrows a session to one cross-cutting theme", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/trainers/bio/generate",
+      payload: { ...body, count: 10, tagIds: ["homeostaza"] },
+    });
+    expect(res.statusCode).toBe(200);
+    const tasks = res.json().tasks as Task[];
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const t of tasks) expect(t.tags, `${t.id} was served for the wrong theme`).toContain("homeostaza");
+  });
+
+  it("serves the whole topic when no theme is given", async () => {
+    const res = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...body, count: 20 } });
+    const tagged = (res.json().tasks as Task[]).filter((t) => t.tags?.includes("homeostaza"));
+    expect(tagged.length).toBeLessThan(20);
+  });
+
   it("rejects a basic-level request, since the whole course is extended level", async () => {
     const res = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...body, level: "P" } });
     expect(res.json()).toMatchObject({ code: "BAD_TOPICS" });

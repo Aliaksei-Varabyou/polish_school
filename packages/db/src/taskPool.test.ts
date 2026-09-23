@@ -100,4 +100,24 @@ describe.skipIf(!available)("SupabaseTaskPool (local Supabase)", () => {
     const { data } = await db.admin.from("task_reports").select("reason").eq("task_id", bad.id);
     expect(data?.map((r) => r.reason).sort()).toEqual(["wrong answer", null].sort());
   });
+
+  // keep this in step with the SQLite pool's equivalent test: the two implementations must agree
+  it("narrows by cross-cutting tag only when the query asks for one", async () => {
+    const topicId = "sp7.tags";
+    await pool.add(
+      [
+        task("homeo", { topicId, tags: ["homeostaza", "regulacja"] }),
+        task("plain", { topicId }),
+        task("other", { topicId, tags: ["choroby"] }),
+      ],
+      ctx,
+    );
+    const q = { ...query, topicId };
+
+    expect(names(await pool.take(q))).toEqual(["homeo", "other", "plain"]);
+    expect(names(await pool.take({ ...q, tags: [] }))).toEqual(["homeo", "other", "plain"]);
+    expect(names(await pool.take({ ...q, tags: ["homeostaza"] }))).toEqual(["homeo"]);
+    expect(names(await pool.take({ ...q, tags: ["choroby", "homeostaza"] }))).toEqual(["homeo", "other"]);
+    expect(await pool.take({ ...q, tags: ["nieznany"] })).toEqual([]);
+  });
 });

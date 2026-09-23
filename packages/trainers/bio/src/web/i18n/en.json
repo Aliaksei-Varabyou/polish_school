@@ -18,7 +18,13 @@
     "modeChoice": "Pick one of 4",
     "modeMixed": "Mixed",
     "generate": "Start",
-    "pickTopic": "Pick at least one section"
+    "pickTopic": "Pick at least one section",
+    "mode": "How to pick tasks",
+    "modeTopics": "By section",
+    "modeTags": "By theme",
+    "themes": "Cross-cutting themes",
+    "themesHint": "A theme gathers tasks from several sections — homeostasis spans thermoregulation, ADH and glucose control.",
+    "pickTheme": "Pick at least one theme"
   },
   "loading": {
     "title": "Preparing tasks…",

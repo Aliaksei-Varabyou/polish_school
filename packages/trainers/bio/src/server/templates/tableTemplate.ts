@@ -18,6 +18,8 @@ interface CommonSpec<T> {
   topicId: string;
   rows: readonly T[];
   subtopic: Bi;
+  /** cross-cutting themes (see curriculum/tags.ts) */
+  tags?: string[];
   difficulty: (row: T) => Difficulty;
   question: (row: T, lang: BioLang) => string;
   hint?: (row: T, lang: BioLang) => string;
@@ -48,6 +50,7 @@ export function choiceFromTable<T>(spec: ChoiceSpec<T>): RowTemplate {
     id: spec.id,
     topicId: spec.topicId,
     answerType: "choice",
+    tags: spec.tags,
     params: { i: choiceParam(...spec.rows.map((_, i) => i)) },
     difficulty: (p) => spec.difficulty(spec.rows[p.i]),
     subtopic: spec.subtopic,
@@ -87,6 +90,7 @@ export function termFromTable<T>(spec: TermSpec<T>): RowTemplate {
     id: spec.id,
     topicId: spec.topicId,
     answerType: "text",
+    tags: spec.tags,
     params: { i: choiceParam(...spec.rows.map((_, i) => i)) },
     difficulty: (p) => spec.difficulty(spec.rows[p.i]),
     subtopic: spec.subtopic,

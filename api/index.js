@@ -255,6 +255,12 @@ var GenerateRequest = z.object({
     message: "count must be one of 5, 10, 15, 20"
   }),
   answerMode: AnswerMode,
+  /**
+   * Cross-cutting themes to narrow the selection to (homeostaza, obliczenia, …). Empty or absent
+   * means the whole topic. `topicIds` stays required: the client expands a theme into the topics
+   * that carry it, so the server's allow-list and verification are unchanged.
+   */
+  tagIds: z.array(z.string().min(1).max(64)).max(10).optional(),
   /** ids of tasks the student has already seen — not served again from the pool */
   excludeIds: z.array(z.string().max(64)).max(1e3).optional()
 }).refine((r) => !isLyceum(r.grade) || r.level !== void 0, {
@@ -280,6 +286,8 @@ var Task = z.object({
   correctAnswer: z.string().min(1),
   /** answerType "text": other spellings/inflections accepted as correct, alongside correctAnswer */
   acceptedAnswers: z.array(z.string().min(1)).max(12).optional(),
+  /** cross-cutting themes this task belongs to, independent of its topic (see GenerateRequest.tagIds) */
+  tags: z.array(z.string().min(1).max(64)).max(8).optional(),
   verifyExpression: z.string().optional(),
   choices: z.array(Choice).length(4).optional(),
   correctChoice: ChoiceLabel.optional(),
@@ -447,6 +455,7 @@ var TaskPool = class {
         difficulty  INTEGER NOT NULL,
         answer_type TEXT NOT NULL,
         data        TEXT NOT NULL,
+        tags        TEXT NOT NULL DEFAULT '[]',
         created_at  INTEGER NOT NULL,
         served      INTEGER NOT NULL DEFAULT 0,
         reports     INTEGER NOT NULL DEFAULT 0
@@ -458,22 +467,35 @@ var TaskPool = class {
       CREATE INDEX IF NOT EXISTS tasks_lookup_v2 ON tasks (trainer_id, lang, grade, level, topic_id, answer_type);
     `);
   }
-  /** Older pools: no trainer column (they only contained math tasks), no reports column. */
+  /** Older pools: no trainer column (they only contained math tasks), no reports, no tags. */
   migrate() {
     const columns = this.db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
     if (!columns.includes("trainer_id")) this.db.exec("ALTER TABLE tasks ADD COLUMN trainer_id TEXT NOT NULL DEFAULT 'math'");
     if (!columns.includes("reports")) this.db.exec("ALTER TABLE tasks ADD COLUMN reports INTEGER NOT NULL DEFAULT 0");
+    if (!columns.includes("tags")) this.db.exec("ALTER TABLE tasks ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'");
   }
   async add(tasks, ctx) {
     const insert = this.db.prepare(
-      `INSERT OR IGNORE INTO tasks (id, trainer_id, lang, grade, level, topic_id, difficulty, answer_type, data, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO tasks (id, trainer_id, lang, grade, level, topic_id, difficulty, answer_type, data, tags, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const now = Date.now();
     this.db.exec("BEGIN");
     try {
       for (const t of tasks) {
-        insert.run(t.id, ctx.trainerId, ctx.lang, ctx.grade, ctx.level ?? "", t.topicId, t.difficulty, t.answerType, JSON.stringify(t), now);
+        insert.run(
+          t.id,
+          ctx.trainerId,
+          ctx.lang,
+          ctx.grade,
+          ctx.level ?? "",
+          t.topicId,
+          t.difficulty,
+          t.answerType,
+          JSON.stringify(t),
+          JSON.stringify(t.tags ?? []),
+          now
+        );
       }
       this.db.exec("COMMIT");
     } catch (err) {
@@ -484,12 +506,15 @@ var TaskPool = class {
   async take(q) {
     if (q.limit <= 0) return [];
     const types = ANSWER_TYPES[q.answerMode];
+    const tags = q.tags ?? [];
+    const tagClause = tags.length > 0 ? "AND EXISTS (SELECT 1 FROM json_each(tasks.tags) WHERE value IN (SELECT value FROM json_each(?)))" : "";
     const rows = this.db.prepare(
       `SELECT id, data FROM tasks
          WHERE trainer_id = ? AND lang = ? AND grade = ? AND level = ? AND topic_id = ?
            AND answer_type IN (${types.map(() => "?").join(",")})
            AND id NOT IN (SELECT value FROM json_each(?))
            AND reports < ?
+           ${tagClause}
          ORDER BY (difficulty = ?) DESC, served ASC, random()
          LIMIT ?`
     ).all(
@@ -501,6 +526,7 @@ var TaskPool = class {
       ...types,
       JSON.stringify(q.excludeIds),
       MAX_REPORTS,
+      ...tags.length > 0 ? [JSON.stringify(tags)] : [],
       q.difficulty ?? 0,
       q.limit
     );
@@ -548,7 +574,8 @@ var SupabaseTaskPool = class {
       topic_id: t.topicId,
       difficulty: t.difficulty,
       answer_type: t.answerType,
-      data: t
+      data: t,
+      tags: t.tags ?? []
     }));
     const { error } = await this.admin.from("tasks").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
     if (error) throw new Error(`pool add: ${error.message}`);
@@ -562,6 +589,7 @@ var SupabaseTaskPool = class {
       p_level: q.level ?? "",
       p_topic_id: q.topicId,
       p_answer_types: ANSWER_TYPES[q.answerMode],
+      p_tags: [...q.tags ?? []],
       p_difficulty: q.difficulty ?? 0,
       p_exclude: [...q.excludeIds],
       p_limit: q.limit,
@@ -1266,6 +1294,7 @@ async function generateTasks(req, deps) {
       ...ctx,
       topicId: slot.topic.id,
       answerMode: strictKind ? slot.kind : req.answerMode,
+      tags: req.tagIds,
       difficulty: slot.difficulty,
       excludeIds: [...exclude],
       limit: 1
@@ -1549,10 +1578,30 @@ var lo = [
   )
 ];
 
+// packages/trainers/bio/src/curriculum/tags.ts
+var TAGS = [
+  {
+    id: "homeostaza",
+    name: { pl: "Homeostaza i sprz\u0119\u017Cenie zwrotne", ru: "\u0413\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", en: "Homeostasis and feedback" },
+    topicIds: ["bio.lo3.hormones"]
+  },
+  {
+    id: "regulacja-hormonalna",
+    name: { pl: "Regulacja hormonalna", ru: "\u0413\u043E\u0440\u043C\u043E\u043D\u0430\u043B\u044C\u043D\u0430\u044F \u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", en: "Hormonal regulation" },
+    topicIds: ["bio.lo3.hormones"]
+  },
+  {
+    id: "choroby",
+    name: { pl: "Choroby i zaburzenia", ru: "\u0411\u043E\u043B\u0435\u0437\u043D\u0438 \u0438 \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u044F", en: "Diseases and disorders" },
+    topicIds: ["bio.lo3.hormones"]
+  }
+];
+var byId = new Map(TAGS.map((t) => [t.id, t]));
+
 // packages/trainers/bio/src/curriculum/index.ts
 var TOPICS = [...lo];
-var byId = new Map(TOPICS.map((t) => [t.id, t]));
-var getTopic = (id) => byId.get(id);
+var byId2 = new Map(TOPICS.map((t) => [t.id, t]));
+var getTopic = (id) => byId2.get(id);
 function topicsFor(grade, level) {
   return TOPICS.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
 }
@@ -1641,7 +1690,7 @@ import { randomUUID } from "node:crypto";
 function verifyTask(raw, ctx) {
   if (!raw || typeof raw !== "object") return { ok: false, reason: "not an object" };
   const r = raw;
-  for (const key of ["verifyExpression", "acceptedAnswers", "choices", "correctChoice", "hint"]) {
+  for (const key of ["verifyExpression", "acceptedAnswers", "tags", "choices", "correctChoice", "hint"]) {
     if (r[key] === null || r[key] === "") delete r[key];
   }
   let topicId = typeof r.topicId === "string" ? r.topicId : void 0;
@@ -2336,8 +2385,8 @@ var sp = [
 
 // packages/trainers/math/src/curriculum/index.ts
 var TOPICS2 = [...sp, ...lo2];
-var byId2 = new Map(TOPICS2.map((t) => [t.id, t]));
-var getTopic2 = (id) => byId2.get(id);
+var byId3 = new Map(TOPICS2.map((t) => [t.id, t]));
+var getTopic2 = (id) => byId3.get(id);
 function topicsFor2(grade, level) {
   return TOPICS2.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
 }

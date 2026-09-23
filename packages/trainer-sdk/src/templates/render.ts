@@ -57,6 +57,7 @@ function buildRaw<P extends Record<string, ParamSpec>, L extends Lang>(template:
     answerType: template.answerType,
     correctAnswer: isChoice ? (correctChoice ?? "") : template.correctAnswer(p, d, lang),
     acceptedAnswers: template.acceptedAnswers?.(p, d, lang),
+    tags: template.tags,
     verifyExpression: template.verifyExpression?.(p, d),
     choices,
     correctChoice,

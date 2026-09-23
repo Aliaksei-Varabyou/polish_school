@@ -18,7 +18,13 @@
     "modeChoice": "Wybór z 4",
     "modeMixed": "Mieszana",
     "generate": "Zaczynamy",
-    "pickTopic": "Wybierz co najmniej jeden dział"
+    "pickTopic": "Wybierz co najmniej jeden dział",
+    "mode": "Wybór zadań",
+    "modeTopics": "Według działów",
+    "modeTags": "Według tematu",
+    "themes": "Tematy przekrojowe",
+    "themesHint": "Temat łączy zadania z kilku działów — np. homeostaza obejmuje termoregulację, ADH i regulację glukozy.",
+    "pickTheme": "Wybierz co najmniej jeden temat"
   },
   "loading": {
     "title": "Przygotowuję zadania…",

@@ -1,6 +1,8 @@
 import type { Grade, Level, Topic } from "@portal/core";
 import { lo } from "./lo.ts";
 
+export * from "./tags.ts";
+
 export type { Topic } from "@portal/core";
 
 export const TOPICS: Topic[] = [...lo];
