@@ -12,18 +12,14 @@ import {
   type Topic,
 } from "@portal/core";
 import type { TaskPoolStore } from "@portal/task-pool";
-import type { TrainerServer } from "../index.ts";
+import type { Logger, TrainerServer } from "../index.ts";
 
 /** tasks per LLM request (topics are mixed within a batch) */
 export const MAX_BATCH = 5;
 const MAX_ROUNDS = 3;
 const CONCURRENCY = 3;
 
-export interface Logger {
-  info(obj: object, msg: string): void;
-  warn(obj: object, msg: string): void;
-  error(obj: object, msg: string): void;
-}
+export type { Logger } from "../index.ts";
 
 const silent: Logger = { info() {}, warn() {}, error() {} };
 
@@ -147,6 +143,12 @@ export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): P
     fromPool.push(task);
     return true;
   };
+
+  // 0) a trainer with rendered content fills an empty pool itself; losing this must not lose the
+  // session, so a failure is logged and the request carries on with whatever the pool does have
+  if (pool && trainer.ensureContent) {
+    await trainer.ensureContent(pool, log).catch((err: unknown) => log.error({ err, trainer: trainer.id }, "ensureContent failed"));
+  }
 
   // 1) reuse verified tasks the student hasn't seen
   const reuseTarget = pool ? Math.floor(req.count * reuseRatio) : 0;

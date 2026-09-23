@@ -37,19 +37,6 @@ describe("trainer API (bio, offline)", () => {
       );
     }
   });
-  afterEach(async () => {
-    await app.close();
-    pool.close();
-  });
-
-  const body = {
-    lang: "pl",
-    grade: "lo3",
-    level: "R",
-    topicIds: ["bio.lo3.hormones"],
-    count: 10,
-    answerMode: "mixed",
-  };
 
   it("serves the extended-level topics and nothing on the basic level", async () => {
     const r = await app.inject("/api/trainers/bio/topics?grade=lo3&level=R");
@@ -127,4 +114,32 @@ describe("trainer API (bio, offline)", () => {
   it("exposes biology topics to the curriculum helper", () => {
     expect(topicsFor("lo3", "R")).toHaveLength(11);
   });
+  it("fills an empty pool by itself, so a deploy needs no seeding step", async () => {
+    const empty = new TaskPool(":memory:");
+    const fresh = await buildApp(new ForbiddenClient(), { logger: false, pool: empty, serveWeb: false });
+    try {
+      expect(await empty.count("bio")).toBe(0);
+      const res = await fresh.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: body });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().tasks).toHaveLength(10);
+      // both content languages, not just the one that was asked for
+      expect(await empty.count("bio")).toBeGreaterThan(100);
+    } finally {
+      await fresh.close();
+      empty.close();
+    }
+  });
+  afterEach(async () => {
+    await app.close();
+    pool.close();
+  });
+
+  const body = {
+    lang: "pl",
+    grade: "lo3",
+    level: "R",
+    topicIds: ["bio.lo3.hormones"],
+    count: 10,
+    answerMode: "mixed",
+  };
 });

@@ -1,6 +1,7 @@
 // Trainer contract shared by the portal (web), the API and every subject trainer.
 import type { LLMClient } from "@portal/ai";
 import type { FeedbackRequest, Grade, Lang, Level, SessionTaskRecord, Task, TaskBatchInput, Topic } from "@portal/core";
+import type { TaskPoolStore } from "@portal/task-pool";
 import type { ComponentType } from "react";
 
 export interface VerifyContext {
@@ -12,6 +13,13 @@ export interface VerifyContext {
 }
 
 export type VerifyResult = { ok: true; task: Task } | { ok: false; reason: string };
+
+/** Minimal logging surface, so trainers don't depend on the server's logger type. */
+export interface Logger {
+  info(obj: object, msg: string): void;
+  warn(obj: object, msg: string): void;
+  error(obj: object, msg: string): void;
+}
 
 /** Server side of a trainer: curriculum, AI prompts and task verification. */
 export interface TrainerServer {
@@ -29,6 +37,12 @@ export interface TrainerServer {
   reuseRatio?: number;
   topicsFor(grade: Grade, level?: Level): Topic[];
   getTopic(id: string): Topic | undefined;
+  /**
+   * Gives the trainer a chance to fill an empty pool before a session is assembled — for a trainer
+   * whose content is rendered rather than generated, this is what makes a deploy self-sufficient.
+   * Called at most once per request, and a failure only costs tasks, never the session.
+   */
+  ensureContent?(pool: TaskPoolStore, log?: Logger): Promise<void>;
   /** Generates one batch of raw (not yet verified) tasks. */
   generateTaskBatch(client: LLMClient, input: TaskBatchInput): Promise<unknown[]>;
   /** Validates shape and re-checks the math/content of a generated task. */

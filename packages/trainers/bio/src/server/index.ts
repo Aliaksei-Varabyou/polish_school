@@ -6,10 +6,12 @@ import type { TrainerServer } from "@portal/trainer-sdk";
 import { checkAnswer } from "../answer.ts";
 import { getTopic, topicsFor } from "../curriculum/index.ts";
 import { buildFeedback } from "./feedback.ts";
+import { ensureContent } from "./seed.ts";
 import { verifyTask } from "./verifyTask.ts";
 
 export { verifyTask, type VerifyContext, type VerifyResult } from "./verifyTask.ts";
 export { buildFeedback } from "./feedback.ts";
+export { ensureContent } from "./seed.ts";
 
 export const bioTrainer: TrainerServer = {
   id: "bio",
@@ -18,6 +20,8 @@ export const bioTrainer: TrainerServer = {
   reuseRatio: 1,
   topicsFor,
   getTopic,
+  // no LLM to fall back on, so an empty pool is filled from the templates on first use
+  ensureContent,
   generateTaskBatch: async () => [],
   verifyTask,
   checkAnswer,

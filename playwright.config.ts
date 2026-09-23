@@ -16,14 +16,12 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    // Biology never calls an LLM, so its tasks have to be in the pool before the API starts; the
-    // render script writes them wherever the API will read from (SQLite here, Postgres when the
-    // environment carries Supabase credentials). Math still generates through the mock provider.
-    command:
-      "npm run build && npm run render:templates -w @portal/trainer-bio -- --target=20 --db=../../../e2e/.pool.db && npm start",
+    // Nothing seeds the pool here on purpose: biology fills an empty one itself on the first
+    // request, and that is exactly the path a real deploy takes. Math generates through the mock.
+    command: "npm run build && npm start",
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
-    timeout: 240_000,
-    env: { LLM_PROVIDER: "mock", PORT: String(PORT), TASK_DB_PATH: "./e2e/.pool.db" },
+    timeout: 300_000,
+    env: { LLM_PROVIDER: "mock", PORT: String(PORT), TASK_DB_PATH: ":memory:" },
   },
 });
