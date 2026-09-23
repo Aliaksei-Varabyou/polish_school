@@ -74,7 +74,8 @@ export interface TaskTemplate<P extends Record<string, ParamSpec> = Record<strin
   question: (p: ParamsOf<P>, d: Derived, lang: L) => string;
   /** cross-check string interpreted by the trainer's own verifier (mathjs syntax for math) */
   verifyExpression?: (p: ParamsOf<P>, d: Derived) => string;
-  correctAnswer: (p: ParamsOf<P>, d: Derived) => string;
+  /** `lang` matters for term-recall subjects, where the canonical answer is itself a translated word */
+  correctAnswer: (p: ParamsOf<P>, d: Derived, lang: L) => string;
   /** answerType "text": other spellings and inflections accepted alongside `correctAnswer` */
   acceptedAnswers?: (p: ParamsOf<P>, d: Derived, lang: L) => string[];
   solution: Record<L, (p: ParamsOf<P>, d: Derived) => string>;

@@ -18,6 +18,7 @@
     "@portal/core": "*",
     "@portal/db": "*",
     "@portal/task-pool": "*",
+    "@portal/trainer-bio": "*",
     "@portal/trainer-math": "*",
     "@portal/trainer-sdk": "*",
     "@supabase/supabase-js": "^2.116.0",

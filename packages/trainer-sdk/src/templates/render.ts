@@ -55,7 +55,7 @@ function buildRaw<P extends Record<string, ParamSpec>, L extends Lang>(template:
     difficulty: typeof template.difficulty === "function" ? template.difficulty(p, d) : template.difficulty,
     question: template.question(p, d, lang),
     answerType: template.answerType,
-    correctAnswer: isChoice ? (correctChoice ?? "") : template.correctAnswer(p, d),
+    correctAnswer: isChoice ? (correctChoice ?? "") : template.correctAnswer(p, d, lang),
     acceptedAnswers: template.acceptedAnswers?.(p, d, lang),
     verifyExpression: template.verifyExpression?.(p, d),
     choices,

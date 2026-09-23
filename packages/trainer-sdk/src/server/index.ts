@@ -117,8 +117,10 @@ export type GenerateOutcome =
  */
 export async function generateTasks(req: GenerateRequest, deps: GenerateDeps): Promise<GenerateOutcome> {
   const { trainer, client, pool, log = silent } = deps;
-  // an offline-first trainer (content rendered from templates, no LLM) drains the pool instead
-  const reuseRatio = deps.reuseRatio ?? trainer.reuseRatio ?? 0.5;
+  // The trainer's own value wins over the caller's: POOL_REUSE_RATIO is a deployment-wide default
+  // for LLM-backed trainers, while an offline trainer (content rendered from templates, no LLM)
+  // has no other source of tasks and must drain the pool whatever that knob says.
+  const reuseRatio = trainer.reuseRatio ?? deps.reuseRatio ?? 0.5;
   const usesLLM = trainer.usesLLM ?? true;
   const ctx = { trainerId: trainer.id, lang: req.lang, grade: req.grade, level: req.level };
   const allowed = new Map(trainer.topicsFor(req.grade, req.level).map((t) => [t.id, t]));

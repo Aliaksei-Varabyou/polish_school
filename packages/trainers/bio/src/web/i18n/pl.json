@@ -1,0 +1,77 @@
+{
+  "app": {
+    "title": "Trener biologii",
+    "subtitle": "Liceum, klasa 3, zakres rozszerzony — anatomia i fizjologia człowieka"
+  },
+  "start": {
+    "contentLang": "Język zadań",
+    "contentLangHint": "Zadania z biologii są dostępne po polsku i po rosyjsku.",
+    "lang_pl": "Polski",
+    "lang_ru": "Rosyjski",
+    "topics": "Działy",
+    "selectAll": "Zaznacz wszystkie",
+    "clearAll": "Odznacz",
+    "selected": "Wybrano: {{count}}",
+    "count": "Liczba zadań",
+    "answerMode": "Forma odpowiedzi",
+    "modeInput": "Wpisz odpowiedź",
+    "modeChoice": "Wybór z 4",
+    "modeMixed": "Mieszana",
+    "generate": "Zaczynamy",
+    "pickTopic": "Wybierz co najmniej jeden dział"
+  },
+  "loading": {
+    "title": "Przygotowuję zadania…",
+    "hint": "Zadania są gotowe wcześniej, więc potrwa to chwilę"
+  },
+  "errors": {
+    "RATE_LIMIT": "Za dużo zapytań. Odczekaj minutę i spróbuj ponownie.",
+    "NETWORK": "Brak połączenia z serwerem. Sprawdź internet.",
+    "LLM_ERROR": "Brak zadań dla wybranych działów. Wybierz inne albo spróbuj później.",
+    "generic": "Coś poszło nie tak. Spróbuj ponownie.",
+    "partial": "Przygotowano {{got}} z {{count}} zadań."
+  },
+  "trainer": {
+    "taskOf": "Zadanie {{n}} z {{total}}",
+    "difficulty1": "Łatwe",
+    "difficulty2": "Średnie",
+    "difficulty3": "Trudne",
+    "placeholder": "Twoja odpowiedź",
+    "helpTerm": "Wpisz jedno słowo — nazwę w mianowniku. Wielkość liter i ogonki nie mają znaczenia.",
+    "helpNumber": "Podaj liczbę; jednostkę możesz pominąć. Ułamek dziesiętny z przecinkiem.",
+    "check": "Sprawdź",
+    "next": "Dalej",
+    "finish": "Wyniki",
+    "correct": "Dobrze!",
+    "wrong": "Źle",
+    "correctAnswer": "Poprawna odpowiedź:",
+    "alsoAccepted": "Uznawane również: {{list}}",
+    "showSolution": "Pokaż wyjaśnienie",
+    "hideSolution": "Ukryj wyjaśnienie",
+    "hint": "Podpowiedź",
+    "quit": "Wyjdź",
+    "quitConfirm": "Przerwać trening? Postęp zostanie utracony."
+  },
+  "results": {
+    "title": "Twój wynik",
+    "score": "{{correct}} z {{total}}",
+    "great": "Świetnie! Materiał masz opanowany.",
+    "good": "Dobrze! Zostało kilka rzeczy do dopracowania.",
+    "ok": "Nieźle, ale warto jeszcze poćwiczyć.",
+    "low": "Ten materiał warto powtórzyć. Dasz radę!",
+    "byTopic": "Według działów",
+    "mistakes": "Błędy",
+    "yourAnswer": "Twoja odpowiedź:",
+    "noAnswer": "brak odpowiedzi",
+    "hintUsed": "z podpowiedzią",
+    "again": "Jeszcze raz",
+    "change": "Zmień ustawienia",
+    "analyze": "Analiza słabych stron",
+    "analyzing": "Analizuję…",
+    "weakTopics": "Nad czym popracować",
+    "recommendations": "Wskazówki",
+    "practiceWeak": "Poćwicz słabe działy",
+    "noMistakes": "Bez błędów — tak trzymaj!",
+    "savedToHistory": "Zapisano w historii"
+  }
+}

@@ -21,7 +21,11 @@ export interface TrainerServer {
    * then skips the LLM rounds entirely instead of burning three empty ones. Default true.
    */
   usesLLM?: boolean;
-  /** default share of tasks taken from the pool; offline trainers set 1. Overridden by GenerateDeps. */
+  /**
+   * Share of tasks taken from the pool (0..1). Set by trainers that have a hard requirement —
+   * an offline trainer sets 1 — and it takes precedence over the deployment-wide default, which
+   * only makes sense for trainers that can fall back to generating.
+   */
   reuseRatio?: number;
   topicsFor(grade: Grade, level?: Level): Topic[];
   getTopic(id: string): Topic | undefined;
@@ -55,6 +59,12 @@ export interface TrainerWeb {
   name: Record<Lang, string>;
   description: Record<Lang, string>;
   grades: Grade[];
+  /**
+   * Languages this trainer actually has tasks in. Omitted means every portal language; a trainer
+   * whose content is authored in fewer (biology: pl and ru) lists them, and its start page asks
+   * which one to run the session in when the portal is set to another.
+   */
+  contentLangs?: Lang[];
   /** i18next resources registered under the namespace = trainer id */
   translations: Record<Lang, Record<string, unknown>>;
   /** topic names for history and progress pages */

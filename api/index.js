@@ -1251,7 +1251,7 @@ function claimSlot(pending, task) {
 }
 async function generateTasks(req, deps) {
   const { trainer, client, pool, log = silent } = deps;
-  const reuseRatio = deps.reuseRatio ?? trainer.reuseRatio ?? 0.5;
+  const reuseRatio = trainer.reuseRatio ?? deps.reuseRatio ?? 0.5;
   const usesLLM = trainer.usesLLM ?? true;
   const ctx = { trainerId: trainer.id, lang: req.lang, grade: req.grade, level: req.level };
   const allowed = new Map(trainer.topicsFor(req.grade, req.level).map((t) => [t.id, t]));
@@ -1435,6 +1435,262 @@ function registerTrainerRoutes(app, { client, trainers: trainers2, pool, reuseRa
   );
 }
 
+// packages/trainers/bio/src/answer.ts
+var UNDECOMPOSABLE = { \u0142: "l", \u0111: "d", \u00F8: "o", \u00DF: "ss" };
+function normalizeTerm(s) {
+  return s.trim().toLowerCase().replace(/[łđøß]/g, (c) => UNDECOMPOSABLE[c]).normalize("NFD").replace(new RegExp("\\p{M}", "gu"), "").replace(/^[„“"'«»(\[]+|[„“"'«»)\].,;:!?]+$/g, "").replace(/^(the|a|an)\s+/, "").replace(/\s+/g, " ").trim();
+}
+function isTermCorrect(userAnswer, correctAnswer, acceptedAnswers) {
+  const typed = normalizeTerm(userAnswer);
+  if (!typed) return false;
+  return [correctAnswer, ...acceptedAnswers ?? []].some((a) => normalizeTerm(a) === typed);
+}
+function parseQuantity(s) {
+  const cleaned = s.trim().replace(/\s/g, "").replace(",", ".").replace(/^[^\d+-]*/, "").match(/^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?/);
+  if (!cleaned) return null;
+  const n = Number(cleaned[0]);
+  return Number.isFinite(n) ? n : null;
+}
+function isNumberCorrect(userAnswer, correctAnswer) {
+  const user = parseQuantity(userAnswer);
+  const correct = parseQuantity(correctAnswer);
+  if (user === null || correct === null) return false;
+  return Math.abs(user - correct) <= Math.max(1e-9, Math.abs(correct) * 0.01);
+}
+function checkAnswer(task, answer) {
+  switch (task.answerType) {
+    case "choice":
+      return answer.trim().toUpperCase() === (task.correctChoice ?? task.correctAnswer).toUpperCase();
+    case "text":
+      return isTermCorrect(answer, task.correctAnswer, task.acceptedAnswers);
+    default:
+      return isNumberCorrect(answer, task.correctAnswer);
+  }
+}
+
+// packages/trainers/bio/src/curriculum/lo.ts
+var lo = [
+  topic(
+    "bio.lo3.organism",
+    "lo3",
+    ["Organizm cz\u0142owieka jako funkcjonalna ca\u0142o\u015B\u0107", "\u041E\u0440\u0433\u0430\u043D\u0438\u0437\u043C \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u043A\u0430\u043A \u0435\u0434\u0438\u043D\u043E\u0435 \u0446\u0435\u043B\u043E\u0435", "The human organism as a functional whole"],
+    ["poziomy organizacji organizmu", "tkanka nab\u0142onkowa", "tkanka \u0142\u0105czna", "tkanka mi\u0119\u015Bniowa", "tkanka nerwowa", "homeostaza", "ujemne sprz\u0119\u017Cenie zwrotne", "transport przez b\u0142ony biologiczne"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.skin",
+    "lo3",
+    ["Uk\u0142ad pow\u0142okowy", "\u041F\u043E\u043A\u0440\u043E\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The integumentary system"],
+    ["budowa nask\xF3rka", "sk\xF3ra w\u0142a\u015Bciwa", "tkanka podsk\xF3rna", "wytwory nask\xF3rka", "termoregulacja", "receptory sk\xF3ry", "choroby i higiena sk\xF3ry"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.motion",
+    "lo3",
+    ["Uk\u0142ad ruchu", "\u041E\u043F\u043E\u0440\u043D\u043E-\u0434\u0432\u0438\u0433\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The musculoskeletal system"],
+    ["budowa i sk\u0142ad chemiczny ko\u015Bci", "tkanka kostna", "szkielet osiowy", "szkielet ko\u0144czyn", "po\u0142\u0105czenia ko\u015Bci", "budowa stawu", "mi\u0119\u015Bnie szkieletowe", "mechanizm skurczu mi\u0119\u015Bnia", "antagonizm mi\u0119\u015Bni", "wady postawy"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.digestion",
+    "lo3",
+    ["Uk\u0142ad pokarmowy", "\u041F\u0438\u0449\u0435\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The digestive system"],
+    ["budowa przewodu pokarmowego", "enzymy trawienne", "trawienie i wch\u0142anianie", "rola w\u0105troby", "rola trzustki", "sk\u0142adniki pokarmowe", "witaminy i sole mineralne", "warto\u015B\u0107 energetyczna pokarmu", "wska\u017Anik BMI"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.respiration",
+    "lo3",
+    ["Uk\u0142ad oddechowy", "\u0414\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The respiratory system"],
+    ["drogi oddechowe", "p\u0119cherzyki p\u0142ucne", "wymiana gazowa", "transport tlenu i dwutlenku w\u0119gla", "mechanika oddychania", "obj\u0119to\u015Bci i pojemno\u015Bci p\u0142uc", "regulacja oddychania", "choroby uk\u0142adu oddechowego"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.circulation",
+    "lo3",
+    ["Uk\u0142ad kr\u0105\u017Cenia. Odporno\u015B\u0107", "\u041A\u0440\u043E\u0432\u043E\u043E\u0431\u0440\u0430\u0449\u0435\u043D\u0438\u0435 \u0438 \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442", "Circulation and immunity"],
+    ["budowa serca", "cykl pracy serca", "krwiobieg du\u017Cy i ma\u0142y", "naczynia krwiono\u015Bne", "sk\u0142ad i funkcje krwi", "grupy krwi", "konflikt serologiczny", "uk\u0142ad limfatyczny", "odporno\u015B\u0107 nieswoista", "odporno\u015B\u0107 swoista", "szczepionki i surowice"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.urinary",
+    "lo3",
+    ["Uk\u0142ad moczowy", "\u041C\u043E\u0447\u0435\u0432\u044B\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The urinary system"],
+    ["budowa nerki", "budowa nefronu", "filtracja k\u0142\u0119buszkowa", "resorpcja zwrotna", "sekrecja kanalikowa", "powstawanie moczu", "osmoregulacja", "rola ADH", "rola aldosteronu"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.nervous",
+    "lo3",
+    ["Uk\u0142ad nerwowy", "\u041D\u0435\u0440\u0432\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The nervous system"],
+    ["budowa neuronu", "tkanka nerwowa", "potencja\u0142 spoczynkowy", "potencja\u0142 czynno\u015Bciowy", "budowa i dzia\u0142anie synapsy", "neuroprzeka\u017Aniki", "budowa m\xF3zgowia", "rdze\u0144 kr\u0119gowy", "\u0142uk odruchowy", "uk\u0142ad autonomiczny"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.senses",
+    "lo3",
+    ["Narz\u0105dy zmys\u0142\xF3w", "\u041E\u0440\u0433\u0430\u043D\u044B \u0447\u0443\u0432\u0441\u0442\u0432", "The sense organs"],
+    ["budowa oka", "akomodacja", "wady wzroku", "budowa ucha", "narz\u0105d Cortiego", "narz\u0105d r\xF3wnowagi", "zmys\u0142 smaku", "zmys\u0142 w\u0119chu", "czucie sk\xF3rne"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.hormones",
+    "lo3",
+    ["Uk\u0142ad hormonalny", "\u042D\u043D\u0434\u043E\u043A\u0440\u0438\u043D\u043D\u0430\u044F \u0441\u0438\u0441\u0442\u0435\u043C\u0430", "The endocrine system"],
+    ["gruczo\u0142y dokrewne", "hormony i ich dzia\u0142anie", "o\u015B podwzg\xF3rze\u2013przysadka", "regulacja poziomu glukozy", "regulacja gospodarki wapniowej", "ujemne sprz\u0119\u017Cenie zwrotne", "nadczynno\u015B\u0107 i niedoczynno\u015B\u0107 gruczo\u0142\xF3w"],
+    "R"
+  ),
+  topic(
+    "bio.lo3.reproduction",
+    "lo3",
+    ["Rozmna\u017Canie i rozw\xF3j", "\u0420\u0430\u0437\u043C\u043D\u043E\u0436\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0437\u0432\u0438\u0442\u0438\u0435", "Reproduction and development"],
+    ["budowa uk\u0142adu rozrodczego", "gametogeneza", "cykl miesi\u0105czkowy", "zap\u0142odnienie", "rozw\xF3j zarodkowy", "listki zarodkowe", "ci\u0105\u017Ca i por\xF3d", "rozw\xF3j postnatalny"],
+    "R"
+  )
+];
+
+// packages/trainers/bio/src/curriculum/index.ts
+var TOPICS = [...lo];
+var byId = new Map(TOPICS.map((t) => [t.id, t]));
+var getTopic = (id) => byId.get(id);
+function topicsFor(grade, level) {
+  return TOPICS.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
+}
+
+// packages/trainers/bio/src/server/feedback.ts
+var WEAK_THRESHOLD = 0.6;
+var STRONG_THRESHOLD = 0.9;
+var PHRASES = {
+  pl: {
+    great: "\u015Awietny wynik \u2014 materia\u0142 masz opanowany.",
+    good: "Dobry wynik, zosta\u0142o kilka rzeczy do dopracowania.",
+    ok: "Podstawy s\u0105, ale warto jeszcze po\u0107wiczy\u0107.",
+    low: "Ten materia\u0142 wymaga powt\xF3rki \u2014 spokojnie, to kwestia \u0107wicze\u0144.",
+    weak: (pct) => `poprawnych odpowiedzi: ${pct}%`,
+    reviewSubtopics: (topic2, subtopics) => `Powt\xF3rz temat \u201E${topic2}\u201D, zw\u0142aszcza: ${subtopics.join(", ")}.`,
+    hintsUsed: (n) => `Skorzysta\u0142e\u015B z podpowiedzi ${n} razy \u2014 spr\xF3buj nast\u0119pnym razem najpierw odpowiedzie\u0107 bez nich.`,
+    repeatWeak: "Powt\xF3rz sesj\u0119 z zaznaczonymi s\u0142abymi tematami.",
+    keepGoing: "Utrzymaj tempo: kr\xF3tka sesja co kilka dni dzia\u0142a lepiej ni\u017C jedna d\u0142uga przed sprawdzianem."
+  },
+  ru: {
+    great: "\u041E\u0442\u043B\u0438\u0447\u043D\u044B\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442 \u2014 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B \u0443\u0441\u0432\u043E\u0435\u043D.",
+    good: "\u0425\u043E\u0440\u043E\u0448\u0438\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442, \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u0434\u043E\u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C \u043F\u0430\u0440\u0443 \u043C\u0435\u0441\u0442.",
+    ok: "\u0411\u0430\u0437\u0430 \u0435\u0441\u0442\u044C, \u043D\u043E \u0441\u0442\u043E\u0438\u0442 \u0435\u0449\u0451 \u043F\u043E\u0442\u0440\u0435\u043D\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F.",
+    low: "\u042D\u0442\u043E\u0442 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B \u043D\u0443\u0436\u043D\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u2014 \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u043E, \u044D\u0442\u043E \u0432\u043E\u043F\u0440\u043E\u0441 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0438.",
+    weak: (pct) => `\u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u044B\u0445 \u043E\u0442\u0432\u0435\u0442\u043E\u0432: ${pct}%`,
+    reviewSubtopics: (topic2, subtopics) => `\u041F\u043E\u0432\u0442\u043E\u0440\u0438 \u0442\u0435\u043C\u0443 \xAB${topic2}\xBB, \u043E\u0441\u043E\u0431\u0435\u043D\u043D\u043E: ${subtopics.join(", ")}.`,
+    hintsUsed: (n) => `\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430\u043C\u0438 \u0442\u044B \u0432\u043E\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043B\u0441\u044F ${n} \u0440\u0430\u0437 \u2014 \u0432 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0440\u0430\u0437 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0439 \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u0432\u0435\u0442\u0438\u0442\u044C \u0431\u0435\u0437 \u043D\u0438\u0445.`,
+    repeatWeak: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438 \u0441\u0435\u0441\u0441\u0438\u044E \u043F\u043E \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u043D\u044B\u043C \u0441\u043B\u0430\u0431\u044B\u043C \u0442\u0435\u043C\u0430\u043C.",
+    keepGoing: "\u0414\u0435\u0440\u0436\u0438 \u0442\u0435\u043C\u043F: \u043A\u043E\u0440\u043E\u0442\u043A\u0430\u044F \u0441\u0435\u0441\u0441\u0438\u044F \u0440\u0430\u0437 \u0432 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0434\u043D\u0435\u0439 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043B\u0443\u0447\u0448\u0435, \u0447\u0435\u043C \u043E\u0434\u043D\u0430 \u0434\u043B\u0438\u043D\u043D\u0430\u044F \u043F\u0435\u0440\u0435\u0434 \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u044C\u043D\u043E\u0439."
+  },
+  en: {
+    great: "Excellent \u2014 you know this material.",
+    good: "Good result, a couple of things left to polish.",
+    ok: "The basics are there, but more practice would help.",
+    low: "This material needs a review \u2014 nothing a bit of practice won't fix.",
+    weak: (pct) => `correct answers: ${pct}%`,
+    reviewSubtopics: (topic2, subtopics) => `Review "${topic2}", especially: ${subtopics.join(", ")}.`,
+    hintsUsed: (n) => `You used hints ${n} times \u2014 next time try answering without them first.`,
+    repeatWeak: "Run another session on the topics marked weak.",
+    keepGoing: "Keep the rhythm: a short session every few days beats one long one before the test."
+  }
+};
+function scoreByTopic(results) {
+  const map = /* @__PURE__ */ new Map();
+  for (const r of results) {
+    const s = map.get(r.topicId) ?? { topicId: r.topicId, ok: 0, total: 0, missedSubtopics: [] };
+    s.total++;
+    if (r.correct) s.ok++;
+    else if (r.subtopic && !s.missedSubtopics.includes(r.subtopic)) s.missedSubtopics.push(r.subtopic);
+    map.set(r.topicId, s);
+  }
+  return [...map.values()].sort((a, b) => a.ok / a.total - b.ok / b.total);
+}
+function buildFeedback(req) {
+  const p = PHRASES[req.lang] ?? PHRASES.pl;
+  const scores = scoreByTopic(req.results);
+  const correct = req.results.filter((r) => r.correct).length;
+  const ratio = req.results.length ? correct / req.results.length : 0;
+  const summary = ratio >= STRONG_THRESHOLD ? p.great : ratio >= 0.7 ? p.good : ratio >= 0.5 ? p.ok : p.low;
+  const weak = scores.filter((s) => s.ok / s.total < WEAK_THRESHOLD);
+  const weakTopics = weak.map((s) => ({
+    topicId: s.topicId,
+    reason: p.weak(Math.round(s.ok / s.total * 100))
+  }));
+  const recommendations = [];
+  for (const s of weak.slice(0, 3)) {
+    const topic2 = getTopic(s.topicId);
+    if (!topic2) continue;
+    const focus = (s.missedSubtopics.length > 0 ? s.missedSubtopics : topic2.subtopics).slice(0, 3);
+    recommendations.push(p.reviewSubtopics(topic2.name[req.lang] ?? topic2.name.pl, focus));
+  }
+  const hints = req.results.filter((r) => r.usedHint).length;
+  if (hints >= 3) recommendations.push(p.hintsUsed(hints));
+  if (weak.length > 0) recommendations.push(p.repeatWeak);
+  if (recommendations.length === 0) recommendations.push(p.keepGoing);
+  return {
+    summary,
+    weakTopics,
+    recommendations: recommendations.slice(0, 4),
+    suggestedTopicIds: weak.map((s) => s.topicId).slice(0, 5)
+  };
+}
+
+// packages/trainers/bio/src/server/verifyTask.ts
+import { randomUUID } from "node:crypto";
+function verifyTask(raw, ctx) {
+  if (!raw || typeof raw !== "object") return { ok: false, reason: "not an object" };
+  const r = raw;
+  for (const key of ["verifyExpression", "acceptedAnswers", "choices", "correctChoice", "hint"]) {
+    if (r[key] === null || r[key] === "") delete r[key];
+  }
+  let topicId = typeof r.topicId === "string" ? r.topicId : void 0;
+  if (!topicId && ctx.allowedTopicIds.length === 1) topicId = ctx.allowedTopicIds[0];
+  if (!topicId || !ctx.allowedTopicIds.includes(topicId)) return { ok: false, reason: `unexpected topicId: ${topicId}` };
+  const parsed = Task.safeParse({ ...r, id: ctx.id ?? randomUUID(), topicId });
+  if (!parsed.success) return { ok: false, reason: `schema: ${parsed.error.issues[0]?.message}` };
+  const task = parsed.data;
+  if (ctx.answerMode === "choice" && task.answerType !== "choice") return { ok: false, reason: "expected choice task" };
+  if (ctx.answerMode === "input" && task.answerType === "choice") return { ok: false, reason: "expected input task" };
+  if (task.answerType === "expression") return { ok: false, reason: "biology has no algebraic answers" };
+  if (task.answerType === "text") {
+    if (normalizeTerm(task.correctAnswer) === "") return { ok: false, reason: "correctAnswer normalizes to nothing" };
+    const forms = [task.correctAnswer, ...task.acceptedAnswers ?? []].map(normalizeTerm);
+    if (new Set(forms).size !== forms.length) return { ok: false, reason: "duplicate accepted answers" };
+    if (!isTermCorrect(task.correctAnswer, task.correctAnswer, task.acceptedAnswers)) {
+      return { ok: false, reason: "correctAnswer does not match itself after normalization" };
+    }
+  }
+  if (task.answerType === "number") {
+    if (parseQuantity(task.correctAnswer) === null) return { ok: false, reason: "correctAnswer is not a number" };
+  }
+  if (task.answerType === "choice") {
+    const choices = task.choices;
+    const labels = new Set(choices.map((c) => c.label));
+    if (labels.size !== 4) return { ok: false, reason: "duplicate choice labels" };
+    const texts = new Set(choices.map((c) => normalizeTerm(c.text)));
+    if (texts.size !== 4) return { ok: false, reason: "duplicate choice texts" };
+    const correct = choices.find((c) => c.label === task.correctChoice);
+    if (!correct) return { ok: false, reason: "correctChoice is not one of the options" };
+    task.correctAnswer = task.correctChoice;
+  }
+  return { ok: true, task };
+}
+
+// packages/trainers/bio/src/server/index.ts
+var bioTrainer = {
+  id: "bio",
+  usesLLM: false,
+  // the pool is the only source of tasks, so drain it for the whole batch instead of half of it
+  reuseRatio: 1,
+  topicsFor,
+  getTopic,
+  generateTaskBatch: async () => [],
+  verifyTask,
+  checkAnswer,
+  generateFeedback: async (_client, input) => buildFeedback(input)
+};
+
 // packages/trainers/math/src/answer.ts
 import { all, create } from "mathjs";
 var math = create(all);
@@ -1557,7 +1813,7 @@ function isAnswerCorrect(user, correct, type) {
 }
 
 // packages/trainers/math/src/curriculum/lo.ts
-var lo = [
+var lo2 = [
   // ---- klasa 1 ----
   topic(
     "lo1.real",
@@ -2079,11 +2335,11 @@ var sp = [
 ];
 
 // packages/trainers/math/src/curriculum/index.ts
-var TOPICS = [...sp, ...lo];
-var byId = new Map(TOPICS.map((t) => [t.id, t]));
-var getTopic = (id) => byId.get(id);
-function topicsFor(grade, level) {
-  return TOPICS.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
+var TOPICS2 = [...sp, ...lo2];
+var byId2 = new Map(TOPICS2.map((t) => [t.id, t]));
+var getTopic2 = (id) => byId2.get(id);
+function topicsFor2(grade, level) {
+  return TOPICS2.filter((t) => t.grade === grade && (t.level !== "R" || level === "R"));
 }
 
 // packages/trainers/math/src/server/mock.ts
@@ -2141,7 +2397,7 @@ function mockFeedback(input) {
   }
   const weak = [...stats].filter(([, s]) => s.ok / s.total < 0.7);
   const correct = input.results.filter((r) => r.correct).length;
-  const name = (id) => getTopic(id)?.name[input.lang] ?? id;
+  const name = (id) => getTopic2(id)?.name[input.lang] ?? id;
   return {
     summary: `[mock] ${correct}/${input.results.length}`,
     weakTopics: weak.map(([id, s]) => ({ topicId: id, reason: `${name(id)}: ${s.ok}/${s.total}` })),
@@ -2261,7 +2517,7 @@ function buildFeedbackPrompt(input) {
     if (r.usedHint) s.hints++;
     stats.set(r.topicId, s);
   }
-  const topicLines = [...stats].map(([id, s]) => `- ${id} ("${getTopic(id)?.name[lang] ?? id}"): ${s.ok}/${s.total} correct, hints used: ${s.hints}`).join("\n");
+  const topicLines = [...stats].map(([id, s]) => `- ${id} ("${getTopic2(id)?.name[lang] ?? id}"): ${s.ok}/${s.total} correct, hints used: ${s.hints}`).join("\n");
   const mistakes = results.filter((r) => !r.correct).map(
     (r, i) => `${i + 1}. [${r.topicId} / ${r.subtopic} / difficulty ${r.difficulty}] ${r.question}
    student answer: "${r.userAnswer || "(no answer)"}", correct: "${r.correctAnswer}"` + (r.misconception ? `, chosen option's typical mistake: ${r.misconception}` : "")
@@ -2300,14 +2556,14 @@ var FEEDBACK_JSON_SCHEMA = {
 };
 
 // packages/trainers/math/src/server/verifyTask.ts
-import { randomUUID } from "node:crypto";
+import { randomUUID as randomUUID2 } from "node:crypto";
 var numericParts = (s) => s.split(";").map((p) => evaluateNumber(normalizeAnswer(p)));
 var isNumeric = (s) => numericParts(s).every((n) => n !== null);
 function sameValue(a, b) {
   if (isNumeric(a) && isNumeric(b)) return isAnswerCorrect(a, b, "number");
   return normalizeAnswer(a) === normalizeAnswer(b);
 }
-function verifyTask(raw, ctx) {
+function verifyTask2(raw, ctx) {
   if (!raw || typeof raw !== "object") return { ok: false, reason: "not an object" };
   const r = raw;
   for (const key of ["verifyExpression", "choices", "correctChoice", "hint"]) {
@@ -2316,7 +2572,7 @@ function verifyTask(raw, ctx) {
   let topicId = typeof r.topicId === "string" ? r.topicId : void 0;
   if (!topicId && ctx.allowedTopicIds.length === 1) topicId = ctx.allowedTopicIds[0];
   if (!topicId || !ctx.allowedTopicIds.includes(topicId)) return { ok: false, reason: `unexpected topicId: ${topicId}` };
-  const parsed = Task.safeParse({ ...r, id: ctx.id ?? randomUUID(), topicId });
+  const parsed = Task.safeParse({ ...r, id: ctx.id ?? randomUUID2(), topicId });
   if (!parsed.success) return { ok: false, reason: `schema: ${parsed.error.issues[0]?.message}` };
   const task = parsed.data;
   if (ctx.answerMode === "choice" && task.answerType !== "choice") return { ok: false, reason: "expected choice task" };
@@ -2377,16 +2633,19 @@ function generateFeedback2(client, input) {
 }
 var mathTrainer = {
   id: "math",
-  topicsFor,
-  getTopic,
+  topicsFor: topicsFor2,
+  getTopic: getTopic2,
   generateTaskBatch,
-  verifyTask,
+  verifyTask: verifyTask2,
   checkAnswer: (task, answer) => isAnswerCorrect(answer, task.correctAnswer, task.answerType),
   generateFeedback: generateFeedback2
 };
 
 // apps/api/src/trainers.ts
-var trainers = /* @__PURE__ */ new Map([[mathTrainer.id, mathTrainer]]);
+var trainers = /* @__PURE__ */ new Map([
+  [mathTrainer.id, mathTrainer],
+  [bioTrainer.id, bioTrainer]
+]);
 
 // apps/api/src/app.ts
 var WEB_DIST = resolve(dirname2(fileURLToPath(import.meta.url)), "../../web/dist");

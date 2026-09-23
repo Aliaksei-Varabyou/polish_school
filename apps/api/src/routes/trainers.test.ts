@@ -23,7 +23,7 @@ describe("trainer API (math, mock AI)", () => {
   const body = { lang: "pl", grade: "sp7", topicIds, count: 10, answerMode: "mixed" };
 
   it("lists trainers and their topics", async () => {
-    expect((await app.inject("/api/trainers")).json()).toEqual({ trainers: [{ id: "math" }] });
+    expect((await app.inject("/api/trainers")).json()).toEqual({ trainers: [{ id: "math" }, { id: "bio" }] });
     const topics = await app.inject("/api/trainers/math/topics?grade=lo2&level=R");
     expect(topics.json().topics.map((t: { id: string }) => t.id)).toContain("lo2.polynomialsR");
     expect((await app.inject("/api/trainers/math/topics")).statusCode).toBe(400);

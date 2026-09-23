@@ -1,0 +1,77 @@
+{
+  "app": {
+    "title": "Biology trainer",
+    "subtitle": "Liceum class 3, extended level — human anatomy and physiology"
+  },
+  "start": {
+    "contentLang": "Task language",
+    "contentLangHint": "Biology tasks are available in Polish and Russian.",
+    "lang_pl": "Polish",
+    "lang_ru": "Russian",
+    "topics": "Sections",
+    "selectAll": "Select all",
+    "clearAll": "Clear",
+    "selected": "Selected: {{count}}",
+    "count": "Number of tasks",
+    "answerMode": "Answer format",
+    "modeInput": "Type the answer",
+    "modeChoice": "Pick one of 4",
+    "modeMixed": "Mixed",
+    "generate": "Start",
+    "pickTopic": "Pick at least one section"
+  },
+  "loading": {
+    "title": "Preparing tasks…",
+    "hint": "Tasks are prepared in advance, so this takes a moment"
+  },
+  "errors": {
+    "RATE_LIMIT": "Too many requests. Wait a minute and try again.",
+    "NETWORK": "No connection to the server. Check your internet.",
+    "LLM_ERROR": "No tasks for the selected sections yet. Pick others or try later.",
+    "generic": "Something went wrong. Try again.",
+    "partial": "Prepared {{got}} of {{count}} tasks."
+  },
+  "trainer": {
+    "taskOf": "Task {{n}} of {{total}}",
+    "difficulty1": "Easy",
+    "difficulty2": "Medium",
+    "difficulty3": "Hard",
+    "placeholder": "Your answer",
+    "helpTerm": "One word — the term in its base form. Case and diacritics don't matter.",
+    "helpNumber": "Enter a number; the unit is optional.",
+    "check": "Check",
+    "next": "Next",
+    "finish": "Results",
+    "correct": "Correct!",
+    "wrong": "Wrong",
+    "correctAnswer": "Correct answer:",
+    "alsoAccepted": "Also accepted: {{list}}",
+    "showSolution": "Show explanation",
+    "hideSolution": "Hide explanation",
+    "hint": "Hint",
+    "quit": "Quit",
+    "quitConfirm": "Stop the session? Progress will be lost."
+  },
+  "results": {
+    "title": "Your score",
+    "score": "{{correct}} of {{total}}",
+    "great": "Excellent! You know this material.",
+    "good": "Good! A few things left to polish.",
+    "ok": "Not bad, but more practice would help.",
+    "low": "This material is worth reviewing. You've got this!",
+    "byTopic": "By section",
+    "mistakes": "Mistakes",
+    "yourAnswer": "Your answer:",
+    "noAnswer": "no answer",
+    "hintUsed": "with a hint",
+    "again": "Again",
+    "change": "Change settings",
+    "analyze": "Analyse weak spots",
+    "analyzing": "Analysing…",
+    "weakTopics": "What to work on",
+    "recommendations": "Tips",
+    "practiceWeak": "Practise weak sections",
+    "noMistakes": "No mistakes — keep it up!",
+    "savedToHistory": "Saved to history"
+  }
+}

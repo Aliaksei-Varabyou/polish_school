@@ -158,7 +158,8 @@ describe("generateTasks", () => {
 
     const offline: TrainerServer = { ...fakeTrainer, usesLLM: false, reuseRatio: 1 };
     const failing = new FailingClient();
-    const outcome = await generateTasks(request(), { trainer: offline, client: failing, pool });
+    // deps.reuseRatio is what the API always passes (POOL_REUSE_RATIO); the trainer must override it
+    const outcome = await generateTasks(request(), { trainer: offline, client: failing, pool, reuseRatio: 0.5 });
 
     expect(failing.calls).toBe(0);
     expect(outcome).toMatchObject({ ok: true, stats: { llmCalls: 0, generated: 0, reused: 10 } });
