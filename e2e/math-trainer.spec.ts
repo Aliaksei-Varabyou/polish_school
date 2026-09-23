@@ -55,7 +55,8 @@ test("catalog → math: 10 tasks → results → analysis → try again", async 
   await page.getByRole("radio", { name: "Расширенный", exact: true }).click();
 
   const boxes = page.locator("input[type=checkbox]");
-  await expect(boxes).toHaveCount(10);
+  // LO2 na poziomie rozszerzonym: 10 tematów poziomu P (w tym dodane "Wielomiany") + 1 poziomu R
+  await expect(boxes).toHaveCount(11);
   await boxes.nth(0).check();
   await boxes.nth(6).check();
   await page.locator("select").selectOption("10");

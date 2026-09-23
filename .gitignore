@@ -8,6 +8,7 @@ dist
 apps/api/data/
 packages/trainers/math/data/
 packages/trainers/bio/data/
+e2e/.pool.db*
 test-results/
 playwright-report/
 .turbo/
