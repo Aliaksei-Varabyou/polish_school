@@ -2148,7 +2148,9 @@ function calcTemplate(spec) {
   };
 }
 function pairFromTable(spec) {
-  const label = spec.label ?? { pl: "Struktura", ru: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430" };
+  const label = spec.label ?? { pl: "Struktura", ru: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430", feminine: ["pl", "ru"] };
+  const feminine = (lang) => label.feminine?.includes(lang) ?? false;
+  const ask = (lang) => lang === "pl" ? `Jaka jest ${feminine("pl") ? "jej" : "jego"} rola?` : `\u041A\u0430\u043A\u043E\u0432\u0430 ${feminine("ru") ? "\u0435\u0451" : "\u0435\u0433\u043E"} \u0440\u043E\u043B\u044C?`;
   return [
     choiceFromTable({
       id: `${spec.topicId}.${spec.slug}-to-role`,
@@ -2159,7 +2161,7 @@ function pairFromTable(spec) {
       tags: spec.tags,
       difficulty: (r) => r.tier,
       shift: spec.shift ?? 0,
-      question: (r, lang) => `${label[lang]}: ${r.name[lang]}. ${lang === "pl" ? "Jaka jest jej rola?" : "\u041A\u0430\u043A\u043E\u0432\u0430 \u0435\u0451 \u0440\u043E\u043B\u044C?"}`,
+      question: (r, lang) => `${label[lang]}: ${r.name[lang]}. ${ask(lang)}`,
       optionText: (r, lang) => r.role[lang],
       misconception: spec.misconception,
       solution: (r, lang) => `${cap(r.name[lang])} \u2014 ${r.role[lang]}.`
@@ -2179,6 +2181,276 @@ function pairFromTable(spec) {
     })
   ];
 }
+
+// packages/trainers/bio/src/server/templates/data/homeostasis.ts
+var HOMEOSTASIS = [
+  {
+    id: "homeostaza",
+    name: { pl: "homeostaza", ru: "\u0433\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437" },
+    role: { pl: "utrzymywanie sta\u0142o\u015Bci \u015Brodowiska wewn\u0119trznego mimo zmian na zewn\u0105trz", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u0441\u0442\u0432\u0430 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0440\u0435\u0434\u044B \u043D\u0435\u0441\u043C\u043E\u0442\u0440\u044F \u043D\u0430 \u0432\u043D\u0435\u0448\u043D\u0438\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F" },
+    aliases: { pl: [], ru: [] },
+    tier: 1
+  },
+  {
+    id: "sprzezenie-ujemne",
+    name: { pl: "ujemne sprz\u0119\u017Cenie zwrotne", ru: "\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" },
+    role: { pl: "wygaszanie odchylenia przez reakcj\u0119 dzia\u0142aj\u0105c\u0105 w przeciwnym kierunku", ru: "\u0433\u0430\u0448\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u0432\u0435\u0442\u043E\u043C, \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0432 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u0443\u044E \u0441\u0442\u043E\u0440\u043E\u043D\u0443" },
+    aliases: { pl: ["sprz\u0119\u017Cenie zwrotne ujemne"], ru: ["\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C"] },
+    tier: 1
+  },
+  {
+    id: "sprzezenie-dodatnie",
+    name: { pl: "dodatnie sprz\u0119\u017Cenie zwrotne", ru: "\u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" },
+    role: { pl: "wzmacnianie odchylenia a\u017C do zako\u0144czenia procesu, jak przy porodzie", ru: "\u0443\u0441\u0438\u043B\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044F \u0434\u043E \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430, \u043A\u0430\u043A \u043F\u0440\u0438 \u0440\u043E\u0434\u0430\u0445" },
+    aliases: { pl: ["sprz\u0119\u017Cenie zwrotne dodatnie"], ru: ["\u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C"] },
+    tier: 2
+  },
+  {
+    id: "receptor",
+    name: { pl: "receptor", ru: "\u0440\u0435\u0446\u0435\u043F\u0442\u043E\u0440" },
+    role: { pl: "wykrywanie zmiany parametru \u015Brodowiska wewn\u0119trznego lub zewn\u0119trznego", ru: "\u043E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0438\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044F \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0438\u043B\u0438 \u0432\u043D\u0435\u0448\u043D\u0435\u0439 \u0441\u0440\u0435\u0434\u044B" },
+    aliases: { pl: ["receptory"], ru: ["\u0440\u0435\u0446\u0435\u043F\u0442\u043E\u0440\u044B"] },
+    tier: 1
+  },
+  {
+    id: "osrodek-integrujacy",
+    name: { pl: "o\u015Brodek integruj\u0105cy", ru: "\u0438\u043D\u0442\u0435\u0433\u0440\u0438\u0440\u0443\u044E\u0449\u0438\u0439 \u0446\u0435\u043D\u0442\u0440" },
+    role: { pl: "por\xF3wnanie sygna\u0142u z warto\u015Bci\u0105 prawid\u0142ow\u0105 i wys\u0142anie polecenia do efektora", ru: "\u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435 \u0441\u0438\u0433\u043D\u0430\u043B\u0430 \u0441 \u043D\u043E\u0440\u043C\u043E\u0439 \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u044D\u0444\u0444\u0435\u043A\u0442\u043E\u0440\u0443" },
+    aliases: { pl: ["o\u015Brodek regulacyjny", "o\u015Brodek steruj\u0105cy"], ru: ["\u0440\u0435\u0433\u0443\u043B\u044F\u0442\u043E\u0440\u043D\u044B\u0439 \u0446\u0435\u043D\u0442\u0440", "\u0443\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0449\u0438\u0439 \u0446\u0435\u043D\u0442\u0440"] },
+    tier: 2
+  },
+  {
+    id: "efektor",
+    name: { pl: "efektor", ru: "\u044D\u0444\u0444\u0435\u043A\u0442\u043E\u0440" },
+    role: { pl: "wykonanie reakcji przywracaj\u0105cej warto\u015B\u0107 prawid\u0142ow\u0105, np. przez mi\u0119sie\u0144 lub gruczo\u0142", ru: "\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u0432\u0435\u0442\u0430, \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u044E\u0449\u0435\u0433\u043E \u043D\u043E\u0440\u043C\u0443, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 \u043C\u044B\u0448\u0446\u0435\u0439 \u0438\u043B\u0438 \u0436\u0435\u043B\u0435\u0437\u043E\u0439" },
+    aliases: { pl: ["efektory"], ru: ["\u044D\u0444\u0444\u0435\u043A\u0442\u043E\u0440\u044B"] },
+    tier: 1
+  },
+  {
+    id: "termoregulacja",
+    name: { pl: "termoregulacja", ru: "\u0442\u0435\u0440\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F" },
+    role: { pl: "utrzymywanie sta\u0142ej temperatury cia\u0142a przez regulacj\u0119 wytwarzania i oddawania ciep\u0142a", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u043E\u0439 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0442\u0435\u043B\u0430 \u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u0435\u0439 \u0442\u0435\u043F\u043B\u043E\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u044F \u0438 \u0442\u0435\u043F\u043B\u043E\u043E\u0442\u0434\u0430\u0447\u0438" },
+    aliases: { pl: [], ru: [] },
+    tier: 1
+  },
+  {
+    id: "stalocieplnosc",
+    name: { pl: "sta\u0142ocieplno\u015B\u0107", ru: "\u0442\u0435\u043F\u043B\u043E\u043A\u0440\u043E\u0432\u043D\u043E\u0441\u0442\u044C" },
+    role: { pl: "zdolno\u015B\u0107 do sta\u0142ej temperatury cia\u0142a niezale\u017Cnie od otoczenia dzi\u0119ki ciep\u0142u z metabolizmu (ptaki i ssaki)", ru: "\u0441\u043F\u043E\u0441\u043E\u0431\u043D\u043E\u0441\u0442\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0443\u044E \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0443 \u0442\u0435\u043B\u0430 \u043D\u0435\u0437\u0430\u0432\u0438\u0441\u0438\u043C\u043E \u043E\u0442 \u0441\u0440\u0435\u0434\u044B \u0437\u0430 \u0441\u0447\u0451\u0442 \u0442\u0435\u043F\u043B\u0430 \u043E\u0431\u043C\u0435\u043D\u0430 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 (\u043F\u0442\u0438\u0446\u044B \u0438 \u043C\u043B\u0435\u043A\u043E\u043F\u0438\u0442\u0430\u044E\u0449\u0438\u0435)" },
+    aliases: { pl: ["endotermia", "homeotermia"], ru: ["\u044D\u043D\u0434\u043E\u0442\u0435\u0440\u043C\u0438\u044F", "\u0433\u043E\u043C\u043E\u0439\u043E\u0442\u0435\u0440\u043C\u0438\u044F", "\u0433\u043E\u043C\u0435\u043E\u0442\u0435\u0440\u043C\u0438\u044F"] },
+    tier: 2
+  },
+  {
+    id: "zmiennocieplnosc",
+    name: { pl: "zmiennocieplno\u015B\u0107", ru: "\u0445\u043E\u043B\u043E\u0434\u043D\u043E\u043A\u0440\u043E\u0432\u043D\u043E\u0441\u0442\u044C" },
+    role: { pl: "zale\u017Cno\u015B\u0107 temperatury cia\u0142a od temperatury otoczenia (ryby, p\u0142azy, gady)", ru: "\u0437\u0430\u0432\u0438\u0441\u0438\u043C\u043E\u0441\u0442\u044C \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0442\u0435\u043B\u0430 \u043E\u0442 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0441\u0440\u0435\u0434\u044B (\u0440\u044B\u0431\u044B, \u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u044B\u0435, \u043F\u0440\u0435\u0441\u043C\u044B\u043A\u0430\u044E\u0449\u0438\u0435\u0441\u044F)" },
+    aliases: { pl: ["ektotermia", "poikilotermia"], ru: ["\u044D\u043A\u0442\u043E\u0442\u0435\u0440\u043C\u0438\u044F", "\u043F\u043E\u0439\u043A\u0438\u043B\u043E\u0442\u0435\u0440\u043C\u0438\u044F"] },
+    tier: 2
+  },
+  {
+    id: "osmoregulacja",
+    name: { pl: "osmoregulacja", ru: "\u043E\u0441\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F" },
+    role: { pl: "utrzymywanie sta\u0142ego st\u0119\u017Cenia soli i ilo\u015Bci wody w p\u0142ynach ustrojowych", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u043E\u0439 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438 \u0441\u043E\u043B\u0435\u0439 \u0438 \u043A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u0430 \u0432\u043E\u0434\u044B \u0432 \u0436\u0438\u0434\u043A\u043E\u0441\u0442\u044F\u0445 \u0442\u0435\u043B\u0430" },
+    aliases: { pl: [], ru: [] },
+    tier: 1
+  },
+  {
+    id: "goraczka",
+    name: { pl: "gor\u0105czka", ru: "\u043B\u0438\u0445\u043E\u0440\u0430\u0434\u043A\u0430" },
+    role: { pl: "przestawienie o\u015Brodka termoregulacji na wy\u017Csz\u0105 temperatur\u0119 w odpowiedzi na infekcj\u0119", ru: "\u043F\u0435\u0440\u0435\u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u0446\u0435\u043D\u0442\u0440\u0430 \u0442\u0435\u0440\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u0438 \u043D\u0430 \u0431\u043E\u043B\u0435\u0435 \u0432\u044B\u0441\u043E\u043A\u0443\u044E \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0443 \u0432 \u043E\u0442\u0432\u0435\u0442 \u043D\u0430 \u0438\u043D\u0444\u0435\u043A\u0446\u0438\u044E" },
+    aliases: { pl: ["podwy\u017Cszona temperatura"], ru: ["\u0436\u0430\u0440", "\u043F\u043E\u0432\u044B\u0448\u0435\u043D\u043D\u0430\u044F \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430"] },
+    tier: 2
+  },
+  {
+    id: "hipotermia",
+    name: { pl: "hipotermia", ru: "\u0433\u0438\u043F\u043E\u0442\u0435\u0440\u043C\u0438\u044F" },
+    role: { pl: "niebezpieczne obni\u017Cenie temperatury g\u0142\u0119bokiej cia\u0142a poni\u017Cej 35 \xB0C", ru: "\u043E\u043F\u0430\u0441\u043D\u043E\u0435 \u0441\u043D\u0438\u0436\u0435\u043D\u0438\u0435 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0442\u0435\u043B\u0430 \u043D\u0438\u0436\u0435 35 \xB0C" },
+    aliases: { pl: ["wych\u0142odzenie"], ru: ["\u043F\u0435\u0440\u0435\u043E\u0445\u043B\u0430\u0436\u0434\u0435\u043D\u0438\u0435"] },
+    tier: 2
+  },
+  {
+    id: "odwodnienie",
+    name: { pl: "odwodnienie", ru: "\u043E\u0431\u0435\u0437\u0432\u043E\u0436\u0438\u0432\u0430\u043D\u0438\u0435" },
+    role: { pl: "zaburzenie homeostazy wywo\u0142ane utrat\u0105 wody wi\u0119ksz\u0105 ni\u017C jej pobieranie", ru: "\u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0435 \u0433\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437\u0430 \u0438\u0437-\u0437\u0430 \u043F\u043E\u0442\u0435\u0440\u0438 \u0432\u043E\u0434\u044B, \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u044E\u0449\u0435\u0439 \u0435\u0451 \u043F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435" },
+    aliases: { pl: ["dehydratacja"], ru: ["\u0434\u0435\u0433\u0438\u0434\u0440\u0430\u0442\u0430\u0446\u0438\u044F"] },
+    tier: 1
+  }
+];
+var PARAMETERS = [
+  {
+    id: "temperatura",
+    parameter: { pl: "temperatura wewn\u0119trzna cia\u0142a", ru: "\u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u044F\u044F \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0442\u0435\u043B\u0430" },
+    norm: { pl: "oko\u0142o 36,6 \xB0C (36\u201337 \xB0C)", ru: "\u043E\u043A\u043E\u043B\u043E 36,6 \xB0C (36\u201337 \xB0C)" },
+    aliases: { pl: ["temperatura cia\u0142a", "temperatura"], ru: ["\u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0442\u0435\u043B\u0430", "\u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430"] },
+    tier: 1
+  },
+  {
+    id: "ph-krwi",
+    parameter: { pl: "pH krwi", ru: "pH \u043A\u0440\u043E\u0432\u0438" },
+    norm: { pl: "7,35\u20137,45", ru: "7,35\u20137,45" },
+    aliases: { pl: ["pH", "odczyn krwi"], ru: ["pH", "\u0440\u041D \u043A\u0440\u043E\u0432\u0438", "\u043A\u0438\u0441\u043B\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u043A\u0440\u043E\u0432\u0438"] },
+    tier: 2
+  },
+  {
+    id: "glukoza",
+    parameter: { pl: "st\u0119\u017Cenie glukozy we krwi", ru: "\u0443\u0440\u043E\u0432\u0435\u043D\u044C \u0433\u043B\u044E\u043A\u043E\u0437\u044B \u0432 \u043A\u0440\u043E\u0432\u0438" },
+    norm: { pl: "70\u201399 mg/dl na czczo", ru: "70\u201399 \u043C\u0433/\u0434\u043B \u043D\u0430\u0442\u043E\u0449\u0430\u043A" },
+    aliases: { pl: ["glukoza", "glikemia", "poziom glukozy"], ru: ["\u0433\u043B\u044E\u043A\u043E\u0437\u0430", "\u0441\u0430\u0445\u0430\u0440 \u043A\u0440\u043E\u0432\u0438", "\u0433\u043B\u0438\u043A\u0435\u043C\u0438\u044F"] },
+    tier: 2
+  },
+  {
+    id: "cisnienie",
+    parameter: { pl: "ci\u015Bnienie t\u0119tnicze krwi", ru: "\u0430\u0440\u0442\u0435\u0440\u0438\u0430\u043B\u044C\u043D\u043E\u0435 \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u0435" },
+    norm: { pl: "oko\u0142o 120/80 mm Hg", ru: "\u043E\u043A\u043E\u043B\u043E 120/80 \u043C\u043C \u0440\u0442. \u0441\u0442." },
+    aliases: { pl: ["ci\u015Bnienie krwi", "ci\u015Bnienie"], ru: ["\u0434\u0430\u0432\u043B\u0435\u043D\u0438\u0435", "\u0434\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043A\u0440\u043E\u0432\u0438"] },
+    tier: 1
+  },
+  {
+    id: "tetno",
+    parameter: { pl: "t\u0119tno", ru: "\u043F\u0443\u043B\u044C\u0441" },
+    norm: { pl: "60\u201380 uderze\u0144 na minut\u0119 w spoczynku", ru: "60\u201380 \u0443\u0434\u0430\u0440\u043E\u0432 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443 \u0432 \u043F\u043E\u043A\u043E\u0435" },
+    aliases: { pl: ["puls", "cz\u0119sto\u015B\u0107 skurcz\xF3w serca"], ru: ["\u0447\u0430\u0441\u0442\u043E\u0442\u0430 \u0441\u0435\u0440\u0434\u0435\u0447\u043D\u044B\u0445 \u0441\u043E\u043A\u0440\u0430\u0449\u0435\u043D\u0438\u0439", "\u0427\u0421\u0421"] },
+    tier: 1
+  },
+  {
+    id: "oddechy",
+    parameter: { pl: "cz\u0119sto\u015B\u0107 oddech\xF3w", ru: "\u0447\u0430\u0441\u0442\u043E\u0442\u0430 \u0434\u044B\u0445\u0430\u043D\u0438\u044F" },
+    norm: { pl: "12\u201320 oddech\xF3w na minut\u0119 w spoczynku", ru: "12\u201320 \u0432\u0434\u043E\u0445\u043E\u0432 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443 \u0432 \u043F\u043E\u043A\u043E\u0435" },
+    aliases: { pl: ["liczba oddech\xF3w", "cz\u0119stotliwo\u015B\u0107 oddech\xF3w"], ru: ["\u0447\u0430\u0441\u0442\u043E\u0442\u0430 \u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0439", "\u0427\u0414\u0414"] },
+    tier: 2
+  }
+];
+var RESPONSES = [
+  {
+    id: "temperatura-wzrost",
+    deviation: { pl: "wzrost temperatury cia\u0142a", ru: "\u043F\u043E\u0432\u044B\u0448\u0435\u043D\u0438\u0435 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0442\u0435\u043B\u0430" },
+    response: { pl: "rozszerzenie naczy\u0144 sk\xF3ry i wydzielanie potu", ru: "\u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u0441\u043E\u0441\u0443\u0434\u043E\u0432 \u043A\u043E\u0436\u0438 \u0438 \u043F\u043E\u0442\u043E\u043E\u0442\u0434\u0435\u043B\u0435\u043D\u0438\u0435" },
+    feedback: "ujemne",
+    tier: 1
+  },
+  {
+    id: "temperatura-spadek",
+    deviation: { pl: "spadek temperatury cia\u0142a", ru: "\u043F\u043E\u043D\u0438\u0436\u0435\u043D\u0438\u0435 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0442\u0435\u043B\u0430" },
+    response: { pl: "zw\u0119\u017Cenie naczy\u0144 sk\xF3ry i dr\u017Cenie mi\u0119\u015Bni", ru: "\u0441\u0443\u0436\u0435\u043D\u0438\u0435 \u0441\u043E\u0441\u0443\u0434\u043E\u0432 \u043A\u043E\u0436\u0438 \u0438 \u043C\u044B\u0448\u0435\u0447\u043D\u0430\u044F \u0434\u0440\u043E\u0436\u044C" },
+    feedback: "ujemne",
+    tier: 1
+  },
+  {
+    id: "glukoza-wzrost",
+    deviation: { pl: "wzrost st\u0119\u017Cenia glukozy we krwi", ru: "\u043F\u043E\u0432\u044B\u0448\u0435\u043D\u0438\u0435 \u0443\u0440\u043E\u0432\u043D\u044F \u0433\u043B\u044E\u043A\u043E\u0437\u044B \u0432 \u043A\u0440\u043E\u0432\u0438" },
+    response: { pl: "wydzielanie insuliny i magazynowanie glukozy jako glikogenu", ru: "\u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0438\u043D\u0441\u0443\u043B\u0438\u043D\u0430 \u0438 \u0437\u0430\u043F\u0430\u0441\u0430\u043D\u0438\u0435 \u0433\u043B\u044E\u043A\u043E\u0437\u044B \u0432 \u0432\u0438\u0434\u0435 \u0433\u043B\u0438\u043A\u043E\u0433\u0435\u043D\u0430" },
+    feedback: "ujemne",
+    tier: 1
+  },
+  {
+    id: "glukoza-spadek",
+    deviation: { pl: "spadek st\u0119\u017Cenia glukozy we krwi", ru: "\u043F\u043E\u043D\u0438\u0436\u0435\u043D\u0438\u0435 \u0443\u0440\u043E\u0432\u043D\u044F \u0433\u043B\u044E\u043A\u043E\u0437\u044B \u0432 \u043A\u0440\u043E\u0432\u0438" },
+    response: { pl: "wydzielanie glukagonu i rozk\u0142ad glikogenu w w\u0105trobie", ru: "\u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0433\u043B\u044E\u043A\u0430\u0433\u043E\u043D\u0430 \u0438 \u0440\u0430\u0441\u043F\u0430\u0434 \u0433\u043B\u0438\u043A\u043E\u0433\u0435\u043D\u0430 \u0432 \u043F\u0435\u0447\u0435\u043D\u0438" },
+    feedback: "ujemne",
+    tier: 2
+  },
+  {
+    id: "woda-niedobor",
+    deviation: { pl: "niedob\xF3r wody w organizmie", ru: "\u043D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u043A \u0432\u043E\u0434\u044B \u0432 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C\u0435" },
+    response: { pl: "uczucie pragnienia i zag\u0119szczanie moczu pod wp\u0142ywem ADH", ru: "\u0447\u0443\u0432\u0441\u0442\u0432\u043E \u0436\u0430\u0436\u0434\u044B \u0438 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u043C\u043E\u0447\u0438 \u043F\u043E\u0434 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435\u043C \u0410\u0414\u0413" },
+    feedback: "ujemne",
+    tier: 2
+  },
+  {
+    id: "co2-wzrost",
+    deviation: { pl: "wzrost st\u0119\u017Cenia CO\u2082 we krwi", ru: "\u043F\u043E\u0432\u044B\u0448\u0435\u043D\u0438\u0435 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438 CO\u2082 \u0432 \u043A\u0440\u043E\u0432\u0438" },
+    response: { pl: "przyspieszenie i pog\u0142\u0119bienie oddech\xF3w", ru: "\u0443\u0447\u0430\u0449\u0435\u043D\u0438\u0435 \u0438 \u0443\u0433\u043B\u0443\u0431\u043B\u0435\u043D\u0438\u0435 \u0434\u044B\u0445\u0430\u043D\u0438\u044F" },
+    feedback: "ujemne",
+    tier: 2
+  },
+  {
+    id: "cisnienie-spadek",
+    deviation: { pl: "spadek ci\u015Bnienia t\u0119tniczego krwi", ru: "\u043F\u0430\u0434\u0435\u043D\u0438\u0435 \u0430\u0440\u0442\u0435\u0440\u0438\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u044F" },
+    response: { pl: "przyspieszenie pracy serca i zw\u0119\u017Cenie naczy\u0144 krwiono\u015Bnych", ru: "\u0443\u0447\u0430\u0449\u0435\u043D\u0438\u0435 \u0440\u0430\u0431\u043E\u0442\u044B \u0441\u0435\u0440\u0434\u0446\u0430 \u0438 \u0441\u0443\u0436\u0435\u043D\u0438\u0435 \u043A\u0440\u043E\u0432\u0435\u043D\u043E\u0441\u043D\u044B\u0445 \u0441\u043E\u0441\u0443\u0434\u043E\u0432" },
+    feedback: "ujemne",
+    tier: 2
+  },
+  {
+    id: "porod",
+    deviation: { pl: "rozci\u0105ganie szyjki macicy podczas porodu", ru: "\u0440\u0430\u0441\u0442\u044F\u0436\u0435\u043D\u0438\u0435 \u0448\u0435\u0439\u043A\u0438 \u043C\u0430\u0442\u043A\u0438 \u0432\u043E \u0432\u0440\u0435\u043C\u044F \u0440\u043E\u0434\u043E\u0432" },
+    response: { pl: "coraz silniejsze wydzielanie oksytocyny i skurcze macicy", ru: "\u0432\u0441\u0451 \u0431\u043E\u043B\u0435\u0435 \u0441\u0438\u043B\u044C\u043D\u043E\u0435 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043E\u043A\u0441\u0438\u0442\u043E\u0446\u0438\u043D\u0430 \u0438 \u0441\u043E\u043A\u0440\u0430\u0449\u0435\u043D\u0438\u044F \u043C\u0430\u0442\u043A\u0438" },
+    feedback: "dodatnie",
+    tier: 2
+  }
+];
+
+// packages/trainers/bio/src/server/templates/topics/lo3Homeostasis.ts
+var TOPIC = "bio.lo3.organism";
+var TAGS2 = ["homeostaza"];
+var SUBTOPIC = { pl: "homeostaza i sprz\u0119\u017Cenie zwrotne", ru: "\u0433\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" };
+var PARAMS = { pl: "parametry \u015Brodowiska wewn\u0119trznego", ru: "\u043F\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u0438 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0440\u0435\u0434\u044B" };
+var terms = pairFromTable({
+  topicId: TOPIC,
+  paragraph: P.organism.homeostasis,
+  slug: "homeostasis",
+  rows: HOMEOSTASIS,
+  subtopic: SUBTOPIC,
+  tags: TAGS2,
+  shift: 2,
+  label: { pl: "Poj\u0119cie", ru: "\u041F\u043E\u043D\u044F\u0442\u0438\u0435" },
+  misconception: {
+    pl: "pokrewne poj\u0119cie regulacji \u2014 \u0142atwo pomyli\u0107 rodzaje sprz\u0119\u017Cenia albo ogniwa p\u0119tli",
+    ru: "\u0441\u043C\u0435\u0436\u043D\u043E\u0435 \u043F\u043E\u043D\u044F\u0442\u0438\u0435 \u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u0438 \u2014 \u043B\u0435\u0433\u043A\u043E \u0441\u043F\u0443\u0442\u0430\u0442\u044C \u0432\u0438\u0434\u044B \u043E\u0431\u0440\u0430\u0442\u043D\u043E\u0439 \u0441\u0432\u044F\u0437\u0438 \u0438\u043B\u0438 \u0437\u0432\u0435\u043D\u044C\u044F \u043A\u043E\u043D\u0442\u0443\u0440\u0430"
+  }
+});
+var parameterToNorm = choiceFromTable({
+  id: `${TOPIC}.parameter-to-norm`,
+  topicId: TOPIC,
+  paragraph: P.organism.homeostasis,
+  rows: PARAMETERS,
+  subtopic: PARAMS,
+  tags: TAGS2,
+  difficulty: (r) => r.tier,
+  shift: 1,
+  question: (r, lang) => lang === "pl" ? `Parametr: ${r.parameter.pl}. Jaka jest jego warto\u015B\u0107 prawid\u0142owa?` : `\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C: ${r.parameter.ru}. \u041A\u0430\u043A\u043E\u0432\u0430 \u0435\u0433\u043E \u043D\u043E\u0440\u043C\u0430?`,
+  optionText: (r, lang) => r.norm[lang],
+  misconception: { pl: "norma innego parametru \u015Brodowiska wewn\u0119trznego", ru: "\u043D\u043E\u0440\u043C\u0430 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044F \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0440\u0435\u0434\u044B" },
+  // the parameter does not open the sentence: "pH" must not become "PH"
+  solution: (r, lang) => lang === "pl" ? `Warto\u015B\u0107 prawid\u0142owa parametru \u201E${r.parameter.pl}\u201D: ${r.norm.pl}.` : `\u041D\u043E\u0440\u043C\u0430 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044F \xAB${r.parameter.ru}\xBB: ${r.norm.ru}.`
+});
+var normToParameter = termFromTable({
+  id: `${TOPIC}.norm-to-parameter`,
+  topicId: TOPIC,
+  paragraph: P.organism.homeostasis,
+  rows: PARAMETERS,
+  subtopic: PARAMS,
+  tags: TAGS2,
+  difficulty: (r) => r.tier,
+  question: (r, lang) => lang === "pl" ? `Warto\u015B\u0107 prawid\u0142owa: ${r.norm.pl}. Jakiego parametru dotyczy? Podaj nazw\u0119 w mianowniku.` : `\u041D\u043E\u0440\u043C\u0430: ${r.norm.ru}. \u041A \u043A\u0430\u043A\u043E\u043C\u0443 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044E \u043E\u043D\u0430 \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0441\u044F? \u041D\u0430\u0437\u043E\u0432\u0438 \u0432 \u0438\u043C\u0435\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u043C \u043F\u0430\u0434\u0435\u0436\u0435.`,
+  term: (r, lang) => r.parameter[lang],
+  aliases: (r) => [r.parameter.pl, r.parameter.ru, ...r.aliases.pl, ...r.aliases.ru],
+  solution: (r, lang) => lang === "pl" ? `Odpowied\u017A: ${r.parameter.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${r.parameter.ru}.`
+});
+var deviationToResponse = choiceFromTable({
+  id: `${TOPIC}.deviation-to-response`,
+  topicId: TOPIC,
+  paragraph: P.organism.homeostasis,
+  rows: RESPONSES,
+  subtopic: SUBTOPIC,
+  tags: TAGS2,
+  difficulty: (r) => r.tier,
+  shift: 3,
+  question: (r, lang) => lang === "pl" ? `Zmiana: ${r.deviation.pl}. Jak reaguje organizm?` : `\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435: ${r.deviation.ru}. \u041A\u0430\u043A \u0440\u0435\u0430\u0433\u0438\u0440\u0443\u0435\u0442 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u043C?`,
+  optionText: (r, lang) => r.response[lang],
+  misconception: {
+    pl: "reakcja na inn\u0105 zmian\u0119 \u2014 cz\u0119sto na zmian\u0119 przeciwn\u0105",
+    ru: "\u043E\u0442\u0432\u0435\u0442 \u043D\u0430 \u0434\u0440\u0443\u0433\u043E\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u2014 \u0447\u0430\u0441\u0442\u043E \u043D\u0430 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u043E\u0435"
+  },
+  solution: (r, lang) => {
+    if (lang === "pl") {
+      const loop2 = r.feedback === "ujemne" ? "To ujemne sprz\u0119\u017Cenie zwrotne: reakcja znosi zmian\u0119 i przywraca stan prawid\u0142owy." : "To dodatnie sprz\u0119\u017Cenie zwrotne: reakcja nasila bodziec, a\u017C proces si\u0119 zako\u0144czy.";
+      return `${cap(r.deviation.pl)} \u2192 ${r.response.pl}. ${loop2}`;
+    }
+    const loop = r.feedback === "ujemne" ? "\u042D\u0442\u043E \u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C: \u043E\u0442\u0432\u0435\u0442 \u0443\u0441\u0442\u0440\u0430\u043D\u044F\u0435\u0442 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043D\u043E\u0440\u043C\u0443." : "\u042D\u0442\u043E \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C: \u043E\u0442\u0432\u0435\u0442 \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u0435\u0442 \u0441\u0442\u0438\u043C\u0443\u043B, \u043F\u043E\u043A\u0430 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0441\u044F.";
+    return `${cap(r.deviation.ru)} \u2192 ${r.response.ru}. ${loop}`;
+  }
+});
+var lo3HomeostasisTemplates = [...terms, parameterToNorm, normToParameter, deviationToResponse];
 
 // packages/trainers/bio/src/server/templates/data/hormones.ts
 var HORMONES = [
@@ -2526,17 +2798,17 @@ var LOOPS = [
 ];
 
 // packages/trainers/bio/src/server/templates/topics/lo3Hormones.ts
-var TOPIC = "bio.lo3.hormones";
-var SUBTOPIC = { pl: "gruczo\u0142y dokrewne i hormony", ru: "\u0436\u0435\u043B\u0435\u0437\u044B \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0435\u043A\u0440\u0435\u0446\u0438\u0438 \u0438 \u0433\u043E\u0440\u043C\u043E\u043D\u044B" };
+var TOPIC2 = "bio.lo3.hormones";
+var SUBTOPIC2 = { pl: "gruczo\u0142y dokrewne i hormony", ru: "\u0436\u0435\u043B\u0435\u0437\u044B \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0435\u043A\u0440\u0435\u0446\u0438\u0438 \u0438 \u0433\u043E\u0440\u043C\u043E\u043D\u044B" };
 var REGULATION = { pl: "regulacja hormonalna i sprz\u0119\u017Cenie zwrotne", ru: "\u0433\u043E\u0440\u043C\u043E\u043D\u0430\u043B\u044C\u043D\u0430\u044F \u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F \u0438 \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" };
 var DISEASES = { pl: "nadczynno\u015B\u0107 i niedoczynno\u015B\u0107 gruczo\u0142\xF3w", ru: "\u0433\u0438\u043F\u0435\u0440- \u0438 \u0433\u0438\u043F\u043E\u0444\u0443\u043D\u043A\u0446\u0438\u044F \u0436\u0435\u043B\u0451\u0437" };
 var tier = (row) => row.tier;
 var glandToHormone = choiceFromTable({
-  id: `${TOPIC}.gland-to-hormone`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.gland-to-hormone`,
+  topicId: TOPIC2,
   rows: HORMONES,
   paragraph: P.hormones.structure,
-  subtopic: SUBTOPIC,
+  subtopic: SUBTOPIC2,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
   shift: 0,
@@ -2550,11 +2822,11 @@ var glandToHormone = choiceFromTable({
   solution: (h, lang) => lang === "pl" ? `${cap(h.name.pl)}. Gruczo\u0142: ${h.gland.pl}. Dzia\u0142anie: ${h.action.pl}.` : `${cap(h.name.ru)}. \u0416\u0435\u043B\u0435\u0437\u0430: ${h.gland.ru}. \u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435: ${h.action.ru}.`
 });
 var hormoneToAction = choiceFromTable({
-  id: `${TOPIC}.hormone-to-action`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.hormone-to-action`,
+  topicId: TOPIC2,
   rows: HORMONES,
   paragraph: P.hormones.structure,
-  subtopic: SUBTOPIC,
+  subtopic: SUBTOPIC2,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
   shift: 1,
@@ -2564,11 +2836,11 @@ var hormoneToAction = choiceFromTable({
   solution: (h, lang) => lang === "pl" ? `${cap(h.name.pl)} (${h.gland.pl}) \u2014 ${h.action.pl}.` : `${cap(h.name.ru)} (${h.gland.ru}) \u2014 ${h.action.ru}.`
 });
 var hormoneToGland = choiceFromTable({
-  id: `${TOPIC}.hormone-to-gland`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.hormone-to-gland`,
+  topicId: TOPIC2,
   rows: HORMONES,
   paragraph: P.hormones.structure,
-  subtopic: SUBTOPIC,
+  subtopic: SUBTOPIC2,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
   shift: 2,
@@ -2578,11 +2850,11 @@ var hormoneToGland = choiceFromTable({
   solution: (h, lang) => lang === "pl" ? `${cap(h.name.pl)} \u2014 miejsce powstawania: ${h.gland.pl}.` : `${cap(h.name.ru)} \u2014 \u043C\u0435\u0441\u0442\u043E \u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u044F: ${h.gland.ru}.`
 });
 var actionToHormone = termFromTable({
-  id: `${TOPIC}.action-to-hormone`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.action-to-hormone`,
+  topicId: TOPIC2,
   rows: HORMONES,
   paragraph: P.hormones.structure,
-  subtopic: SUBTOPIC,
+  subtopic: SUBTOPIC2,
   tags: ["regulacja-hormonalna"],
   difficulty: tier,
   question: (h, lang) => lang === "pl" ? `Podaj nazw\u0119 hormonu (w mianowniku), kt\xF3ry ${h.action.pl}.` : `\u041D\u0430\u0437\u043E\u0432\u0438 \u0433\u043E\u0440\u043C\u043E\u043D (\u0432 \u0438\u043C\u0435\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u043C \u043F\u0430\u0434\u0435\u0436\u0435), \u043A\u043E\u0442\u043E\u0440\u044B\u0439 ${h.action.ru}.`,
@@ -2594,8 +2866,8 @@ var actionToHormone = termFromTable({
   solution: (h, lang) => lang === "pl" ? `Odpowied\u017A: ${h.name.pl}. Gruczo\u0142: ${h.gland.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${h.name.ru}. \u0416\u0435\u043B\u0435\u0437\u0430: ${h.gland.ru}.`
 });
 var disorderToDisease = choiceFromTable({
-  id: `${TOPIC}.disorder-to-disease`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.disorder-to-disease`,
+  topicId: TOPIC2,
   rows: DISORDERS,
   paragraph: P.hormones.disorders,
   subtopic: DISEASES,
@@ -2612,8 +2884,8 @@ var disorderToDisease = choiceFromTable({
   solution: (dz, lang) => lang === "pl" ? `${dz.kind === "nadczynno\u015B\u0107" ? "Nadmiar" : "Niedob\xF3r"} ${dz.hormone.pl} \u2192 ${dz.disease.pl}. Objawy: ${dz.symptom.pl}.` : `${dz.kind === "nadczynno\u015B\u0107" ? "\u0418\u0437\u0431\u044B\u0442\u043E\u043A" : "\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u043A"} ${dz.hormone.ru} \u2192 ${dz.disease.ru}. \u0421\u0438\u043C\u043F\u0442\u043E\u043C\u044B: ${dz.symptom.ru}.`
 });
 var symptomToDisease = choiceFromTable({
-  id: `${TOPIC}.symptom-to-disease`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.symptom-to-disease`,
+  topicId: TOPIC2,
   rows: DISORDERS,
   paragraph: P.hormones.disorders,
   subtopic: DISEASES,
@@ -2626,8 +2898,8 @@ var symptomToDisease = choiceFromTable({
   solution: (dz, lang) => lang === "pl" ? `Odpowied\u017A: ${dz.disease.pl} \u2014 ${dz.kind} wydzielania ${dz.hormone.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${dz.disease.ru} \u2014 ${dz.kind === "nadczynno\u015B\u0107" ? "\u0438\u0437\u0431\u044B\u0442\u043E\u0447\u043D\u0430\u044F" : "\u043D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u0430\u044F"} \u0441\u0435\u043A\u0440\u0435\u0446\u0438\u044F ${dz.hormone.ru}.`
 });
 var feedbackLoop = choiceFromTable({
-  id: `${TOPIC}.feedback-loop`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.feedback-loop`,
+  topicId: TOPIC2,
   rows: LOOPS,
   subtopic: REGULATION,
   tags: ["homeostaza", "regulacja-hormonalna"],
@@ -2642,8 +2914,8 @@ var feedbackLoop = choiceFromTable({
   solution: (l, lang) => lang === "pl" ? `Odpowied\u017A: ${l.hormone.pl}. Skutek: ${l.response.pl}. To ujemne sprz\u0119\u017Cenie zwrotne \u2014 skutek znosi bodziec, kt\xF3ry go wywo\u0142a\u0142.` : `\u041E\u0442\u0432\u0435\u0442: ${l.hormone.ru}. \u0420\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442: ${l.response.ru}. \u042D\u0442\u043E \u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C \u2014 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442 \u0433\u0430\u0441\u0438\u0442 \u0432\u044B\u0437\u0432\u0430\u0432\u0448\u0438\u0439 \u0435\u0433\u043E \u0441\u0442\u0438\u043C\u0443\u043B.`
 });
 var loopToEffect = choiceFromTable({
-  id: `${TOPIC}.loop-to-effect`,
-  topicId: TOPIC,
+  id: `${TOPIC2}.loop-to-effect`,
+  topicId: TOPIC2,
   rows: LOOPS,
   subtopic: REGULATION,
   tags: ["homeostaza", "regulacja-hormonalna"],
@@ -2910,14 +3182,14 @@ var BLOOD_GROUPS = [
 ];
 
 // packages/trainers/bio/src/server/templates/topics/lo3Circulation.ts
-var TOPIC2 = "bio.lo3.circulation";
+var TOPIC3 = "bio.lo3.circulation";
 var HEART = { pl: "budowa i praca serca, naczynia krwiono\u015Bne", ru: "\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0440\u0430\u0431\u043E\u0442\u0430 \u0441\u0435\u0440\u0434\u0446\u0430, \u043A\u0440\u043E\u0432\u0435\u043D\u043E\u0441\u043D\u044B\u0435 \u0441\u043E\u0441\u0443\u0434\u044B" };
 var BLOOD = { pl: "sk\u0142ad i funkcje krwi", ru: "\u0441\u043E\u0441\u0442\u0430\u0432 \u0438 \u0444\u0443\u043D\u043A\u0446\u0438\u0438 \u043A\u0440\u043E\u0432\u0438" };
 var GROUPS = { pl: "grupy krwi i transfuzje", ru: "\u0433\u0440\u0443\u043F\u043F\u044B \u043A\u0440\u043E\u0432\u0438 \u0438 \u043F\u0435\u0440\u0435\u043B\u0438\u0432\u0430\u043D\u0438\u0435" };
 var DEFENCE = { pl: "odporno\u015B\u0107 nieswoista i swoista", ru: "\u043D\u0435\u0441\u043F\u0435\u0446\u0438\u0444\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0438 \u0441\u043F\u0435\u0446\u0438\u0444\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442" };
 var tier2 = (row) => row.tier;
 var heartTemplates = pairFromTable({
-  topicId: TOPIC2,
+  topicId: TOPIC3,
   slug: "heart",
   rows: HEART_AND_VESSELS,
   subtopic: HEART,
@@ -2929,7 +3201,7 @@ var heartTemplates = pairFromTable({
   }
 });
 var bloodTemplates = pairFromTable({
-  topicId: TOPIC2,
+  topicId: TOPIC3,
   slug: "blood",
   rows: BLOOD_COMPONENTS,
   subtopic: BLOOD,
@@ -2938,7 +3210,7 @@ var bloodTemplates = pairFromTable({
   misconception: { pl: "rola innego sk\u0142adnika krwi", ru: "\u0440\u043E\u043B\u044C \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0430 \u043A\u0440\u043E\u0432\u0438" }
 });
 var immunityTemplates = pairFromTable({
-  topicId: TOPIC2,
+  topicId: TOPIC3,
   slug: "immunity",
   rows: IMMUNITY,
   paragraph: P.circulation.immunity,
@@ -2951,8 +3223,8 @@ var immunityTemplates = pairFromTable({
   }
 });
 var transfusion = choiceFromTable({
-  id: `${TOPIC2}.transfusion`,
-  topicId: TOPIC2,
+  id: `${TOPIC3}.transfusion`,
+  topicId: TOPIC3,
   rows: BLOOD_GROUPS,
   paragraph: P.circulation.blood,
   subtopic: GROUPS,
@@ -2968,8 +3240,8 @@ var transfusion = choiceFromTable({
   solution: (g, lang) => lang === "pl" ? `Grupa ${g.group.pl}: ${g.antigens.pl}, ${g.antibodies.pl}. Dlatego mo\u017Ce przyj\u0105\u0107 krew ${g.receivesFrom.pl}.` : `\u0413\u0440\u0443\u043F\u043F\u0430 ${g.group.ru}: ${g.antigens.ru}, ${g.antibodies.ru}. \u041F\u043E\u044D\u0442\u043E\u043C\u0443 \u043C\u043E\u0436\u0435\u0442 \u043F\u0440\u0438\u043D\u044F\u0442\u044C \u043A\u0440\u043E\u0432\u044C ${g.receivesFrom.ru}.`
 });
 var antigens = choiceFromTable({
-  id: `${TOPIC2}.group-to-antigens`,
-  topicId: TOPIC2,
+  id: `${TOPIC3}.group-to-antigens`,
+  topicId: TOPIC3,
   rows: BLOOD_GROUPS,
   paragraph: P.circulation.blood,
   subtopic: GROUPS,
@@ -2981,8 +3253,8 @@ var antigens = choiceFromTable({
   solution: (g, lang) => lang === "pl" ? `Grupa ${g.group.pl}: ${g.antigens.pl}. W osoczu: ${g.antibodies.pl}.` : `\u0413\u0440\u0443\u043F\u043F\u0430 ${g.group.ru}: ${g.antigens.ru}. \u0412 \u043F\u043B\u0430\u0437\u043C\u0435: ${g.antibodies.ru}.`
 });
 var cardiacOutput = calcTemplate({
-  id: `${TOPIC2}.cardiac-output`,
-  topicId: TOPIC2,
+  id: `${TOPIC3}.cardiac-output`,
+  topicId: TOPIC3,
   paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
@@ -2996,8 +3268,8 @@ var cardiacOutput = calcTemplate({
   solution: (p, answer, lang) => lang === "pl" ? `${p.sv * 10} ml \xD7 ${p.hr} = ${p.sv * 10 * p.hr} ml/min = ${answer} l/min.` : `${p.sv * 10} \u043C\u043B \xD7 ${p.hr} = ${p.sv * 10 * p.hr} \u043C\u043B/\u043C\u0438\u043D = ${answer} \u043B/\u043C\u0438\u043D.`
 });
 var strokeVolume = calcTemplate({
-  id: `${TOPIC2}.stroke-volume`,
-  topicId: TOPIC2,
+  id: `${TOPIC3}.stroke-volume`,
+  topicId: TOPIC3,
   paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
@@ -3010,8 +3282,8 @@ var strokeVolume = calcTemplate({
   solution: (p, answer, lang) => lang === "pl" ? `${p.edv * 10} \u2212 ${p.esv * 10} = ${answer} ml.` : `${p.edv * 10} \u2212 ${p.esv * 10} = ${answer} \u043C\u043B.`
 });
 var ejectionFraction = calcTemplate({
-  id: `${TOPIC2}.ejection-fraction`,
-  topicId: TOPIC2,
+  id: `${TOPIC3}.ejection-fraction`,
+  topicId: TOPIC3,
   paragraph: P.circulation.function,
   subtopic: HEART,
   tags: ["obliczenia"],
@@ -3108,34 +3380,9 @@ var TISSUES = [
     tier: 1
   }
 ];
-var TRANSPORT_AND_REGULATION = [
-  {
-    id: "homeostaza",
-    paragraph: P.organism.homeostasis,
-    name: { pl: "homeostaza", ru: "\u0433\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437" },
-    role: { pl: "utrzymywanie sta\u0142o\u015Bci \u015Brodowiska wewn\u0119trznego mimo zmian na zewn\u0105trz", ru: "\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u0441\u0442\u0432\u0430 \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0435\u0439 \u0441\u0440\u0435\u0434\u044B \u043D\u0435\u0441\u043C\u043E\u0442\u0440\u044F \u043D\u0430 \u0432\u043D\u0435\u0448\u043D\u0438\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F" },
-    aliases: { pl: [], ru: [] },
-    tier: 1
-  },
-  {
-    id: "sprzezenie-ujemne",
-    paragraph: P.organism.homeostasis,
-    name: { pl: "ujemne sprz\u0119\u017Cenie zwrotne", ru: "\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" },
-    role: { pl: "wygaszanie odchylenia przez reakcj\u0119 dzia\u0142aj\u0105c\u0105 w przeciwnym kierunku", ru: "\u0433\u0430\u0448\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u0432\u0435\u0442\u043E\u043C, \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0432 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u0443\u044E \u0441\u0442\u043E\u0440\u043E\u043D\u0443" },
-    aliases: { pl: ["sprz\u0119\u017Cenie zwrotne ujemne"], ru: ["\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C"] },
-    tier: 1
-  },
-  {
-    id: "sprzezenie-dodatnie",
-    paragraph: P.organism.homeostasis,
-    name: { pl: "dodatnie sprz\u0119\u017Cenie zwrotne", ru: "\u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C" },
-    role: { pl: "wzmacnianie odchylenia a\u017C do zako\u0144czenia procesu, jak przy porodzie", ru: "\u0443\u0441\u0438\u043B\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044F \u0434\u043E \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430, \u043A\u0430\u043A \u043F\u0440\u0438 \u0440\u043E\u0434\u0430\u0445" },
-    aliases: { pl: ["sprz\u0119\u017Cenie zwrotne dodatnie"], ru: ["\u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C"] },
-    tier: 2
-  },
+var HIERARCHY_AND_TRANSPORT = [
   {
     id: "dyfuzja",
-    paragraph: P.organism.hierarchy,
     name: { pl: "dyfuzja", ru: "\u0434\u0438\u0444\u0444\u0443\u0437\u0438\u044F" },
     role: { pl: "samorzutny ruch cz\u0105steczek zgodnie z gradientem st\u0119\u017Ce\u0144, bez nak\u0142adu energii", ru: "\u0441\u0430\u043C\u043E\u043F\u0440\u043E\u0438\u0437\u0432\u043E\u043B\u044C\u043D\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u043C\u043E\u043B\u0435\u043A\u0443\u043B \u043F\u043E \u0433\u0440\u0430\u0434\u0438\u0435\u043D\u0442\u0443 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438, \u0431\u0435\u0437 \u0437\u0430\u0442\u0440\u0430\u0442 \u044D\u043D\u0435\u0440\u0433\u0438\u0438" },
     aliases: { pl: [], ru: [] },
@@ -3143,7 +3390,6 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "osmoza",
-    paragraph: P.organism.hierarchy,
     name: { pl: "osmoza", ru: "\u043E\u0441\u043C\u043E\u0441" },
     role: { pl: "przenikanie wody przez b\u0142on\u0119 p\xF3\u0142przepuszczaln\u0105 do roztworu bardziej st\u0119\u017Conego", ru: "\u043F\u0435\u0440\u0435\u0445\u043E\u0434 \u0432\u043E\u0434\u044B \u0447\u0435\u0440\u0435\u0437 \u043F\u043E\u043B\u0443\u043F\u0440\u043E\u043D\u0438\u0446\u0430\u0435\u043C\u0443\u044E \u043C\u0435\u043C\u0431\u0440\u0430\u043D\u0443 \u0432 \u0431\u043E\u043B\u0435\u0435 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u0440\u0430\u0441\u0442\u0432\u043E\u0440" },
     aliases: { pl: [], ru: [] },
@@ -3151,7 +3397,6 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "transport-aktywny",
-    paragraph: P.organism.hierarchy,
     name: { pl: "transport aktywny", ru: "\u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0439 \u0442\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442" },
     role: { pl: "przenoszenie substancji wbrew gradientowi st\u0119\u017Ce\u0144 kosztem ATP", ru: "\u043F\u0435\u0440\u0435\u043D\u043E\u0441 \u0432\u0435\u0449\u0435\u0441\u0442\u0432 \u043F\u0440\u043E\u0442\u0438\u0432 \u0433\u0440\u0430\u0434\u0438\u0435\u043D\u0442\u0430 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438 \u0437\u0430 \u0441\u0447\u0451\u0442 \u0410\u0422\u0424" },
     aliases: { pl: [], ru: [] },
@@ -3159,7 +3404,6 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "endocytoza",
-    paragraph: P.organism.hierarchy,
     name: { pl: "endocytoza", ru: "\u044D\u043D\u0434\u043E\u0446\u0438\u0442\u043E\u0437" },
     role: { pl: "pobieranie du\u017Cych cz\u0105stek przez wpuklenie b\u0142ony kom\xF3rkowej", ru: "\u043F\u043E\u0433\u043B\u043E\u0449\u0435\u043D\u0438\u0435 \u043A\u0440\u0443\u043F\u043D\u044B\u0445 \u0447\u0430\u0441\u0442\u0438\u0446 \u0447\u0435\u0440\u0435\u0437 \u0432\u043F\u044F\u0447\u0438\u0432\u0430\u043D\u0438\u0435 \u043A\u043B\u0435\u0442\u043E\u0447\u043D\u043E\u0439 \u043C\u0435\u043C\u0431\u0440\u0430\u043D\u044B" },
     aliases: { pl: ["fagocytoza"], ru: ["\u0444\u0430\u0433\u043E\u0446\u0438\u0442\u043E\u0437"] },
@@ -3167,7 +3411,6 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "narzad",
-    paragraph: P.organism.hierarchy,
     name: { pl: "narz\u0105d", ru: "\u043E\u0440\u0433\u0430\u043D" },
     role: { pl: "zesp\xF3\u0142 r\xF3\u017Cnych tkanek pe\u0142ni\u0105cy wsp\xF3lnie okre\u015Blon\u0105 funkcj\u0119", ru: "\u0441\u043E\u0432\u043E\u043A\u0443\u043F\u043D\u043E\u0441\u0442\u044C \u0440\u0430\u0437\u043D\u044B\u0445 \u0442\u043A\u0430\u043D\u0435\u0439, \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u043D\u043E \u0432\u044B\u043F\u043E\u043B\u043D\u044F\u044E\u0449\u0438\u0445 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0451\u043D\u043D\u0443\u044E \u0444\u0443\u043D\u043A\u0446\u0438\u044E" },
     aliases: { pl: [], ru: [] },
@@ -3175,7 +3418,6 @@ var TRANSPORT_AND_REGULATION = [
   },
   {
     id: "uklad-narzadow",
-    paragraph: P.organism.hierarchy,
     name: { pl: "uk\u0142ad narz\u0105d\xF3w", ru: "\u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u043E\u0440\u0433\u0430\u043D\u043E\u0432" },
     role: { pl: "zesp\xF3\u0142 narz\u0105d\xF3w wsp\xF3\u0142pracuj\u0105cych w jednym procesie \u017Cyciowym", ru: "\u0441\u043E\u0432\u043E\u043A\u0443\u043F\u043D\u043E\u0441\u0442\u044C \u043E\u0440\u0433\u0430\u043D\u043E\u0432, \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0449\u0438\u0445 \u0432\u043C\u0435\u0441\u0442\u0435 \u0432 \u043E\u0434\u043D\u043E\u043C \u0436\u0438\u0437\u043D\u0435\u043D\u043D\u043E\u043C \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435" },
     aliases: { pl: [], ru: [] },
@@ -3858,20 +4100,20 @@ var organism = [
     paragraph: P.organism.hierarchy,
     subtopic: { pl: "tkanki i poziomy organizacji", ru: "\u0442\u043A\u0430\u043D\u0438 \u0438 \u0443\u0440\u043E\u0432\u043D\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u0430\u0446\u0438\u0438" },
     shift: 0,
-    label: { pl: "Tkanka", ru: "\u0422\u043A\u0430\u043D\u044C" },
+    label: { pl: "Tkanka", ru: "\u0422\u043A\u0430\u043D\u044C", feminine: ["pl", "ru"] },
     misconception: { pl: "rola innej tkanki, cz\u0119sto z tej samej grupy", ru: "\u0440\u043E\u043B\u044C \u0434\u0440\u0443\u0433\u043E\u0439 \u0442\u043A\u0430\u043D\u0438, \u0447\u0430\u0441\u0442\u043E \u0438\u0437 \u0442\u043E\u0439 \u0436\u0435 \u0433\u0440\u0443\u043F\u043F\u044B" }
   }),
   ...pairFromTable({
     topicId: "bio.lo3.organism",
-    slug: "regulation",
-    rows: TRANSPORT_AND_REGULATION,
-    subtopic: { pl: "homeostaza i transport przez b\u0142ony", ru: "\u0433\u043E\u043C\u0435\u043E\u0441\u0442\u0430\u0437 \u0438 \u0442\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442 \u0447\u0435\u0440\u0435\u0437 \u043C\u0435\u043C\u0431\u0440\u0430\u043D\u044B" },
-    tags: ["homeostaza"],
+    paragraph: P.organism.hierarchy,
+    slug: "hierarchy",
+    rows: HIERARCHY_AND_TRANSPORT,
+    subtopic: { pl: "poziomy organizacji i transport przez b\u0142ony", ru: "\u0443\u0440\u043E\u0432\u043D\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0438 \u0442\u0440\u0430\u043D\u0441\u043F\u043E\u0440\u0442 \u0447\u0435\u0440\u0435\u0437 \u043C\u0435\u043C\u0431\u0440\u0430\u043D\u044B" },
     shift: 2,
     label: { pl: "Poj\u0119cie", ru: "\u041F\u043E\u043D\u044F\u0442\u0438\u0435" },
     misconception: {
-      pl: "definicja pokrewnego poj\u0119cia \u2014 \u0142atwo pomyli\u0107 dyfuzj\u0119 z osmoz\u0105 albo sprz\u0119\u017Cenia zwrotne",
-      ru: "\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0441\u043C\u0435\u0436\u043D\u043E\u0433\u043E \u043F\u043E\u043D\u044F\u0442\u0438\u044F \u2014 \u043B\u0435\u0433\u043A\u043E \u0441\u043F\u0443\u0442\u0430\u0442\u044C \u0434\u0438\u0444\u0444\u0443\u0437\u0438\u044E \u0441 \u043E\u0441\u043C\u043E\u0441\u043E\u043C \u0438\u043B\u0438 \u0432\u0438\u0434\u044B \u043E\u0431\u0440\u0430\u0442\u043D\u043E\u0439 \u0441\u0432\u044F\u0437\u0438"
+      pl: "definicja pokrewnego poj\u0119cia \u2014 \u0142atwo pomyli\u0107 dyfuzj\u0119 z osmoz\u0105 albo narz\u0105d z uk\u0142adem narz\u0105d\xF3w",
+      ru: "\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0441\u043C\u0435\u0436\u043D\u043E\u0433\u043E \u043F\u043E\u043D\u044F\u0442\u0438\u044F \u2014 \u043B\u0435\u0433\u043A\u043E \u0441\u043F\u0443\u0442\u0430\u0442\u044C \u0434\u0438\u0444\u0444\u0443\u0437\u0438\u044E \u0441 \u043E\u0441\u043C\u043E\u0441\u043E\u043C \u0438\u043B\u0438 \u043E\u0440\u0433\u0430\u043D \u0441 \u0441\u0438\u0441\u0442\u0435\u043C\u043E\u0439 \u043E\u0440\u0433\u0430\u043D\u043E\u0432"
     }
   })
 ];
@@ -3892,7 +4134,7 @@ var motion = pairFromTable({
   rows: MOTION_PARTS,
   subtopic: { pl: "ko\u015Bci, stawy i mi\u0119\u015Bnie", ru: "\u043A\u043E\u0441\u0442\u0438, \u0441\u0443\u0441\u0442\u0430\u0432\u044B \u0438 \u043C\u044B\u0448\u0446\u044B" },
   shift: 0,
-  label: { pl: "Struktura", ru: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430" },
+  label: { pl: "Struktura", ru: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430", feminine: ["pl", "ru"] },
   misconception: { pl: "rola s\u0105siedniej struktury ko\u015Bci, stawu albo mi\u0119\u015Bnia", ru: "\u0440\u043E\u043B\u044C \u0441\u043E\u0441\u0435\u0434\u043D\u0435\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u044B \u043A\u043E\u0441\u0442\u0438, \u0441\u0443\u0441\u0442\u0430\u0432\u0430 \u0438\u043B\u0438 \u043C\u044B\u0448\u0446\u044B" }
 });
 var digestion = [
@@ -3932,7 +4174,7 @@ var senses = [
     rows: SENSE_PARTS,
     subtopic: { pl: "budowa oka i ucha", ru: "\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0433\u043B\u0430\u0437\u0430 \u0438 \u0443\u0445\u0430" },
     shift: 0,
-    label: { pl: "Struktura", ru: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430" },
+    label: { pl: "Struktura", ru: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430", feminine: ["pl", "ru"] },
     misconception: { pl: "rola innej cz\u0119\u015Bci oka albo ucha", ru: "\u0440\u043E\u043B\u044C \u0434\u0440\u0443\u0433\u043E\u0439 \u0447\u0430\u0441\u0442\u0438 \u0433\u043B\u0430\u0437\u0430 \u0438\u043B\u0438 \u0443\u0445\u0430" }
   }),
   ...pairFromTable({
@@ -3943,7 +4185,7 @@ var senses = [
     subtopic: { pl: "wady wzroku", ru: "\u0434\u0435\u0444\u0435\u043A\u0442\u044B \u0437\u0440\u0435\u043D\u0438\u044F" },
     tags: ["choroby"],
     shift: 3,
-    label: { pl: "Wada wzroku", ru: "\u0414\u0435\u0444\u0435\u043A\u0442 \u0437\u0440\u0435\u043D\u0438\u044F" },
+    label: { pl: "Wada wzroku", ru: "\u0414\u0435\u0444\u0435\u043A\u0442 \u0437\u0440\u0435\u043D\u0438\u044F", feminine: ["pl"] },
     misconception: { pl: "opis przeciwnej wady wzroku", ru: "\u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u043E\u0433\u043E \u0434\u0435\u0444\u0435\u043A\u0442\u0430 \u0437\u0440\u0435\u043D\u0438\u044F" }
   })
 ];
@@ -4182,13 +4424,13 @@ var LUNG_VOLUMES = [
 ];
 
 // packages/trainers/bio/src/server/templates/topics/lo3Respiration.ts
-var TOPIC3 = "bio.lo3.respiration";
+var TOPIC4 = "bio.lo3.respiration";
 var ANATOMY = { pl: "drogi oddechowe i wymiana gazowa", ru: "\u0434\u044B\u0445\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u043F\u0443\u0442\u0438 \u0438 \u0433\u0430\u0437\u043E\u043E\u0431\u043C\u0435\u043D" };
 var VOLUMES = { pl: "obj\u0119to\u015Bci i pojemno\u015Bci p\u0142uc", ru: "\u043E\u0431\u044A\u0451\u043C\u044B \u0438 \u0451\u043C\u043A\u043E\u0441\u0442\u0438 \u043B\u0451\u0433\u043A\u0438\u0445" };
 var partTier = (row) => row.tier;
 var partToRole = choiceFromTable({
-  id: `${TOPIC3}.part-to-role`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.part-to-role`,
+  topicId: TOPIC4,
   rows: AIRWAY_PARTS,
   subtopic: ANATOMY,
   difficulty: partTier,
@@ -4199,8 +4441,8 @@ var partToRole = choiceFromTable({
   solution: (r, lang) => lang === "pl" ? `${cap(r.part.pl)} \u2014 ${r.role.pl}.` : `${cap(r.part.ru)} \u2014 ${r.role.ru}.`
 });
 var roleToPart = termFromTable({
-  id: `${TOPIC3}.role-to-part`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.role-to-part`,
+  topicId: TOPIC4,
   rows: AIRWAY_PARTS,
   subtopic: ANATOMY,
   difficulty: partTier,
@@ -4210,8 +4452,8 @@ var roleToPart = termFromTable({
   solution: (r, lang) => lang === "pl" ? `Odpowied\u017A: ${r.part.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${r.part.ru}.`
 });
 var volumeToDefinition = choiceFromTable({
-  id: `${TOPIC3}.volume-to-definition`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.volume-to-definition`,
+  topicId: TOPIC4,
   rows: LUNG_VOLUMES,
   paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
@@ -4223,8 +4465,8 @@ var volumeToDefinition = choiceFromTable({
   solution: (v, lang) => lang === "pl" ? `${cap(v.name.pl)} \u2014 ${v.definition.pl}.` : `${cap(v.name.ru)} \u2014 ${v.definition.ru}.`
 });
 var definitionToVolume = termFromTable({
-  id: `${TOPIC3}.definition-to-volume`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.definition-to-volume`,
+  topicId: TOPIC4,
   rows: LUNG_VOLUMES,
   paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
@@ -4235,8 +4477,8 @@ var definitionToVolume = termFromTable({
   solution: (v, lang) => lang === "pl" ? `Odpowied\u017A: ${v.name.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${v.name.ru}.`
 });
 var vitalCapacity = calcTemplate({
-  id: `${TOPIC3}.vital-capacity`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.vital-capacity`,
+  topicId: TOPIC4,
   paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
@@ -4249,8 +4491,8 @@ var vitalCapacity = calcTemplate({
   solution: (p, answer, lang) => lang === "pl" ? `VC = ${p.tv * 100} + ${p.irv * 100} + ${p.erv * 100} = ${answer} ml. Obj\u0119to\u015B\u0107 zalegaj\u0105ca nie wchodzi do pojemno\u015Bci \u017Cyciowej.` : `\u0416\u0401\u041B = ${p.tv * 100} + ${p.irv * 100} + ${p.erv * 100} = ${answer} \u043C\u043B. \u041E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u044B\u0439 \u043E\u0431\u044A\u0451\u043C \u0432 \u0436\u0438\u0437\u043D\u0435\u043D\u043D\u0443\u044E \u0451\u043C\u043A\u043E\u0441\u0442\u044C \u043D\u0435 \u0432\u0445\u043E\u0434\u0438\u0442.`
 });
 var minuteVentilation = calcTemplate({
-  id: `${TOPIC3}.minute-ventilation`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.minute-ventilation`,
+  topicId: TOPIC4,
   paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
@@ -4264,8 +4506,8 @@ var minuteVentilation = calcTemplate({
   solution: (p, answer, lang) => lang === "pl" ? `${p.tv * 100} ml \xD7 ${p.f} = ${p.tv * 100 * p.f} ml/min = ${answer} l/min.` : `${p.tv * 100} \u043C\u043B \xD7 ${p.f} = ${p.tv * 100 * p.f} \u043C\u043B/\u043C\u0438\u043D = ${answer} \u043B/\u043C\u0438\u043D.`
 });
 var alveolarVentilation = calcTemplate({
-  id: `${TOPIC3}.alveolar-ventilation`,
-  topicId: TOPIC3,
+  id: `${TOPIC4}.alveolar-ventilation`,
+  topicId: TOPIC4,
   paragraph: P.respiration.ventilation,
   subtopic: VOLUMES,
   tags: ["obliczenia"],
@@ -4286,6 +4528,448 @@ var lo3RespirationTemplates = [
   vitalCapacity,
   minuteVentilation,
   alveolarVentilation
+];
+
+// packages/trainers/bio/src/server/templates/data/skin.ts
+var ANIMAL_INTEGUMENT = [
+  {
+    id: "kutykula",
+    name: { pl: "kutykula", ru: "\u043A\u0443\u0442\u0438\u043A\u0443\u043B\u0430" },
+    role: { pl: "niekom\xF3rkowa warstwa wydzielana przez nask\xF3rek bezkr\u0119gowc\xF3w, chroni\u0105ca przed wysychaniem", ru: "\u043D\u0435\u043A\u043B\u0435\u0442\u043E\u0447\u043D\u044B\u0439 \u0441\u043B\u043E\u0439, \u0432\u044B\u0434\u0435\u043B\u044F\u0435\u043C\u044B\u0439 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u043E\u043C \u0431\u0435\u0441\u043F\u043E\u0437\u0432\u043E\u043D\u043E\u0447\u043D\u044B\u0445 \u0438 \u0437\u0430\u0449\u0438\u0449\u0430\u044E\u0449\u0438\u0439 \u043E\u0442 \u0432\u044B\u0441\u044B\u0445\u0430\u043D\u0438\u044F" },
+    aliases: { pl: [], ru: [] },
+    tier: 2
+  },
+  {
+    id: "pancerz-chitynowy",
+    name: { pl: "pancerz chitynowy", ru: "\u0445\u0438\u0442\u0438\u043D\u043E\u0432\u044B\u0439 \u043F\u0430\u043D\u0446\u0438\u0440\u044C" },
+    role: { pl: "sztywny szkielet zewn\u0119trzny stawonog\xF3w: ochrona i miejsce przyczepu mi\u0119\u015Bni", ru: "\u0436\u0451\u0441\u0442\u043A\u0438\u0439 \u043D\u0430\u0440\u0443\u0436\u043D\u044B\u0439 \u0441\u043A\u0435\u043B\u0435\u0442 \u0447\u043B\u0435\u043D\u0438\u0441\u0442\u043E\u043D\u043E\u0433\u0438\u0445: \u0437\u0430\u0449\u0438\u0442\u0430 \u0438 \u043C\u0435\u0441\u0442\u043E \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0438\u044F \u043C\u044B\u0448\u0446" },
+    aliases: { pl: ["szkielet zewn\u0119trzny", "egzoszkielet"], ru: ["\u043D\u0430\u0440\u0443\u0436\u043D\u044B\u0439 \u0441\u043A\u0435\u043B\u0435\u0442", "\u044D\u043A\u0437\u043E\u0441\u043A\u0435\u043B\u0435\u0442"] },
+    tier: 1
+  },
+  {
+    id: "linienie",
+    name: { pl: "linienie", ru: "\u043B\u0438\u043D\u044C\u043A\u0430" },
+    role: { pl: "okresowe zrzucanie pancerza lub sk\xF3ry, kt\xF3re umo\u017Cliwia wzrost stawonog\xF3w i w\u0119\u017Cy", ru: "\u043F\u0435\u0440\u0438\u043E\u0434\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0441\u0431\u0440\u043E\u0441 \u043F\u0430\u043D\u0446\u0438\u0440\u044F \u0438\u043B\u0438 \u043A\u043E\u0436\u0438, \u043F\u043E\u0437\u0432\u043E\u043B\u044F\u044E\u0449\u0438\u0439 \u0440\u0430\u0441\u0442\u0438 \u0447\u043B\u0435\u043D\u0438\u0441\u0442\u043E\u043D\u043E\u0433\u0438\u043C \u0438 \u0437\u043C\u0435\u044F\u043C" },
+    aliases: { pl: [], ru: [] },
+    tier: 1
+  },
+  {
+    id: "luski-kostne",
+    name: { pl: "\u0142uski kostne ryb", ru: "\u043A\u043E\u0441\u0442\u043D\u0430\u044F \u0447\u0435\u0448\u0443\u044F \u0440\u044B\u0431" },
+    role: { pl: "p\u0142ytki kostne wytwarzane przez sk\xF3r\u0119 w\u0142a\u015Bciw\u0105, chroni\u0105ce cia\u0142o ryby", ru: "\u043A\u043E\u0441\u0442\u043D\u044B\u0435 \u043F\u043B\u0430\u0441\u0442\u0438\u043D\u043A\u0438, \u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u043C\u043E\u0439 \u0438 \u0437\u0430\u0449\u0438\u0449\u0430\u044E\u0449\u0438\u0435 \u0442\u0435\u043B\u043E \u0440\u044B\u0431\u044B" },
+    aliases: { pl: ["\u0142uski kostne"], ru: ["\u043A\u043E\u0441\u0442\u043D\u0430\u044F \u0447\u0435\u0448\u0443\u044F"] },
+    tier: 2
+  },
+  {
+    id: "luski-rogowe",
+    name: { pl: "\u0142uski rogowe gad\xF3w", ru: "\u0440\u043E\u0433\u043E\u0432\u044B\u0435 \u0447\u0435\u0448\u0443\u0438 \u043F\u0440\u0435\u0441\u043C\u044B\u043A\u0430\u044E\u0449\u0438\u0445\u0441\u044F" },
+    role: { pl: "zrogowacia\u0142y wytw\xF3r nask\xF3rka chroni\u0105cy gady przed utrat\u0105 wody", ru: "\u043E\u0440\u043E\u0433\u043E\u0432\u0435\u0432\u0448\u0435\u0435 \u043F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u043D\u043E\u0435 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u0430, \u0437\u0430\u0449\u0438\u0449\u0430\u044E\u0449\u0435\u0435 \u043F\u0440\u0435\u0441\u043C\u044B\u043A\u0430\u044E\u0449\u0438\u0445\u0441\u044F \u043E\u0442 \u043F\u043E\u0442\u0435\u0440\u0438 \u0432\u043E\u0434\u044B" },
+    aliases: { pl: ["\u0142uski rogowe"], ru: ["\u0440\u043E\u0433\u043E\u0432\u0430\u044F \u0447\u0435\u0448\u0443\u044F", "\u0440\u043E\u0433\u043E\u0432\u044B\u0435 \u0447\u0435\u0448\u0443\u0438"] },
+    tier: 2
+  },
+  {
+    id: "piora",
+    name: { pl: "pi\xF3ra", ru: "\u043F\u0435\u0440\u044C\u044F" },
+    role: { pl: "rogowe wytwory nask\xF3rka ptak\xF3w: izolacja cieplna i powierzchnia no\u015Bna do lotu", ru: "\u0440\u043E\u0433\u043E\u0432\u044B\u0435 \u043F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u043D\u044B\u0435 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u0430 \u043F\u0442\u0438\u0446: \u0442\u0435\u043F\u043B\u043E\u0438\u0437\u043E\u043B\u044F\u0446\u0438\u044F \u0438 \u043D\u0435\u0441\u0443\u0449\u0430\u044F \u043F\u043E\u0432\u0435\u0440\u0445\u043D\u043E\u0441\u0442\u044C \u0434\u043B\u044F \u043F\u043E\u043B\u0451\u0442\u0430" },
+    aliases: { pl: ["pi\xF3ro"], ru: ["\u043F\u0435\u0440\u043E"] },
+    tier: 1
+  },
+  {
+    id: "siersc",
+    name: { pl: "sier\u015B\u0107", ru: "\u0448\u0435\u0440\u0441\u0442\u044C" },
+    role: { pl: "okrywa z w\u0142os\xF3w \u2014 rogowych wytwor\xF3w nask\xF3rka ssak\xF3w \u2014 chroni\u0105ca przed utrat\u0105 ciep\u0142a", ru: "\u043F\u043E\u043A\u0440\u043E\u0432 \u0438\u0437 \u0432\u043E\u043B\u043E\u0441 \u2014 \u0440\u043E\u0433\u043E\u0432\u044B\u0445 \u043F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u043D\u044B\u0445 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u0430 \u043C\u043B\u0435\u043A\u043E\u043F\u0438\u0442\u0430\u044E\u0449\u0438\u0445, \u2014 \u0437\u0430\u0449\u0438\u0449\u0430\u044E\u0449\u0438\u0439 \u043E\u0442 \u043F\u043E\u0442\u0435\u0440\u0438 \u0442\u0435\u043F\u043B\u0430" },
+    aliases: { pl: ["w\u0142osy", "futro"], ru: ["\u0432\u043E\u043B\u043E\u0441\u044B", "\u043C\u0435\u0445"] },
+    tier: 1
+  },
+  {
+    id: "gruczol-kuprowy",
+    name: { pl: "gruczo\u0142 kuprowy", ru: "\u043A\u043E\u043F\u0447\u0438\u043A\u043E\u0432\u0430\u044F \u0436\u0435\u043B\u0435\u0437\u0430" },
+    role: { pl: "gruczo\u0142 ptak\xF3w wydzielaj\u0105cy t\u0142ust\u0105 wydzielin\u0119 do nat\u0142uszczania pi\xF3r", ru: "\u0436\u0435\u043B\u0435\u0437\u0430 \u043F\u0442\u0438\u0446, \u0432\u044B\u0434\u0435\u043B\u044F\u044E\u0449\u0430\u044F \u0436\u0438\u0440\u043E\u0432\u043E\u0439 \u0441\u0435\u043A\u0440\u0435\u0442 \u0434\u043B\u044F \u0441\u043C\u0430\u0437\u044B\u0432\u0430\u043D\u0438\u044F \u043F\u0435\u0440\u044C\u0435\u0432" },
+    aliases: { pl: [], ru: [] },
+    tier: 2
+  },
+  {
+    id: "gruczoly-sluzowe",
+    name: { pl: "gruczo\u0142y \u015Bluzowe", ru: "\u0441\u043B\u0438\u0437\u0438\u0441\u0442\u044B\u0435 \u0436\u0435\u043B\u0435\u0437\u044B" },
+    role: { pl: "gruczo\u0142y sk\xF3ry ryb i p\u0142az\xF3w wydzielaj\u0105ce \u015Bluz, kt\xF3ry nawil\u017Ca sk\xF3r\u0119 i u\u0142atwia ruch w wodzie", ru: "\u0436\u0435\u043B\u0435\u0437\u044B \u043A\u043E\u0436\u0438 \u0440\u044B\u0431 \u0438 \u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u044B\u0445, \u0432\u044B\u0434\u0435\u043B\u044F\u044E\u0449\u0438\u0435 \u0441\u043B\u0438\u0437\u044C, \u043A\u043E\u0442\u043E\u0440\u0430\u044F \u0443\u0432\u043B\u0430\u0436\u043D\u044F\u0435\u0442 \u043A\u043E\u0436\u0443 \u0438 \u043E\u0431\u043B\u0435\u0433\u0447\u0430\u0435\u0442 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u0432 \u0432\u043E\u0434\u0435" },
+    aliases: { pl: [], ru: [] },
+    tier: 1
+  },
+  {
+    id: "gruczoly-jadowe",
+    name: { pl: "gruczo\u0142y jadowe p\u0142az\xF3w", ru: "\u044F\u0434\u043E\u0432\u0438\u0442\u044B\u0435 \u0436\u0435\u043B\u0435\u0437\u044B \u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u044B\u0445" },
+    role: { pl: "gruczo\u0142y sk\xF3ry p\u0142az\xF3w wydzielaj\u0105ce toksyny odstraszaj\u0105ce drapie\u017Cniki", ru: "\u0436\u0435\u043B\u0435\u0437\u044B \u043A\u043E\u0436\u0438 \u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u044B\u0445, \u0432\u044B\u0434\u0435\u043B\u044F\u044E\u0449\u0438\u0435 \u0442\u043E\u043A\u0441\u0438\u043D\u044B, \u043E\u0442\u043F\u0443\u0433\u0438\u0432\u0430\u044E\u0449\u0438\u0435 \u0445\u0438\u0449\u043D\u0438\u043A\u043E\u0432" },
+    aliases: { pl: ["gruczo\u0142y jadowe"], ru: ["\u044F\u0434\u043E\u0432\u0438\u0442\u044B\u0435 \u0436\u0435\u043B\u0435\u0437\u044B"] },
+    tier: 2
+  },
+  {
+    id: "chromatofory",
+    name: { pl: "chromatofory", ru: "\u0445\u0440\u043E\u043C\u0430\u0442\u043E\u0444\u043E\u0440\u044B" },
+    role: { pl: "kom\xF3rki z barwnikiem umo\u017Cliwiaj\u0105ce zmian\u0119 ubarwienia, np. u kameleona i g\u0142owonog\xF3w", ru: "\u043A\u043B\u0435\u0442\u043A\u0438 \u0441 \u043F\u0438\u0433\u043C\u0435\u043D\u0442\u043E\u043C, \u043F\u043E\u0437\u0432\u043E\u043B\u044F\u044E\u0449\u0438\u0435 \u043C\u0435\u043D\u044F\u0442\u044C \u043E\u043A\u0440\u0430\u0441\u043A\u0443, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 \u0443 \u0445\u0430\u043C\u0435\u043B\u0435\u043E\u043D\u0430 \u0438 \u0433\u043E\u043B\u043E\u0432\u043E\u043D\u043E\u0433\u0438\u0445" },
+    aliases: { pl: ["chromatofor"], ru: ["\u0445\u0440\u043E\u043C\u0430\u0442\u043E\u0444\u043E\u0440"] },
+    tier: 2
+  },
+  {
+    id: "oddychanie-skorne",
+    name: { pl: "oddychanie sk\xF3rne", ru: "\u043A\u043E\u0436\u043D\u043E\u0435 \u0434\u044B\u0445\u0430\u043D\u0438\u0435" },
+    role: { pl: "wymiana gazowa przez cienk\u0105, wilgotn\u0105 i ukrwion\u0105 sk\xF3r\u0119, wa\u017Cna u p\u0142az\xF3w i d\u017Cd\u017Cownic", ru: "\u0433\u0430\u0437\u043E\u043E\u0431\u043C\u0435\u043D \u0447\u0435\u0440\u0435\u0437 \u0442\u043E\u043D\u043A\u0443\u044E, \u0432\u043B\u0430\u0436\u043D\u0443\u044E \u0438 \u0431\u043E\u0433\u0430\u0442\u0443\u044E \u0441\u043E\u0441\u0443\u0434\u0430\u043C\u0438 \u043A\u043E\u0436\u0443, \u0432\u0430\u0436\u043D\u044B\u0439 \u0443 \u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u044B\u0445 \u0438 \u0434\u043E\u0436\u0434\u0435\u0432\u044B\u0445 \u0447\u0435\u0440\u0432\u0435\u0439" },
+    aliases: { pl: ["wymiana gazowa przez sk\xF3r\u0119"], ru: ["\u0434\u044B\u0445\u0430\u043D\u0438\u0435 \u043A\u043E\u0436\u0435\u0439"] },
+    tier: 2
+  }
+];
+var ANIMAL_GROUPS = [
+  {
+    id: "pierscienice",
+    group: { pl: "pier\u015Bcienice", ru: "\u043A\u043E\u043B\u044C\u0447\u0430\u0442\u044B\u0435 \u0447\u0435\u0440\u0432\u0438" },
+    cover: { pl: "cienka kutykula i wilgotny nab\u0142onek ze \u015Bluzem, przez kt\xF3ry zachodzi oddychanie", ru: "\u0442\u043E\u043D\u043A\u0430\u044F \u043A\u0443\u0442\u0438\u043A\u0443\u043B\u0430 \u0438 \u0432\u043B\u0430\u0436\u043D\u044B\u0439 \u044D\u043F\u0438\u0442\u0435\u043B\u0438\u0439 \u0441\u043E \u0441\u043B\u0438\u0437\u044C\u044E, \u0447\u0435\u0440\u0435\u0437 \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0438\u0434\u0451\u0442 \u0434\u044B\u0445\u0430\u043D\u0438\u0435" },
+    aliases: { pl: ["pier\u015Bcienica"], ru: ["\u043A\u043E\u043B\u044C\u0447\u0430\u0442\u044B\u0439 \u0447\u0435\u0440\u0432\u044C", "\u043A\u043E\u043B\u044C\u0447\u0435\u0446\u044B"] },
+    tier: 2
+  },
+  {
+    id: "stawonogi",
+    group: { pl: "stawonogi", ru: "\u0447\u043B\u0435\u043D\u0438\u0441\u0442\u043E\u043D\u043E\u0433\u0438\u0435" },
+    cover: { pl: "chitynowy szkielet zewn\u0119trzny, zrzucany podczas linienia", ru: "\u0445\u0438\u0442\u0438\u043D\u043E\u0432\u044B\u0439 \u043D\u0430\u0440\u0443\u0436\u043D\u044B\u0439 \u0441\u043A\u0435\u043B\u0435\u0442, \u0441\u0431\u0440\u0430\u0441\u044B\u0432\u0430\u0435\u043C\u044B\u0439 \u043F\u0440\u0438 \u043B\u0438\u043D\u044C\u043A\u0435" },
+    aliases: { pl: ["stawon\xF3g"], ru: ["\u0447\u043B\u0435\u043D\u0438\u0441\u0442\u043E\u043D\u043E\u0433\u043E\u0435"] },
+    tier: 1
+  },
+  {
+    id: "ryby",
+    group: { pl: "ryby", ru: "\u0440\u044B\u0431\u044B" },
+    cover: { pl: "\u0142uski kostne pokryte sk\xF3r\u0105 z licznymi gruczo\u0142ami \u015Bluzowymi", ru: "\u043A\u043E\u0441\u0442\u043D\u0430\u044F \u0447\u0435\u0448\u0443\u044F, \u043F\u043E\u043A\u0440\u044B\u0442\u0430\u044F \u043A\u043E\u0436\u0435\u0439 \u0441 \u043C\u043D\u043E\u0433\u043E\u0447\u0438\u0441\u043B\u0435\u043D\u043D\u044B\u043C\u0438 \u0441\u043B\u0438\u0437\u0438\u0441\u0442\u044B\u043C\u0438 \u0436\u0435\u043B\u0435\u0437\u0430\u043C\u0438" },
+    aliases: { pl: ["ryba"], ru: ["\u0440\u044B\u0431\u0430"] },
+    tier: 1
+  },
+  {
+    id: "plazy",
+    group: { pl: "p\u0142azy", ru: "\u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u044B\u0435" },
+    cover: { pl: "naga, cienka i wilgotna sk\xF3ra bogata w gruczo\u0142y, uczestnicz\u0105ca w oddychaniu", ru: "\u0433\u043E\u043B\u0430\u044F, \u0442\u043E\u043D\u043A\u0430\u044F \u0438 \u0432\u043B\u0430\u0436\u043D\u0430\u044F \u043A\u043E\u0436\u0430, \u0431\u043E\u0433\u0430\u0442\u0430\u044F \u0436\u0435\u043B\u0435\u0437\u0430\u043C\u0438 \u0438 \u0443\u0447\u0430\u0441\u0442\u0432\u0443\u044E\u0449\u0430\u044F \u0432 \u0434\u044B\u0445\u0430\u043D\u0438\u0438" },
+    aliases: { pl: ["p\u0142az"], ru: ["\u0437\u0435\u043C\u043D\u043E\u0432\u043E\u0434\u043D\u043E\u0435", "\u0430\u043C\u0444\u0438\u0431\u0438\u0438"] },
+    tier: 1
+  },
+  {
+    id: "gady",
+    group: { pl: "gady", ru: "\u043F\u0440\u0435\u0441\u043C\u044B\u043A\u0430\u044E\u0449\u0438\u0435\u0441\u044F" },
+    cover: { pl: "sucha sk\xF3ra pokryta rogowymi \u0142uskami, prawie bez gruczo\u0142\xF3w", ru: "\u0441\u0443\u0445\u0430\u044F \u043A\u043E\u0436\u0430 \u0441 \u0440\u043E\u0433\u043E\u0432\u044B\u043C\u0438 \u0447\u0435\u0448\u0443\u044F\u043C\u0438, \u043F\u043E\u0447\u0442\u0438 \u0431\u0435\u0437 \u0436\u0435\u043B\u0451\u0437" },
+    aliases: { pl: ["gad"], ru: ["\u043F\u0440\u0435\u0441\u043C\u044B\u043A\u0430\u044E\u0449\u0435\u0435\u0441\u044F", "\u0440\u0435\u043F\u0442\u0438\u043B\u0438\u0438"] },
+    tier: 1
+  },
+  {
+    id: "ptaki",
+    group: { pl: "ptaki", ru: "\u043F\u0442\u0438\u0446\u044B" },
+    cover: { pl: "pi\xF3ra i sucha sk\xF3ra z jednym gruczo\u0142em kuprowym", ru: "\u043F\u0435\u0440\u044C\u044F \u0438 \u0441\u0443\u0445\u0430\u044F \u043A\u043E\u0436\u0430 \u0441 \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0439 \u043A\u043E\u043F\u0447\u0438\u043A\u043E\u0432\u043E\u0439 \u0436\u0435\u043B\u0435\u0437\u043E\u0439" },
+    aliases: { pl: ["ptak"], ru: ["\u043F\u0442\u0438\u0446\u0430"] },
+    tier: 1
+  },
+  {
+    id: "ssaki",
+    group: { pl: "ssaki", ru: "\u043C\u043B\u0435\u043A\u043E\u043F\u0438\u0442\u0430\u044E\u0449\u0438\u0435" },
+    cover: { pl: "w\u0142osy oraz sk\xF3ra z gruczo\u0142ami potowymi, \u0142ojowymi i mlekowymi", ru: "\u0432\u043E\u043B\u043E\u0441\u044B \u0438 \u043A\u043E\u0436\u0430 \u0441 \u043F\u043E\u0442\u043E\u0432\u044B\u043C\u0438, \u0441\u0430\u043B\u044C\u043D\u044B\u043C\u0438 \u0438 \u043C\u043E\u043B\u043E\u0447\u043D\u044B\u043C\u0438 \u0436\u0435\u043B\u0435\u0437\u0430\u043C\u0438" },
+    aliases: { pl: ["ssak"], ru: ["\u043C\u043B\u0435\u043A\u043E\u043F\u0438\u0442\u0430\u044E\u0449\u0435\u0435"] },
+    tier: 1
+  }
+];
+var DISEASE_KINDS = {
+  bakteryjna: { pl: "choroba bakteryjna", ru: "\u0431\u0430\u043A\u0442\u0435\u0440\u0438\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u043E\u043B\u0435\u0437\u043D\u044C" },
+  wirusowa: { pl: "choroba wirusowa", ru: "\u0432\u0438\u0440\u0443\u0441\u043D\u0430\u044F \u0431\u043E\u043B\u0435\u0437\u043D\u044C" },
+  grzybicza: { pl: "choroba grzybicza", ru: "\u0433\u0440\u0438\u0431\u043A\u043E\u0432\u0430\u044F \u0431\u043E\u043B\u0435\u0437\u043D\u044C" },
+  pasozytnicza: { pl: "choroba paso\u017Cytnicza", ru: "\u043F\u0430\u0440\u0430\u0437\u0438\u0442\u0430\u0440\u043D\u0430\u044F \u0431\u043E\u043B\u0435\u0437\u043D\u044C" },
+  autoimmunologiczna: { pl: "choroba autoimmunologiczna", ru: "\u0430\u0443\u0442\u043E\u0438\u043C\u043C\u0443\u043D\u043D\u0430\u044F \u0431\u043E\u043B\u0435\u0437\u043D\u044C" },
+  alergiczna: { pl: "choroba alergiczna", ru: "\u0430\u043B\u043B\u0435\u0440\u0433\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u0431\u043E\u043B\u0435\u0437\u043D\u044C" },
+  nowotworowa: { pl: "nowotw\xF3r z\u0142o\u015Bliwy", ru: "\u0437\u043B\u043E\u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u0430\u044F \u043E\u043F\u0443\u0445\u043E\u043B\u044C" },
+  genetyczna: { pl: "choroba genetyczna", ru: "\u0433\u0435\u043D\u0435\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0437\u0430\u0431\u043E\u043B\u0435\u0432\u0430\u043D\u0438\u0435" },
+  urazowa: { pl: "uraz (uszkodzenie sk\xF3ry)", ru: "\u0442\u0440\u0430\u0432\u043C\u0430 (\u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0435 \u043A\u043E\u0436\u0438)" }
+};
+var SKIN_DISEASES = [
+  {
+    id: "tradzik",
+    name: { pl: "tr\u0105dzik pospolity", ru: "\u043E\u0431\u044B\u043A\u043D\u043E\u0432\u0435\u043D\u043D\u044B\u0435 \u0443\u0433\u0440\u0438" },
+    kind: "bakteryjna",
+    cause: { pl: "zatkanie uj\u015B\u0107 gruczo\u0142\xF3w \u0142ojowych i zaka\u017Cenie bakteriami przy nadmiarze \u0142oju w okresie dojrzewania", ru: "\u0437\u0430\u043A\u0443\u043F\u043E\u0440\u043A\u0430 \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u0432 \u0441\u0430\u043B\u044C\u043D\u044B\u0445 \u0436\u0435\u043B\u0451\u0437 \u0438 \u0437\u0430\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0431\u0430\u043A\u0442\u0435\u0440\u0438\u044F\u043C\u0438 \u043F\u0440\u0438 \u0438\u0437\u0431\u044B\u0442\u043A\u0435 \u043A\u043E\u0436\u043D\u043E\u0433\u043E \u0441\u0430\u043B\u0430 \u0432 \u043F\u0435\u0440\u0438\u043E\u0434 \u043F\u043E\u043B\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u0437\u0440\u0435\u0432\u0430\u043D\u0438\u044F" },
+    sign: { pl: "zask\xF3rniki, grudki i krostki na twarzy, plecach i dekolcie", ru: "\u043A\u043E\u043C\u0435\u0434\u043E\u043D\u044B, \u043F\u0430\u043F\u0443\u043B\u044B \u0438 \u0433\u043D\u043E\u0439\u043D\u0438\u0447\u043A\u0438 \u043D\u0430 \u043B\u0438\u0446\u0435, \u0441\u043F\u0438\u043D\u0435 \u0438 \u0433\u0440\u0443\u0434\u0438" },
+    aliases: { pl: ["tr\u0105dzik"], ru: ["\u0430\u043A\u043D\u0435", "\u0443\u0433\u0440\u0438", "\u0443\u0433\u0440\u0435\u0432\u0430\u044F \u0441\u044B\u043F\u044C"] },
+    tier: 1
+  },
+  {
+    id: "grzybica-stop",
+    name: { pl: "grzybica st\xF3p", ru: "\u043C\u0438\u043A\u043E\u0437 \u0441\u0442\u043E\u043F" },
+    kind: "grzybicza",
+    cause: { pl: "zaka\u017Cenie grzybami rozwijaj\u0105cymi si\u0119 w wilgotnym i ciep\u0142ym \u015Brodowisku", ru: "\u0437\u0430\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0433\u0440\u0438\u0431\u0430\u043C\u0438, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0440\u0430\u0437\u0432\u0438\u0432\u0430\u044E\u0442\u0441\u044F \u0432\u043E \u0432\u043B\u0430\u0436\u043D\u043E\u0439 \u0438 \u0442\u0451\u043F\u043B\u043E\u0439 \u0441\u0440\u0435\u0434\u0435" },
+    sign: { pl: "sw\u0119dzenie, zaczerwienienie i \u0142uszczenie si\u0119 sk\xF3ry mi\u0119dzy palcami st\xF3p", ru: "\u0437\u0443\u0434, \u043F\u043E\u043A\u0440\u0430\u0441\u043D\u0435\u043D\u0438\u0435 \u0438 \u0448\u0435\u043B\u0443\u0448\u0435\u043D\u0438\u0435 \u043A\u043E\u0436\u0438 \u043C\u0435\u0436\u0434\u0443 \u043F\u0430\u043B\u044C\u0446\u0430\u043C\u0438 \u043D\u043E\u0433" },
+    aliases: { pl: ["grzybica", "stopa atlety"], ru: ["\u0433\u0440\u0438\u0431\u043E\u043A \u0441\u0442\u043E\u043F\u044B", "\u0433\u0440\u0438\u0431\u043E\u043A", "\u043C\u0438\u043A\u043E\u0437"] },
+    tier: 1
+  },
+  {
+    id: "luszczyca",
+    name: { pl: "\u0142uszczyca", ru: "\u043F\u0441\u043E\u0440\u0438\u0430\u0437" },
+    kind: "autoimmunologiczna",
+    cause: { pl: "reakcja uk\u0142adu odporno\u015Bciowego przyspieszaj\u0105ca podzia\u0142y kom\xF3rek nask\xF3rka", ru: "\u0440\u0435\u0430\u043A\u0446\u0438\u044F \u0438\u043C\u043C\u0443\u043D\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u044B, \u0443\u0441\u043A\u043E\u0440\u044F\u044E\u0449\u0430\u044F \u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043A\u043B\u0435\u0442\u043E\u043A \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u0430" },
+    sign: { pl: "czerwone, wyra\u017Anie odgraniczone plamy pokryte srebrzystymi \u0142uskami", ru: "\u043A\u0440\u0430\u0441\u043D\u044B\u0435 \u0447\u0451\u0442\u043A\u043E \u043E\u0447\u0435\u0440\u0447\u0435\u043D\u043D\u044B\u0435 \u0431\u043B\u044F\u0448\u043A\u0438, \u043F\u043E\u043A\u0440\u044B\u0442\u044B\u0435 \u0441\u0435\u0440\u0435\u0431\u0440\u0438\u0441\u0442\u044B\u043C\u0438 \u0447\u0435\u0448\u0443\u0439\u043A\u0430\u043C\u0438" },
+    aliases: { pl: [], ru: ["\u0447\u0435\u0448\u0443\u0439\u0447\u0430\u0442\u044B\u0439 \u043B\u0438\u0448\u0430\u0439"] },
+    tier: 2
+  },
+  {
+    id: "azs",
+    name: { pl: "atopowe zapalenie sk\xF3ry", ru: "\u0430\u0442\u043E\u043F\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0434\u0435\u0440\u043C\u0430\u0442\u0438\u0442" },
+    kind: "alergiczna",
+    cause: { pl: "wrodzona sk\u0142onno\u015B\u0107 do alergii i uszkodzona bariera nask\xF3rka", ru: "\u0432\u0440\u043E\u0436\u0434\u0451\u043D\u043D\u0430\u044F \u0441\u043A\u043B\u043E\u043D\u043D\u043E\u0441\u0442\u044C \u043A \u0430\u043B\u043B\u0435\u0440\u0433\u0438\u0438 \u0438 \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u043D\u044B\u0439 \u0431\u0430\u0440\u044C\u0435\u0440 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u0430" },
+    sign: { pl: "sucha, silnie sw\u0119dz\u0105ca sk\xF3ra z nawracaj\u0105cymi wypryskami w zgi\u0119ciach \u0142okci i kolan", ru: "\u0441\u0443\u0445\u0430\u044F, \u0441\u0438\u043B\u044C\u043D\u043E \u0437\u0443\u0434\u044F\u0449\u0430\u044F \u043A\u043E\u0436\u0430 \u0441 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u044E\u0449\u0435\u0439\u0441\u044F \u0441\u044B\u043F\u044C\u044E \u043D\u0430 \u0441\u0433\u0438\u0431\u0430\u0445 \u043B\u043E\u043A\u0442\u0435\u0439 \u0438 \u043A\u043E\u043B\u0435\u043D\u0435\u0439" },
+    aliases: { pl: ["AZS", "egzema atopowa"], ru: ["\u0410\u0442\u0414", "\u0430\u0442\u043E\u043F\u0438\u0447\u0435\u0441\u043A\u0430\u044F \u044D\u043A\u0437\u0435\u043C\u0430", "\u043D\u0435\u0439\u0440\u043E\u0434\u0435\u0440\u043C\u0438\u0442"] },
+    tier: 2
+  },
+  {
+    id: "pokrzywka",
+    name: { pl: "pokrzywka", ru: "\u043A\u0440\u0430\u043F\u0438\u0432\u043D\u0438\u0446\u0430" },
+    kind: "alergiczna",
+    cause: { pl: "uwolnienie histaminy w sk\xF3rze po kontakcie z alergenem", ru: "\u0432\u044B\u0431\u0440\u043E\u0441 \u0433\u0438\u0441\u0442\u0430\u043C\u0438\u043D\u0430 \u0432 \u043A\u043E\u0436\u0435 \u043F\u043E\u0441\u043B\u0435 \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u0430 \u0441 \u0430\u043B\u043B\u0435\u0440\u0433\u0435\u043D\u043E\u043C" },
+    sign: { pl: "sw\u0119dz\u0105ce b\u0105ble przypominaj\u0105ce oparzenie pokrzyw\u0105, szybko znikaj\u0105ce", ru: "\u0437\u0443\u0434\u044F\u0449\u0438\u0435 \u0432\u043E\u043B\u0434\u044B\u0440\u0438, \u043F\u043E\u0445\u043E\u0436\u0438\u0435 \u043D\u0430 \u043E\u0436\u043E\u0433 \u043A\u0440\u0430\u043F\u0438\u0432\u043E\u0439, \u0431\u044B\u0441\u0442\u0440\u043E \u0438\u0441\u0447\u0435\u0437\u0430\u044E\u0449\u0438\u0435" },
+    aliases: { pl: [], ru: [] },
+    tier: 1
+  },
+  {
+    id: "czerniak",
+    name: { pl: "czerniak", ru: "\u043C\u0435\u043B\u0430\u043D\u043E\u043C\u0430" },
+    kind: "nowotworowa",
+    cause: { pl: "nowotworowe namna\u017Canie melanocyt\xF3w, kt\xF3remu sprzyja nadmiar promieniowania UV", ru: "\u043E\u043F\u0443\u0445\u043E\u043B\u0435\u0432\u043E\u0435 \u0440\u0430\u0437\u043C\u043D\u043E\u0436\u0435\u043D\u0438\u0435 \u043C\u0435\u043B\u0430\u043D\u043E\u0446\u0438\u0442\u043E\u0432, \u043A\u043E\u0442\u043E\u0440\u043E\u043C\u0443 \u0441\u043F\u043E\u0441\u043E\u0431\u0441\u0442\u0432\u0443\u0435\u0442 \u0438\u0437\u0431\u044B\u0442\u043E\u043A \u0443\u043B\u044C\u0442\u0440\u0430\u0444\u0438\u043E\u043B\u0435\u0442\u0430" },
+    sign: { pl: "znami\u0119 o nieregularnym brzegu i niejednolitej barwie, kt\xF3re szybko si\u0119 powi\u0119ksza", ru: "\u0440\u043E\u0434\u0438\u043D\u043A\u0430 \u0441 \u043D\u0435\u0440\u043E\u0432\u043D\u044B\u043C \u043A\u0440\u0430\u0435\u043C \u0438 \u043D\u0435\u043E\u0434\u043D\u043E\u0440\u043E\u0434\u043D\u043E\u0439 \u043E\u043A\u0440\u0430\u0441\u043A\u043E\u0439, \u043A\u043E\u0442\u043E\u0440\u0430\u044F \u0431\u044B\u0441\u0442\u0440\u043E \u0440\u0430\u0441\u0442\u0451\u0442" },
+    aliases: { pl: ["czerniak z\u0142o\u015Bliwy"], ru: ["\u0437\u043B\u043E\u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u0430\u044F \u043C\u0435\u043B\u0430\u043D\u043E\u043C\u0430"] },
+    tier: 2
+  },
+  {
+    id: "brodawki",
+    name: { pl: "brodawki", ru: "\u0431\u043E\u0440\u043E\u0434\u0430\u0432\u043A\u0438" },
+    kind: "wirusowa",
+    cause: { pl: "zaka\u017Cenie wirusem brodawczaka ludzkiego (HPV)", ru: "\u0437\u0430\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0432\u0438\u0440\u0443\u0441\u043E\u043C \u043F\u0430\u043F\u0438\u043B\u043B\u043E\u043C\u044B \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 (\u0412\u041F\u0427)" },
+    sign: { pl: "twarde, szorstkie grudki na d\u0142oniach lub podeszwach st\xF3p", ru: "\u0442\u0432\u0451\u0440\u0434\u044B\u0435 \u0448\u0435\u0440\u0448\u0430\u0432\u044B\u0435 \u0443\u0437\u0435\u043B\u043A\u0438 \u043D\u0430 \u043A\u0438\u0441\u0442\u044F\u0445 \u0438\u043B\u0438 \u043F\u043E\u0434\u043E\u0448\u0432\u0430\u0445" },
+    aliases: { pl: ["kurzajki", "brodawka"], ru: ["\u0431\u043E\u0440\u043E\u0434\u0430\u0432\u043A\u0430"] },
+    tier: 1
+  },
+  {
+    id: "opryszczka",
+    name: { pl: "opryszczka wargowa", ru: "\u0433\u0435\u0440\u043F\u0435\u0441 \u0433\u0443\u0431" },
+    kind: "wirusowa",
+    cause: { pl: "wirus opryszczki pozostaj\u0105cy w nerwach i uaktywniaj\u0105cy si\u0119 przy spadku odporno\u015Bci", ru: "\u0432\u0438\u0440\u0443\u0441 \u0433\u0435\u0440\u043F\u0435\u0441\u0430, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0449\u0438\u0439\u0441\u044F \u0432 \u043D\u0435\u0440\u0432\u0430\u0445 \u0438 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u0443\u044E\u0449\u0438\u0439\u0441\u044F \u043F\u0440\u0438 \u0441\u043D\u0438\u0436\u0435\u043D\u0438\u0438 \u0438\u043C\u043C\u0443\u043D\u0438\u0442\u0435\u0442\u0430" },
+    sign: { pl: "bolesne p\u0119cherzyki z p\u0142ynem na brzegu warg", ru: "\u0431\u043E\u043B\u0435\u0437\u043D\u0435\u043D\u043D\u044B\u0435 \u043F\u0443\u0437\u044B\u0440\u044C\u043A\u0438 \u0441 \u0436\u0438\u0434\u043A\u043E\u0441\u0442\u044C\u044E \u043D\u0430 \u043A\u0440\u0430\u044E \u0433\u0443\u0431" },
+    aliases: { pl: ["opryszczka", "herpes"], ru: ["\u0433\u0435\u0440\u043F\u0435\u0441", "\u043F\u0440\u043E\u0441\u0442\u0443\u0434\u0430 \u043D\u0430 \u0433\u0443\u0431\u0430\u0445"] },
+    tier: 1
+  },
+  {
+    id: "swierzb",
+    name: { pl: "\u015Bwierzb", ru: "\u0447\u0435\u0441\u043E\u0442\u043A\u0430" },
+    kind: "pasozytnicza",
+    cause: { pl: "\u015Bwierzbowiec dr\u0105\u017C\u0105cy korytarze w nask\xF3rku", ru: "\u0447\u0435\u0441\u043E\u0442\u043E\u0447\u043D\u044B\u0439 \u043A\u043B\u0435\u0449, \u043F\u0440\u043E\u043A\u043B\u0430\u0434\u044B\u0432\u0430\u044E\u0449\u0438\u0439 \u0445\u043E\u0434\u044B \u0432 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441\u0435" },
+    sign: { pl: "silny \u015Bwi\u0105d nasilaj\u0105cy si\u0119 w nocy, zw\u0142aszcza mi\u0119dzy palcami d\u0142oni", ru: "\u0441\u0438\u043B\u044C\u043D\u044B\u0439 \u0437\u0443\u0434, \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u044E\u0449\u0438\u0439\u0441\u044F \u043D\u043E\u0447\u044C\u044E, \u043E\u0441\u043E\u0431\u0435\u043D\u043D\u043E \u043C\u0435\u0436\u0434\u0443 \u043F\u0430\u043B\u044C\u0446\u0430\u043C\u0438 \u0440\u0443\u043A" },
+    aliases: { pl: [], ru: [] },
+    tier: 2
+  },
+  {
+    id: "wszawica",
+    name: { pl: "wszawica", ru: "\u043F\u0435\u0434\u0438\u043A\u0443\u043B\u0451\u0437" },
+    kind: "pasozytnicza",
+    cause: { pl: "wszy \u017Cywi\u0105ce si\u0119 krwi\u0105 i sk\u0142adaj\u0105ce jaja (gnidy) na w\u0142osach", ru: "\u0432\u0448\u0438, \u043F\u0438\u0442\u0430\u044E\u0449\u0438\u0435\u0441\u044F \u043A\u0440\u043E\u0432\u044C\u044E \u0438 \u043E\u0442\u043A\u043B\u0430\u0434\u044B\u0432\u0430\u044E\u0449\u0438\u0435 \u044F\u0439\u0446\u0430 (\u0433\u043D\u0438\u0434\u044B) \u043D\u0430 \u0432\u043E\u043B\u043E\u0441\u0430\u0445" },
+    sign: { pl: "sw\u0119dzenie sk\xF3ry g\u0142owy i widoczne gnidy przyklejone do w\u0142os\xF3w", ru: "\u0437\u0443\u0434 \u043A\u043E\u0436\u0438 \u0433\u043E\u043B\u043E\u0432\u044B \u0438 \u0437\u0430\u043C\u0435\u0442\u043D\u044B\u0435 \u0433\u043D\u0438\u0434\u044B, \u043F\u0440\u0438\u043A\u043B\u0435\u0435\u043D\u043D\u044B\u0435 \u043A \u0432\u043E\u043B\u043E\u0441\u0430\u043C" },
+    aliases: { pl: [], ru: ["\u0432\u0448\u0438\u0432\u043E\u0441\u0442\u044C"] },
+    tier: 1
+  },
+  {
+    id: "bielactwo",
+    name: { pl: "bielactwo nabyte", ru: "\u0432\u0438\u0442\u0438\u043B\u0438\u0433\u043E" },
+    kind: "autoimmunologiczna",
+    cause: { pl: "niszczenie melanocyt\xF3w przez w\u0142asny uk\u0142ad odporno\u015Bciowy", ru: "\u0440\u0430\u0437\u0440\u0443\u0448\u0435\u043D\u0438\u0435 \u043C\u0435\u043B\u0430\u043D\u043E\u0446\u0438\u0442\u043E\u0432 \u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0439 \u0438\u043C\u043C\u0443\u043D\u043D\u043E\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u043E\u0439" },
+    sign: { pl: "bia\u0142e, odbarwione plamy na sk\xF3rze pojawiaj\u0105ce si\u0119 w ci\u0105gu \u017Cycia", ru: "\u0431\u0435\u043B\u044B\u0435 \u043E\u0431\u0435\u0441\u0446\u0432\u0435\u0447\u0435\u043D\u043D\u044B\u0435 \u043F\u044F\u0442\u043D\u0430 \u043D\u0430 \u043A\u043E\u0436\u0435, \u043F\u043E\u044F\u0432\u043B\u044F\u044E\u0449\u0438\u0435\u0441\u044F \u0432 \u0442\u0435\u0447\u0435\u043D\u0438\u0435 \u0436\u0438\u0437\u043D\u0438" },
+    aliases: { pl: ["bielactwo", "vitiligo"], ru: ["\u043B\u0435\u0439\u043A\u043E\u0434\u0435\u0440\u043C\u0430"] },
+    tier: 2
+  },
+  {
+    id: "albinizm",
+    name: { pl: "albinizm", ru: "\u0430\u043B\u044C\u0431\u0438\u043D\u0438\u0437\u043C" },
+    kind: "genetyczna",
+    cause: { pl: "wrodzony brak melaniny wynikaj\u0105cy z mutacji genu", ru: "\u0432\u0440\u043E\u0436\u0434\u0451\u043D\u043D\u043E\u0435 \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0438\u0435 \u043C\u0435\u043B\u0430\u043D\u0438\u043D\u0430 \u0438\u0437-\u0437\u0430 \u043C\u0443\u0442\u0430\u0446\u0438\u0438 \u0433\u0435\u043D\u0430" },
+    sign: { pl: "bardzo jasna sk\xF3ra i w\u0142osy od urodzenia oraz nadwra\u017Cliwo\u015B\u0107 na s\u0142o\u0144ce", ru: "\u043E\u0447\u0435\u043D\u044C \u0441\u0432\u0435\u0442\u043B\u044B\u0435 \u043A\u043E\u0436\u0430 \u0438 \u0432\u043E\u043B\u043E\u0441\u044B \u0441 \u0440\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u0438 \u043F\u043E\u0432\u044B\u0448\u0435\u043D\u043D\u0430\u044F \u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043A \u0441\u043E\u043B\u043D\u0446\u0443" },
+    aliases: { pl: ["bielactwo wrodzone"], ru: [] },
+    tier: 1
+  },
+  {
+    id: "oparzenie-1",
+    name: { pl: "oparzenie I stopnia", ru: "\u043E\u0436\u043E\u0433 I \u0441\u0442\u0435\u043F\u0435\u043D\u0438" },
+    kind: "urazowa",
+    cause: { pl: "kr\xF3tkie dzia\u0142anie wysokiej temperatury lub s\u0142o\u0144ca, uszkadzaj\u0105ce tylko nask\xF3rek", ru: "\u043A\u0440\u0430\u0442\u043A\u043E\u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0432\u044B\u0441\u043E\u043A\u043E\u0439 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B \u0438\u043B\u0438 \u0441\u043E\u043B\u043D\u0446\u0430, \u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0430\u044E\u0449\u0435\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441" },
+    sign: { pl: "zaczerwienienie i b\xF3l sk\xF3ry bez p\u0119cherzy", ru: "\u043F\u043E\u043A\u0440\u0430\u0441\u043D\u0435\u043D\u0438\u0435 \u0438 \u0431\u043E\u043B\u044C \u043A\u043E\u0436\u0438 \u0431\u0435\u0437 \u043F\u0443\u0437\u044B\u0440\u0435\u0439" },
+    aliases: { pl: ["oparzenie pierwszego stopnia", "oparzenie 1 stopnia"], ru: ["\u043E\u0436\u043E\u0433 \u043F\u0435\u0440\u0432\u043E\u0439 \u0441\u0442\u0435\u043F\u0435\u043D\u0438", "\u043E\u0436\u043E\u0433 1 \u0441\u0442\u0435\u043F\u0435\u043D\u0438"] },
+    tier: 2
+  },
+  {
+    id: "oparzenie-2",
+    name: { pl: "oparzenie II stopnia", ru: "\u043E\u0436\u043E\u0433 II \u0441\u0442\u0435\u043F\u0435\u043D\u0438" },
+    kind: "urazowa",
+    cause: { pl: "dzia\u0142anie wysokiej temperatury uszkadzaj\u0105ce nask\xF3rek i cz\u0119\u015B\u0107 sk\xF3ry w\u0142a\u015Bciwej", ru: "\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0432\u044B\u0441\u043E\u043A\u043E\u0439 \u0442\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u044B, \u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0430\u044E\u0449\u0435\u0435 \u044D\u043F\u0438\u0434\u0435\u0440\u043C\u0438\u0441 \u0438 \u0447\u0430\u0441\u0442\u044C \u0434\u0435\u0440\u043C\u044B" },
+    sign: { pl: "p\u0119cherze wype\u0142nione p\u0142ynem surowiczym i silny b\xF3l", ru: "\u043F\u0443\u0437\u044B\u0440\u0438 \u0441 \u0441\u0435\u0440\u043E\u0437\u043D\u043E\u0439 \u0436\u0438\u0434\u043A\u043E\u0441\u0442\u044C\u044E \u0438 \u0441\u0438\u043B\u044C\u043D\u0430\u044F \u0431\u043E\u043B\u044C" },
+    aliases: { pl: ["oparzenie drugiego stopnia", "oparzenie 2 stopnia"], ru: ["\u043E\u0436\u043E\u0433 \u0432\u0442\u043E\u0440\u043E\u0439 \u0441\u0442\u0435\u043F\u0435\u043D\u0438", "\u043E\u0436\u043E\u0433 2 \u0441\u0442\u0435\u043F\u0435\u043D\u0438"] },
+    tier: 2
+  },
+  {
+    id: "odlezyny",
+    name: { pl: "odle\u017Cyny", ru: "\u043F\u0440\u043E\u043B\u0435\u0436\u043D\u0438" },
+    kind: "urazowa",
+    cause: { pl: "d\u0142ugotrwa\u0142y ucisk sk\xF3ry u os\xF3b le\u017C\u0105cych, kt\xF3ry odcina dop\u0142yw krwi", ru: "\u0434\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0435 \u0441\u0434\u0430\u0432\u043B\u0438\u0432\u0430\u043D\u0438\u0435 \u043A\u043E\u0436\u0438 \u0443 \u043B\u0435\u0436\u0430\u0447\u0438\u0445 \u0431\u043E\u043B\u044C\u043D\u044B\u0445, \u043F\u0440\u0435\u043A\u0440\u0430\u0449\u0430\u044E\u0449\u0435\u0435 \u043F\u0440\u0438\u0442\u043E\u043A \u043A\u0440\u043E\u0432\u0438" },
+    sign: { pl: "rany i martwica sk\xF3ry nad wystaj\u0105cymi ko\u015B\u0107mi, np. nad ko\u015Bci\u0105 krzy\u017Cow\u0105", ru: "\u0440\u0430\u043D\u044B \u0438 \u043E\u043C\u0435\u0440\u0442\u0432\u0435\u043D\u0438\u0435 \u043A\u043E\u0436\u0438 \u043D\u0430\u0434 \u0432\u044B\u0441\u0442\u0443\u043F\u0430\u044E\u0449\u0438\u043C\u0438 \u043A\u043E\u0441\u0442\u044F\u043C\u0438, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 \u043D\u0430\u0434 \u043A\u0440\u0435\u0441\u0442\u0446\u043E\u043C" },
+    aliases: { pl: ["odle\u017Cyna"], ru: ["\u043F\u0440\u043E\u043B\u0435\u0436\u0435\u043D\u044C"] },
+    tier: 2
+  }
+];
+var SKIN_RISKS = [
+  {
+    id: "uv",
+    risk: { pl: "oparzenie s\u0142oneczne i przedwczesne starzenie si\u0119 sk\xF3ry", ru: "\u0441\u043E\u043B\u043D\u0435\u0447\u043D\u044B\u0439 \u043E\u0436\u043E\u0433 \u0438 \u043F\u0440\u0435\u0436\u0434\u0435\u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0435 \u0441\u0442\u0430\u0440\u0435\u043D\u0438\u0435 \u043A\u043E\u0436\u0438" },
+    rule: { pl: "krem z filtrem UV i unikanie s\u0142o\u0144ca w po\u0142udnie", ru: "\u043A\u0440\u0435\u043C \u0441 \u0423\u0424-\u0444\u0438\u043B\u044C\u0442\u0440\u043E\u043C \u0438 \u0438\u0437\u0431\u0435\u0433\u0430\u043D\u0438\u0435 \u0441\u043E\u043B\u043D\u0446\u0430 \u0432 \u043F\u043E\u043B\u0434\u0435\u043D\u044C" },
+    tier: 1
+  },
+  {
+    id: "znamiona",
+    risk: { pl: "p\xF3\u017Ane wykrycie czerniaka", ru: "\u043F\u043E\u0437\u0434\u043D\u0435\u0435 \u0432\u044B\u044F\u0432\u043B\u0435\u043D\u0438\u0435 \u043C\u0435\u043B\u0430\u043D\u043E\u043C\u044B" },
+    rule: { pl: "regularne ogl\u0105danie znamion wed\u0142ug regu\u0142y ABCDE", ru: "\u0440\u0435\u0433\u0443\u043B\u044F\u0440\u043D\u044B\u0439 \u043E\u0441\u043C\u043E\u0442\u0440 \u0440\u043E\u0434\u0438\u043D\u043E\u043A \u043F\u043E \u043F\u0440\u0430\u0432\u0438\u043B\u0443 ABCDE" },
+    tier: 2
+  },
+  {
+    id: "grzybica",
+    risk: { pl: "grzybica st\xF3p", ru: "\u043C\u0438\u043A\u043E\u0437 \u0441\u0442\u043E\u043F" },
+    rule: { pl: "dok\u0142adne osuszanie st\xF3p i w\u0142asne klapki na basenie", ru: "\u0442\u0449\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u044B\u0442\u0438\u0440\u0430\u0442\u044C \u0441\u0442\u043E\u043F\u044B \u0438 \u043D\u043E\u0441\u0438\u0442\u044C \u0441\u0432\u043E\u0438 \u0448\u043B\u0451\u043F\u0430\u043D\u0446\u044B \u0432 \u0431\u0430\u0441\u0441\u0435\u0439\u043D\u0435" },
+    tier: 1
+  },
+  {
+    id: "tradzik",
+    risk: { pl: "nasilenie tr\u0105dziku i blizny", ru: "\u0443\u0441\u0438\u043B\u0435\u043D\u0438\u0435 \u0443\u0433\u0440\u0435\u0439 \u0438 \u0440\u0443\u0431\u0446\u044B" },
+    rule: { pl: "mycie twarzy \u0142agodnym \u015Brodkiem i niewyciskanie zmian", ru: "\u0443\u043C\u044B\u0432\u0430\u043D\u0438\u0435 \u043C\u044F\u0433\u043A\u0438\u043C \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E\u043C \u0438 \u043E\u0442\u043A\u0430\u0437 \u043E\u0442 \u0432\u044B\u0434\u0430\u0432\u043B\u0438\u0432\u0430\u043D\u0438\u044F" },
+    tier: 1
+  },
+  {
+    id: "solarium",
+    risk: { pl: "rak sk\xF3ry po sztucznym opalaniu", ru: "\u0440\u0430\u043A \u043A\u043E\u0436\u0438 \u043F\u043E\u0441\u043B\u0435 \u0438\u0441\u043A\u0443\u0441\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0433\u043E \u0437\u0430\u0433\u0430\u0440\u0430" },
+    rule: { pl: "rezygnacja z solarium, zw\u0142aszcza przed 18. rokiem \u017Cycia", ru: "\u043E\u0442\u043A\u0430\u0437 \u043E\u0442 \u0441\u043E\u043B\u044F\u0440\u0438\u044F, \u043E\u0441\u043E\u0431\u0435\u043D\u043D\u043E \u0434\u043E 18 \u043B\u0435\u0442" },
+    tier: 1
+  },
+  {
+    id: "wszawica",
+    risk: { pl: "wszawica", ru: "\u043F\u0435\u0434\u0438\u043A\u0443\u043B\u0451\u0437" },
+    rule: { pl: "w\u0142asny grzebie\u0144, szczotka i nakrycie g\u0142owy", ru: "\u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0447\u0451\u0441\u043A\u0430, \u0449\u0451\u0442\u043A\u0430 \u0438 \u0433\u043E\u043B\u043E\u0432\u043D\u043E\u0439 \u0443\u0431\u043E\u0440" },
+    tier: 1
+  },
+  {
+    id: "odlezyny",
+    risk: { pl: "odle\u017Cyny u osoby le\u017C\u0105cej", ru: "\u043F\u0440\u043E\u043B\u0435\u0436\u043D\u0438 \u0443 \u043B\u0435\u0436\u0430\u0447\u0435\u0433\u043E \u0431\u043E\u043B\u044C\u043D\u043E\u0433\u043E" },
+    rule: { pl: "zmiana u\u0142o\u017Cenia chorego co 2 godziny", ru: "\u0441\u043C\u0435\u043D\u0430 \u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0431\u043E\u043B\u044C\u043D\u043E\u0433\u043E \u043A\u0430\u0436\u0434\u044B\u0435 2 \u0447\u0430\u0441\u0430" },
+    tier: 2
+  }
+];
+
+// packages/trainers/bio/src/server/templates/topics/lo3Skin.ts
+var TOPIC5 = "bio.lo3.skin";
+var ANIMALS = { pl: "uk\u0142ad pow\u0142okowy zwierz\u0105t", ru: "\u043F\u043E\u043A\u0440\u043E\u0432\u044B \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445" };
+var DISEASES2 = { pl: "choroby sk\xF3ry", ru: "\u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043A\u043E\u0436\u0438" };
+var HYGIENE = { pl: "higiena sk\xF3ry", ru: "\u0433\u0438\u0433\u0438\u0435\u043D\u0430 \u043A\u043E\u0436\u0438" };
+var integument = pairFromTable({
+  topicId: TOPIC5,
+  paragraph: P.skin.animals,
+  slug: "integument",
+  rows: ANIMAL_INTEGUMENT,
+  subtopic: ANIMALS,
+  shift: 1,
+  label: { pl: "Poj\u0119cie", ru: "\u041F\u043E\u043D\u044F\u0442\u0438\u0435" },
+  misconception: {
+    pl: "wytw\xF3r lub cecha pow\u0142ok innej grupy zwierz\u0105t",
+    ru: "\u043F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u043D\u043E\u0435 \u0438\u043B\u0438 \u043E\u0441\u043E\u0431\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u043F\u043E\u043A\u0440\u043E\u0432\u043E\u0432 \u0434\u0440\u0443\u0433\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u044B \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445"
+  }
+});
+var groupToCover = choiceFromTable({
+  id: `${TOPIC5}.group-to-cover`,
+  topicId: TOPIC5,
+  paragraph: P.skin.animals,
+  rows: ANIMAL_GROUPS,
+  subtopic: ANIMALS,
+  difficulty: (r) => r.tier,
+  shift: 3,
+  question: (r, lang) => lang === "pl" ? `Grupa zwierz\u0105t: ${r.group.pl}. Jak wygl\u0105da ich pokrycie cia\u0142a?` : `\u0413\u0440\u0443\u043F\u043F\u0430 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445: ${r.group.ru}. \u041A\u0430\u043A\u043E\u0432\u044B \u0438\u0445 \u043F\u043E\u043A\u0440\u043E\u0432\u044B?`,
+  optionText: (r, lang) => r.cover[lang],
+  misconception: { pl: "pokrycie cia\u0142a s\u0105siedniej grupy zwierz\u0105t", ru: "\u043F\u043E\u043A\u0440\u043E\u0432\u044B \u0441\u043E\u0441\u0435\u0434\u043D\u0435\u0439 \u0433\u0440\u0443\u043F\u043F\u044B \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445" },
+  solution: (r, lang) => lang === "pl" ? `${cap(r.group.pl)}: ${r.cover.pl}.` : `${cap(r.group.ru)}: ${r.cover.ru}.`
+});
+var coverToGroup = termFromTable({
+  id: `${TOPIC5}.cover-to-group`,
+  topicId: TOPIC5,
+  paragraph: P.skin.animals,
+  rows: ANIMAL_GROUPS,
+  subtopic: ANIMALS,
+  difficulty: (r) => r.tier,
+  question: (r, lang) => lang === "pl" ? `Pokrycie cia\u0142a: ${r.cover.pl}. Jaka to grupa zwierz\u0105t? Podaj nazw\u0119 w liczbie mnogiej.` : `\u041F\u043E\u043A\u0440\u043E\u0432\u044B: ${r.cover.ru}. \u041A\u0430\u043A\u0430\u044F \u044D\u0442\u043E \u0433\u0440\u0443\u043F\u043F\u0430 \u0436\u0438\u0432\u043E\u0442\u043D\u044B\u0445? \u041D\u0430\u0437\u043E\u0432\u0438 \u0432\u043E \u043C\u043D\u043E\u0436\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u043C \u0447\u0438\u0441\u043B\u0435.`,
+  term: (r, lang) => r.group[lang],
+  aliases: (r) => [r.group.pl, r.group.ru, ...r.aliases.pl, ...r.aliases.ru],
+  solution: (r, lang) => lang === "pl" ? `Odpowied\u017A: ${r.group.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${r.group.ru}.`
+});
+var diseaseToCause = choiceFromTable({
+  id: `${TOPIC5}.disease-to-cause`,
+  topicId: TOPIC5,
+  paragraph: P.skin.disorders,
+  rows: SKIN_DISEASES,
+  subtopic: DISEASES2,
+  tags: ["choroby"],
+  difficulty: (r) => r.tier,
+  shift: 0,
+  question: (r, lang) => lang === "pl" ? `Choroba: ${r.name.pl}. Co j\u0105 wywo\u0142uje?` : `\u0411\u043E\u043B\u0435\u0437\u043D\u044C: ${r.name.ru}. \u0427\u0442\u043E \u0435\u0451 \u0432\u044B\u0437\u044B\u0432\u0430\u0435\u0442?`,
+  optionText: (r, lang) => r.cause[lang],
+  misconception: { pl: "przyczyna innej choroby sk\xF3ry", ru: "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u0434\u0440\u0443\u0433\u043E\u0439 \u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043A\u043E\u0436\u0438" },
+  hint: (r, lang) => lang === "pl" ? `Rodzaj: ${DISEASE_KINDS[r.kind].pl}.` : `\u0412\u0438\u0434: ${DISEASE_KINDS[r.kind].ru}.`,
+  solution: (r, lang) => lang === "pl" ? `${cap(r.name.pl)}: ${r.cause.pl}. Objawy: ${r.sign.pl}.` : `${cap(r.name.ru)}: ${r.cause.ru}. \u0421\u0438\u043C\u043F\u0442\u043E\u043C\u044B: ${r.sign.ru}.`
+});
+var signToDisease = termFromTable({
+  id: `${TOPIC5}.sign-to-disease`,
+  topicId: TOPIC5,
+  paragraph: P.skin.disorders,
+  rows: SKIN_DISEASES,
+  subtopic: DISEASES2,
+  tags: ["choroby"],
+  difficulty: (r) => r.tier,
+  question: (r, lang) => lang === "pl" ? `Objawy: ${r.sign.pl}. Podaj nazw\u0119 choroby.` : `\u0421\u0438\u043C\u043F\u0442\u043E\u043C\u044B: ${r.sign.ru}. \u041D\u0430\u0437\u043E\u0432\u0438 \u0431\u043E\u043B\u0435\u0437\u043D\u044C.`,
+  term: (r, lang) => r.name[lang],
+  aliases: (r) => [r.name.pl, r.name.ru, ...r.aliases.pl, ...r.aliases.ru],
+  hint: (r, lang) => lang === "pl" ? `Rodzaj: ${DISEASE_KINDS[r.kind].pl}.` : `\u0412\u0438\u0434: ${DISEASE_KINDS[r.kind].ru}.`,
+  solution: (r, lang) => lang === "pl" ? `Odpowied\u017A: ${r.name.pl}. Przyczyna: ${r.cause.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${r.name.ru}. \u041F\u0440\u0438\u0447\u0438\u043D\u0430: ${r.cause.ru}.`
+});
+var diseaseToKind = choiceFromTable({
+  id: `${TOPIC5}.disease-to-kind`,
+  topicId: TOPIC5,
+  paragraph: P.skin.disorders,
+  rows: SKIN_DISEASES,
+  subtopic: DISEASES2,
+  tags: ["choroby"],
+  difficulty: (r) => r.tier,
+  shift: 2,
+  question: (r, lang) => lang === "pl" ? `Choroba: ${r.name.pl}. Do jakiej grupy chor\xF3b nale\u017Cy?` : `\u0411\u043E\u043B\u0435\u0437\u043D\u044C: ${r.name.ru}. \u041A \u043A\u0430\u043A\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u0435 \u0431\u043E\u043B\u0435\u0437\u043D\u0435\u0439 \u043E\u043D\u0430 \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0441\u044F?`,
+  // rows of the same kind collide on this text; pickDistractors skips them, and nine kinds leave plenty
+  optionText: (r, lang) => DISEASE_KINDS[r.kind][lang],
+  misconception: { pl: "rodzaj innej choroby sk\xF3ry", ru: "\u0432\u0438\u0434 \u0434\u0440\u0443\u0433\u043E\u0439 \u0431\u043E\u043B\u0435\u0437\u043D\u0438 \u043A\u043E\u0436\u0438" },
+  solution: (r, lang) => lang === "pl" ? `${cap(r.name.pl)} \u2014 ${DISEASE_KINDS[r.kind].pl}: ${r.cause.pl}.` : `${cap(r.name.ru)} \u2014 ${DISEASE_KINDS[r.kind].ru}: ${r.cause.ru}.`
+});
+var riskToRule = choiceFromTable({
+  id: `${TOPIC5}.risk-to-rule`,
+  topicId: TOPIC5,
+  paragraph: P.skin.disorders,
+  rows: SKIN_RISKS,
+  subtopic: HYGIENE,
+  tags: ["choroby"],
+  difficulty: (r) => r.tier,
+  shift: 1,
+  question: (r, lang) => lang === "pl" ? `Zagro\u017Cenie: ${r.risk.pl}. Jaka zasada higieny przed nim chroni?` : `\u0423\u0433\u0440\u043E\u0437\u0430: ${r.risk.ru}. \u041A\u0430\u043A\u043E\u0435 \u043F\u0440\u0430\u0432\u0438\u043B\u043E \u0433\u0438\u0433\u0438\u0435\u043D\u044B \u0437\u0430\u0449\u0438\u0449\u0430\u0435\u0442 \u043E\u0442 \u043D\u0435\u0451?`,
+  optionText: (r, lang) => r.rule[lang],
+  misconception: { pl: "zasada chroni\u0105ca przed innym zagro\u017Ceniem", ru: "\u043F\u0440\u0430\u0432\u0438\u043B\u043E, \u0437\u0430\u0449\u0438\u0449\u0430\u044E\u0449\u0435\u0435 \u043E\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u0443\u0433\u0440\u043E\u0437\u044B" },
+  solution: (r, lang) => lang === "pl" ? `${cap(r.risk.pl)} \u2192 ${r.rule.pl}.` : `${cap(r.risk.ru)} \u2192 ${r.rule.ru}.`
+});
+var lo3SkinTemplates = [
+  ...integument,
+  groupToCover,
+  coverToGroup,
+  diseaseToCause,
+  signToDisease,
+  diseaseToKind,
+  riskToRule
 ];
 
 // packages/trainers/bio/src/server/templates/data/urinary.ts
@@ -4407,13 +5091,13 @@ var URINE_PROCESSES = [
 ];
 
 // packages/trainers/bio/src/server/templates/topics/lo3Urinary.ts
-var TOPIC4 = "bio.lo3.urinary";
+var TOPIC6 = "bio.lo3.urinary";
 var ANATOMY2 = { pl: "budowa nerki i nefronu", ru: "\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u043F\u043E\u0447\u043A\u0438 \u0438 \u043D\u0435\u0444\u0440\u043E\u043D\u0430" };
 var PROCESSES = { pl: "powstawanie moczu i osmoregulacja", ru: "\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u0435 \u043C\u043E\u0447\u0438 \u0438 \u043E\u0441\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F" };
 var tier3 = (row) => row.tier;
 var partToRole2 = choiceFromTable({
-  id: `${TOPIC4}.part-to-role`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.part-to-role`,
+  topicId: TOPIC6,
   rows: NEPHRON_PARTS,
   paragraph: P.urinary.structure,
   subtopic: ANATOMY2,
@@ -4425,8 +5109,8 @@ var partToRole2 = choiceFromTable({
   solution: (r, lang) => lang === "pl" ? `${cap(r.name.pl)} \u2014 ${r.role.pl}.` : `${cap(r.name.ru)} \u2014 ${r.role.ru}.`
 });
 var roleToPart2 = termFromTable({
-  id: `${TOPIC4}.role-to-part`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.role-to-part`,
+  topicId: TOPIC6,
   rows: NEPHRON_PARTS,
   paragraph: P.urinary.structure,
   subtopic: ANATOMY2,
@@ -4437,8 +5121,8 @@ var roleToPart2 = termFromTable({
   solution: (r, lang) => lang === "pl" ? `Odpowied\u017A: ${r.name.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${r.name.ru}.`
 });
 var processToDescription = choiceFromTable({
-  id: `${TOPIC4}.process-to-description`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.process-to-description`,
+  topicId: TOPIC6,
   rows: URINE_PROCESSES,
   paragraph: P.urinary.structure,
   subtopic: PROCESSES,
@@ -4451,8 +5135,8 @@ var processToDescription = choiceFromTable({
   solution: (p, lang) => lang === "pl" ? `${cap(p.name.pl)} \u2014 ${p.description.pl}.` : `${cap(p.name.ru)} \u2014 ${p.description.ru}.`
 });
 var descriptionToProcess = termFromTable({
-  id: `${TOPIC4}.description-to-process`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.description-to-process`,
+  topicId: TOPIC6,
   rows: URINE_PROCESSES,
   paragraph: P.urinary.structure,
   subtopic: PROCESSES,
@@ -4464,8 +5148,8 @@ var descriptionToProcess = termFromTable({
   solution: (p, lang) => lang === "pl" ? `Odpowied\u017A: ${p.name.pl}.` : `\u041E\u0442\u0432\u0435\u0442: ${p.name.ru}.`
 });
 var filteredLoad = calcTemplate({
-  id: `${TOPIC4}.filtered-load`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.filtered-load`,
+  topicId: TOPIC6,
   paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia"],
@@ -4480,8 +5164,8 @@ var filteredLoad = calcTemplate({
   solution: (p, answer, lang) => lang === "pl" ? `${p.gfr * 10} ml/min \xD7 ${p.conc * 10} mg/100 ml = ${answer} mg/min. U zdrowej osoby ca\u0142a ta glukoza wraca przez resorpcj\u0119 zwrotn\u0105, wi\u0119c w moczu jej nie ma.` : `${p.gfr * 10} \u043C\u043B/\u043C\u0438\u043D \xD7 ${p.conc * 10} \u043C\u0433/100 \u043C\u043B = ${answer} \u043C\u0433/\u043C\u0438\u043D. \u0423 \u0437\u0434\u043E\u0440\u043E\u0432\u043E\u0433\u043E \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u0432\u0441\u044F \u044D\u0442\u0430 \u0433\u043B\u044E\u043A\u043E\u0437\u0430 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442\u0441\u044F \u043E\u0431\u0440\u0430\u0442\u043D\u044B\u043C \u0432\u0441\u0430\u0441\u044B\u0432\u0430\u043D\u0438\u0435\u043C, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0432 \u043C\u043E\u0447\u0435 \u0435\u0451 \u043D\u0435\u0442.`
 });
 var clearance = calcTemplate({
-  id: `${TOPIC4}.clearance`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.clearance`,
+  topicId: TOPIC6,
   paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia"],
@@ -4495,8 +5179,8 @@ var clearance = calcTemplate({
   solution: (p, answer, lang) => lang === "pl" ? `(${p.u} \xD7 ${p.v}) / ${p.pl} = ${answer} ml/min \u2014 tyle osocza zostaje w ci\u0105gu minuty ca\u0142kowicie oczyszczone z tej substancji.` : `(${p.u} \xD7 ${p.v}) / ${p.pl} = ${answer} \u043C\u043B/\u043C\u0438\u043D \u2014 \u0441\u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043B\u0430\u0437\u043C\u044B \u0437\u0430 \u043C\u0438\u043D\u0443\u0442\u0443 \u043F\u043E\u043B\u043D\u043E\u0441\u0442\u044C\u044E \u043E\u0447\u0438\u0449\u0430\u0435\u0442\u0441\u044F \u043E\u0442 \u044D\u0442\u043E\u0433\u043E \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u0430.`
 });
 var reabsorbedWater = calcTemplate({
-  id: `${TOPIC4}.reabsorbed-water`,
-  topicId: TOPIC4,
+  id: `${TOPIC6}.reabsorbed-water`,
+  topicId: TOPIC6,
   paragraph: P.urinary.structure,
   subtopic: PROCESSES,
   tags: ["obliczenia", "homeostaza"],
@@ -4555,7 +5239,9 @@ var ALL_TEMPLATES = [
   ...lo3RespirationTemplates,
   ...lo3CirculationTemplates,
   ...lo3UrinaryTemplates,
-  ...lo3RemainingTemplates
+  ...lo3RemainingTemplates,
+  ...lo3HomeostasisTemplates,
+  ...lo3SkinTemplates
 ];
 
 // packages/trainers/bio/src/server/content.ts

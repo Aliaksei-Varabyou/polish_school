@@ -228,6 +228,15 @@ export interface NamedEntry extends InParagraph {
   tier: Difficulty;
 }
 
+/**
+ * How the multiple-choice question names the thing asked about. The question's pronoun agrees with
+ * it ("Tkanka: … Jaka jest jej rola?" but "Narząd: … Jaka jest jego rola?"), so a label that is
+ * feminine says so — per language, since the two can differ ("wada wzroku" / "дефект зрения").
+ */
+export interface Label extends Bi {
+  feminine?: readonly BioLang[];
+}
+
 export interface PairSpec {
   topicId: string;
   /** the paragraph for rows that do not name their own */
@@ -241,7 +250,7 @@ export interface PairSpec {
   shift?: number;
   misconception: Bi;
   /** how the multiple-choice question names the thing being asked about */
-  label?: Bi;
+  label?: Label;
 }
 
 /**
@@ -249,7 +258,10 @@ export interface PairSpec {
  * structure from what it does. One table, both directions, both languages.
  */
 export function pairFromTable(spec: PairSpec): BioTemplate[] {
-  const label = spec.label ?? { pl: "Struktura", ru: "Структура" };
+  const label: Label = spec.label ?? { pl: "Struktura", ru: "Структура", feminine: ["pl", "ru"] };
+  const feminine = (lang: BioLang) => label.feminine?.includes(lang) ?? false;
+  const ask = (lang: BioLang) =>
+    lang === "pl" ? `Jaka jest ${feminine("pl") ? "jej" : "jego"} rola?` : `Какова ${feminine("ru") ? "её" : "его"} роль?`;
   return [
     choiceFromTable<NamedEntry>({
       id: `${spec.topicId}.${spec.slug}-to-role`,
@@ -260,7 +272,7 @@ export function pairFromTable(spec: PairSpec): BioTemplate[] {
       tags: spec.tags,
       difficulty: (r) => r.tier,
       shift: spec.shift ?? 0,
-      question: (r, lang) => `${label[lang]}: ${r.name[lang]}. ${lang === "pl" ? "Jaka jest jej rola?" : "Какова её роль?"}`,
+      question: (r, lang) => `${label[lang]}: ${r.name[lang]}. ${ask(lang)}`,
       optionText: (r, lang) => r.role[lang],
       misconception: spec.misconception,
       solution: (r, lang) => `${cap(r.name[lang])} — ${r.role[lang]}.`,

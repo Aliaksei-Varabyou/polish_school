@@ -1,7 +1,6 @@
 // Content tables for dział 1 (Organizm człowieka jako funkcjonalna całość)
 // and dział 2 (Układ powłokowy).
 import type { NamedEntry } from "../tableTemplate.ts";
-import { P } from "../../../curriculum/lo.ts";
 
 export const TISSUES: readonly NamedEntry[] = [
   {
@@ -76,34 +75,11 @@ export const TISSUES: readonly NamedEntry[] = [
   },
 ];
 
-export const TRANSPORT_AND_REGULATION: readonly NamedEntry[] = [
-  {
-    id: "homeostaza",
-    paragraph: P.organism.homeostasis,
-    name: { pl: "homeostaza", ru: "гомеостаз" },
-    role: { pl: "utrzymywanie stałości środowiska wewnętrznego mimo zmian na zewnątrz", ru: "поддержание постоянства внутренней среды несмотря на внешние изменения" },
-    aliases: { pl: [], ru: [] },
-    tier: 1,
-  },
-  {
-    id: "sprzezenie-ujemne",
-    paragraph: P.organism.homeostasis,
-    name: { pl: "ujemne sprzężenie zwrotne", ru: "отрицательная обратная связь" },
-    role: { pl: "wygaszanie odchylenia przez reakcję działającą w przeciwnym kierunku", ru: "гашение отклонения ответом, действующим в противоположную сторону" },
-    aliases: { pl: ["sprzężenie zwrotne ujemne"], ru: ["отрицательная связь"] },
-    tier: 1,
-  },
-  {
-    id: "sprzezenie-dodatnie",
-    paragraph: P.organism.homeostasis,
-    name: { pl: "dodatnie sprzężenie zwrotne", ru: "положительная обратная связь" },
-    role: { pl: "wzmacnianie odchylenia aż do zakończenia procesu, jak przy porodzie", ru: "усиление отклонения до завершения процесса, как при родах" },
-    aliases: { pl: ["sprzężenie zwrotne dodatnie"], ru: ["положительная связь"] },
-    tier: 2,
-  },
+// §1.2: the levels of organisation and how substances cross the cell membrane — the cell is the
+// bottom of the hierarchy the paragraph builds up from. Homeostasis has its own table (homeostasis.ts).
+export const HIERARCHY_AND_TRANSPORT: readonly NamedEntry[] = [
   {
     id: "dyfuzja",
-    paragraph: P.organism.hierarchy,
     name: { pl: "dyfuzja", ru: "диффузия" },
     role: { pl: "samorzutny ruch cząsteczek zgodnie z gradientem stężeń, bez nakładu energii", ru: "самопроизвольное движение молекул по градиенту концентрации, без затрат энергии" },
     aliases: { pl: [], ru: [] },
@@ -111,7 +87,6 @@ export const TRANSPORT_AND_REGULATION: readonly NamedEntry[] = [
   },
   {
     id: "osmoza",
-    paragraph: P.organism.hierarchy,
     name: { pl: "osmoza", ru: "осмос" },
     role: { pl: "przenikanie wody przez błonę półprzepuszczalną do roztworu bardziej stężonego", ru: "переход воды через полупроницаемую мембрану в более концентрированный раствор" },
     aliases: { pl: [], ru: [] },
@@ -119,7 +94,6 @@ export const TRANSPORT_AND_REGULATION: readonly NamedEntry[] = [
   },
   {
     id: "transport-aktywny",
-    paragraph: P.organism.hierarchy,
     name: { pl: "transport aktywny", ru: "активный транспорт" },
     role: { pl: "przenoszenie substancji wbrew gradientowi stężeń kosztem ATP", ru: "перенос веществ против градиента концентрации за счёт АТФ" },
     aliases: { pl: [], ru: [] },
@@ -127,7 +101,6 @@ export const TRANSPORT_AND_REGULATION: readonly NamedEntry[] = [
   },
   {
     id: "endocytoza",
-    paragraph: P.organism.hierarchy,
     name: { pl: "endocytoza", ru: "эндоцитоз" },
     role: { pl: "pobieranie dużych cząstek przez wpuklenie błony komórkowej", ru: "поглощение крупных частиц через впячивание клеточной мембраны" },
     aliases: { pl: ["fagocytoza"], ru: ["фагоцитоз"] },
@@ -135,7 +108,6 @@ export const TRANSPORT_AND_REGULATION: readonly NamedEntry[] = [
   },
   {
     id: "narzad",
-    paragraph: P.organism.hierarchy,
     name: { pl: "narząd", ru: "орган" },
     role: { pl: "zespół różnych tkanek pełniący wspólnie określoną funkcję", ru: "совокупность разных тканей, совместно выполняющих определённую функцию" },
     aliases: { pl: [], ru: [] },
@@ -143,7 +115,6 @@ export const TRANSPORT_AND_REGULATION: readonly NamedEntry[] = [
   },
   {
     id: "uklad-narzadow",
-    paragraph: P.organism.hierarchy,
     name: { pl: "układ narządów", ru: "система органов" },
     role: { pl: "zespół narządów współpracujących w jednym procesie życiowym", ru: "совокупность органов, работающих вместе в одном жизненном процессе" },
     aliases: { pl: [], ru: [] },

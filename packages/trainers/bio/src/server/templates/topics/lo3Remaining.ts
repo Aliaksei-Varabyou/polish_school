@@ -3,7 +3,7 @@
 // by one. The two exceptions with real arithmetic (corrective lens power, cycle day) are below.
 import { intRange } from "@portal/trainer-sdk/templates";
 import { calcTemplate, pairFromTable, type BioTemplate } from "../tableTemplate.ts";
-import { SKIN_PARTS, TISSUES, TRANSPORT_AND_REGULATION } from "../data/organism.ts";
+import { HIERARCHY_AND_TRANSPORT, SKIN_PARTS, TISSUES } from "../data/organism.ts";
 import {
   DIGESTIVE_ORGANS,
   ENZYMES,
@@ -23,20 +23,20 @@ const organism = [
     paragraph: P.organism.hierarchy,
     subtopic: { pl: "tkanki i poziomy organizacji", ru: "ткани и уровни организации" },
     shift: 0,
-    label: { pl: "Tkanka", ru: "Ткань" },
+    label: { pl: "Tkanka", ru: "Ткань", feminine: ["pl", "ru"] },
     misconception: { pl: "rola innej tkanki, często z tej samej grupy", ru: "роль другой ткани, часто из той же группы" },
   }),
   ...pairFromTable({
     topicId: "bio.lo3.organism",
-    slug: "regulation",
-    rows: TRANSPORT_AND_REGULATION,
-    subtopic: { pl: "homeostaza i transport przez błony", ru: "гомеостаз и транспорт через мембраны" },
-    tags: ["homeostaza"],
+    paragraph: P.organism.hierarchy,
+    slug: "hierarchy",
+    rows: HIERARCHY_AND_TRANSPORT,
+    subtopic: { pl: "poziomy organizacji i transport przez błony", ru: "уровни организации и транспорт через мембраны" },
     shift: 2,
     label: { pl: "Pojęcie", ru: "Понятие" },
     misconception: {
-      pl: "definicja pokrewnego pojęcia — łatwo pomylić dyfuzję z osmozą albo sprzężenia zwrotne",
-      ru: "определение смежного понятия — легко спутать диффузию с осмосом или виды обратной связи",
+      pl: "definicja pokrewnego pojęcia — łatwo pomylić dyfuzję z osmozą albo narząd z układem narządów",
+      ru: "определение смежного понятия — легко спутать диффузию с осмосом или орган с системой органов",
     },
   }),
 ];
@@ -59,7 +59,7 @@ const motion = pairFromTable({
   rows: MOTION_PARTS,
   subtopic: { pl: "kości, stawy i mięśnie", ru: "кости, суставы и мышцы" },
   shift: 0,
-  label: { pl: "Struktura", ru: "Структура" },
+  label: { pl: "Struktura", ru: "Структура", feminine: ["pl", "ru"] },
   misconception: { pl: "rola sąsiedniej struktury kości, stawu albo mięśnia", ru: "роль соседней структуры кости, сустава или мышцы" },
 });
 
@@ -102,7 +102,7 @@ const senses = [
     rows: SENSE_PARTS,
     subtopic: { pl: "budowa oka i ucha", ru: "строение глаза и уха" },
     shift: 0,
-    label: { pl: "Struktura", ru: "Структура" },
+    label: { pl: "Struktura", ru: "Структура", feminine: ["pl", "ru"] },
     misconception: { pl: "rola innej części oka albo ucha", ru: "роль другой части глаза или уха" },
   }),
   ...pairFromTable({
@@ -113,7 +113,7 @@ const senses = [
     subtopic: { pl: "wady wzroku", ru: "дефекты зрения" },
     tags: ["choroby"],
     shift: 3,
-    label: { pl: "Wada wzroku", ru: "Дефект зрения" },
+    label: { pl: "Wada wzroku", ru: "Дефект зрения", feminine: ["pl"] },
     misconception: { pl: "opis przeciwnej wady wzroku", ru: "описание противоположного дефекта зрения" },
   }),
 ];

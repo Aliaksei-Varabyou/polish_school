@@ -4,8 +4,10 @@
 /** tasks per language, by paragraph id; a paragraph that is absent has none */
 export const PARAGRAPH_TASKS: Record<string, number> = {
   "bio.lo3.organism.hierarchy": 32,
-  "bio.lo3.organism.homeostasis": 6,
+  "bio.lo3.organism.homeostasis": 46,
+  "bio.lo3.skin.animals": 38,
   "bio.lo3.skin.structure": 24,
+  "bio.lo3.skin.disorders": 52,
   "bio.lo3.motion.skeleton": 8,
   "bio.lo3.motion.joints": 6,
   "bio.lo3.motion.bones": 2,
@@ -38,8 +40,8 @@ export const PARAGRAPH_TASKS: Record<string, number> = {
 
 /** paragraphs holding at least one task with the tag, by tag id */
 export const TAG_PARAGRAPHS: Record<string, string[]> = {
-  "homeostaza": ["bio.lo3.organism.hierarchy","bio.lo3.organism.homeostasis","bio.lo3.skin.structure","bio.lo3.urinary.structure","bio.lo3.hormones.regulation","bio.lo3.hormones.disorders"],
+  "homeostaza": ["bio.lo3.organism.homeostasis","bio.lo3.skin.structure","bio.lo3.urinary.structure","bio.lo3.hormones.regulation","bio.lo3.hormones.disorders"],
   "regulacja-hormonalna": ["bio.lo3.hormones.structure","bio.lo3.hormones.regulation","bio.lo3.hormones.disorders"],
-  "choroby": ["bio.lo3.senses.vision","bio.lo3.hormones.disorders"],
+  "choroby": ["bio.lo3.skin.disorders","bio.lo3.senses.vision","bio.lo3.hormones.disorders"],
   "obliczenia": ["bio.lo3.respiration.ventilation","bio.lo3.circulation.function","bio.lo3.urinary.structure","bio.lo3.senses.vision","bio.lo3.reproduction.female"],
 };

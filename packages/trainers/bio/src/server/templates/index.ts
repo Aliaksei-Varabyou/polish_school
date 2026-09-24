@@ -12,10 +12,12 @@ import type { Task } from "@portal/core";
 import type { BioLang } from "../../lang.ts";
 import { verifyTask } from "../verifyTask.ts";
 import type { BioTemplate } from "./tableTemplate.ts";
+import { lo3HomeostasisTemplates } from "./topics/lo3Homeostasis.ts";
 import { lo3HormonesTemplates } from "./topics/lo3Hormones.ts";
 import { lo3CirculationTemplates } from "./topics/lo3Circulation.ts";
 import { lo3RemainingTemplates } from "./topics/lo3Remaining.ts";
 import { lo3RespirationTemplates } from "./topics/lo3Respiration.ts";
+import { lo3SkinTemplates } from "./topics/lo3Skin.ts";
 import { lo3UrinaryTemplates } from "./topics/lo3Urinary.ts";
 
 export * from "@portal/trainer-sdk/templates";
@@ -77,4 +79,6 @@ export const ALL_TEMPLATES: BioTemplate[] = [
   ...lo3CirculationTemplates,
   ...lo3UrinaryTemplates,
   ...lo3RemainingTemplates,
+  ...lo3HomeostasisTemplates,
+  ...lo3SkinTemplates,
 ];
