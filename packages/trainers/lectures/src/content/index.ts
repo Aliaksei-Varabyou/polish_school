@@ -8,6 +8,7 @@ import { noelka } from "./books/noelka.ts";
 import { przygodyTomkaSawyera } from "./books/przygodyTomkaSawyera.ts";
 import { rzeka } from "./books/rzeka.ts";
 import { tajemniczyOgrod } from "./books/tajemniczyOgrod.ts";
+import { wesele } from "./books/wesele.ts";
 import { stageGrades, type StageId } from "./stages.ts";
 import type { Book, LectureQuestion } from "./types.ts";
 
@@ -15,7 +16,7 @@ export type { Book, LectureChoice, LectureQuestion } from "./types.ts";
 export * from "./stages.ts";
 
 /** New books are added here one at a time — no other change needed for them to show up. */
-export const BOOKS: Book[] = [akademiaPanaKleksa, kajkoIKokosz, narnia, chlopcyZPlacuBroni, hobbit, przygodyTomkaSawyera, tajemniczyOgrod, noelka, rzeka];
+export const BOOKS: Book[] = [akademiaPanaKleksa, kajkoIKokosz, narnia, chlopcyZPlacuBroni, hobbit, przygodyTomkaSawyera, tajemniczyOgrod, noelka, rzeka, wesele];
 
 const byId = new Map(BOOKS.map((b) => [b.id, b]));
 
