@@ -7,8 +7,18 @@ import type { LessonProps } from "./kit.tsx";
 
 type Lesson = LazyExoticComponent<ComponentType<LessonProps>>;
 
+// one lesson covers both tissue paragraphs: the four groups are best seen side by side
+const tissues = lazy(() => import("./tissues/TissuesLesson.tsx"));
+
 const LESSONS: Record<string, Lesson> = {
+  [P6.animals.tissues]: tissues,
+  [P6.animals.connective]: tissues,
   [P6.arthropods.insects]: lazy(() => import("./insects/InsectsLesson.tsx")),
+  [P6.ectotherms.amphibians]: lazy(() => import("./amphibians/AmphibiansLesson.tsx")),
+  [P6.ectotherms.fish]: lazy(() => import("./fish/FishLesson.tsx")),
+  [P6.ectotherms.reptiles]: lazy(() => import("./reptiles/ReptilesLesson.tsx")),
+  [P6.endotherms.birds]: lazy(() => import("./birds/BirdsLesson.tsx")),
+  [P6.endotherms.mammals]: lazy(() => import("./mammals/MammalsLesson.tsx")),
 };
 
 export const hasLesson = (paragraphId: string): boolean => paragraphId in LESSONS;

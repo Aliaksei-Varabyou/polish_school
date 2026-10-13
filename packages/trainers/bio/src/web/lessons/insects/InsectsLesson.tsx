@@ -3,6 +3,7 @@
 // the same words.
 import type { LessonProps, Txt } from "../kit.tsx";
 import { Remember, Section } from "../kit.tsx";
+import { LessonIntro } from "../LessonIntro.tsx";
 import { BodyMap } from "./BodyMap.tsx";
 import { Classifier } from "./Classifier.tsx";
 import { Metamorphosis } from "./Metamorphosis.tsx";
@@ -13,7 +14,6 @@ const T = {
     pl: "Owady to najliczniejsza grupa zwierząt na Ziemi — opisano ich ponad milion gatunków, więcej niż wszystkich pozostałych zwierząt razem. Żyją prawie wszędzie: na lądzie, w wodach słodkich i w powietrzu. Są stawonogami, więc mają odnóża członowane i twardy pancerz z chityny, z którego wyrastają, linieją.",
     ru: "Насекомые — самая многочисленная группа животных на Земле: описано больше миллиона видов, больше, чем всех остальных животных вместе взятых. Они живут почти везде — на суше, в пресных водах и в воздухе. Это членистоногие, поэтому у них членистые ноги и твёрдый хитиновый панцирь, из которого они вырастают, линяя.",
   },
-  contents: { pl: "W tej lekcji", ru: "В этом уроке" },
   s1: { pl: "Jak zbudowany jest owad", ru: "Как устроено насекомое" },
   s1intro: {
     pl: "Ciało owada dzieli się na trzy części: głowę, tułów i odwłok. Przyjrzyj się każdej z nich.",
@@ -65,28 +65,7 @@ const SECTIONS = ["s1", "s2", "s3", "s4"] as const;
 export default function InsectsLesson({ lang }: LessonProps) {
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-sky-50 p-5 ring-1 ring-emerald-200 sm:p-7">
-        <p className="text-[15px] leading-relaxed text-slate-700 sm:text-base">{T.lead[lang]}</p>
-        <nav className="mt-4" aria-label={T.contents[lang]}>
-          <div className="mb-2 text-xs font-semibold tracking-wide text-emerald-800 uppercase">{T.contents[lang]}</div>
-          <ol className="grid gap-1.5 sm:grid-cols-2">
-            {SECTIONS.map((s, i) => (
-              <li key={s}>
-                <a
-                  href={`#insects-${s}`}
-                  // scroll without touching the URL: the portal's router owns it
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(`insects-${s}`)?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-1.5 text-sm text-slate-700 ring-1 ring-emerald-100 hover:bg-white">
-                  <span className="font-semibold text-emerald-700">{i + 1}.</span> {T[s][lang]}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      </div>
+      <LessonIntro lang={lang} lead={T.lead} prefix="insects" sections={SECTIONS.map((k) => T[k])} />
 
       <Section id="insects-s1" n={1} title={T.s1[lang]} intro={<p>{T.s1intro[lang]}</p>}>
         <BodyMap lang={lang} />
