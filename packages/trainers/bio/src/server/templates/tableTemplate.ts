@@ -251,6 +251,15 @@ export interface PairSpec {
   misconception: Bi;
   /** how the multiple-choice question names the thing being asked about */
   label?: Label;
+  /**
+   * The multiple-choice question after the name, when "what is its role?" does not fit — for a
+   * species it is "what sets it apart?". Written whole per language, pronoun included.
+   */
+  ask?: Bi;
+  /** what the free-text question calls the description it gives; defaults to "Funkcja / Функция" */
+  cue?: Bi;
+  /** the free-text solution repeats the description next to the answer, so a miss teaches something */
+  explain?: boolean;
 }
 
 /**
@@ -261,7 +270,9 @@ export function pairFromTable(spec: PairSpec): BioTemplate[] {
   const label: Label = spec.label ?? { pl: "Struktura", ru: "Структура", feminine: ["pl", "ru"] };
   const feminine = (lang: BioLang) => label.feminine?.includes(lang) ?? false;
   const ask = (lang: BioLang) =>
-    lang === "pl" ? `Jaka jest ${feminine("pl") ? "jej" : "jego"} rola?` : `Какова ${feminine("ru") ? "её" : "его"} роль?`;
+    spec.ask?.[lang] ??
+    (lang === "pl" ? `Jaka jest ${feminine("pl") ? "jej" : "jego"} rola?` : `Какова ${feminine("ru") ? "её" : "его"} роль?`);
+  const cue = spec.cue ?? { pl: "Funkcja", ru: "Функция" };
   return [
     choiceFromTable<NamedEntry>({
       id: `${spec.topicId}.${spec.slug}-to-role`,
@@ -287,11 +298,14 @@ export function pairFromTable(spec: PairSpec): BioTemplate[] {
       difficulty: (r) => r.tier,
       question: (r, lang) =>
         lang === "pl"
-          ? `Funkcja: ${r.role.pl}. Podaj nazwę w mianowniku.`
-          : `Функция: ${r.role.ru}. Назови в именительном падеже.`,
+          ? `${cue.pl}: ${r.role.pl}. Podaj nazwę w mianowniku.`
+          : `${cue.ru}: ${r.role.ru}. Назови в именительном падеже.`,
       term: (r, lang) => r.name[lang],
       aliases: (r) => [r.name.pl, r.name.ru, ...r.aliases.pl, ...r.aliases.ru],
-      solution: (r, lang) => (lang === "pl" ? `Odpowiedź: ${r.name.pl}.` : `Ответ: ${r.name.ru}.`),
+      solution: (r, lang) => {
+        const answer = lang === "pl" ? `Odpowiedź: ${r.name.pl}` : `Ответ: ${r.name.ru}`;
+        return spec.explain ? `${answer} — ${r.role[lang]}.` : `${answer}.`;
+      },
     }),
   ];
 }

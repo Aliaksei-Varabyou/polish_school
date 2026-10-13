@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "Biology trainer",
-    "subtitle": "Liceum class 3, extended level — human anatomy and physiology"
+    "subtitle_lo3": "Liceum class 3, extended level — human anatomy and physiology",
+    "subtitle_sp6": "Grade 6 — animal diversity: from tissues and invertebrates to mammals"
   },
   "start": {
     "contentLang": "Task language",
@@ -29,7 +30,10 @@
     "page": "p. {{page}}",
     "noTasks": "no tasks yet",
     "tasks_one": "{{count}} task",
-    "tasks_other": "{{count}} tasks"
+    "tasks_other": "{{count}} tasks",
+    "grade": "Class",
+    "grade_sp6": "Grade 6",
+    "grade_lo3": "Liceum, grade 3"
   },
   "loading": {
     "title": "Preparing tasks…",

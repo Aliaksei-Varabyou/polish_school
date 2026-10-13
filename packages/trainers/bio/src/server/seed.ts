@@ -6,10 +6,10 @@
 // task". Rows the templates no longer produce are dropped and new ones stored, so a deploy with
 // edited content, content moved to another paragraph, or a first deploy onto an empty pool all go
 // live without anyone running a script against production.
-import type { Task } from "@portal/core";
+import type { Grade, Level, Task } from "@portal/core";
 import type { TaskPoolStore } from "@portal/task-pool";
 import type { BioLang } from "../lang.ts";
-import { GRADE, LEVEL, renderContent } from "./content.ts";
+import { poolPlace, renderContent } from "./content.ts";
 
 type InfoLog = { info(obj: object, msg: string): void };
 
@@ -32,16 +32,22 @@ export async function syncContent(pool: TaskPoolStore, log?: InfoLog): Promise<S
   const wanted = new Set(tasks.map((t) => t.task.id));
   const stored = new Set(await pool.listIds("bio"));
 
-  const missing = new Map<BioLang, Task[]>();
+  // the pool stores tasks per (language, class, level), so missing ones are grouped the same way
+  const missing = new Map<string, { lang: BioLang; grade: Grade; level?: Level; tasks: Task[] }>();
   for (const { lang, task } of tasks) {
     if (stored.has(task.id)) continue;
-    missing.set(lang, [...(missing.get(lang) ?? []), task]);
+    const place = poolPlace(task.topicId);
+    if (!place) continue;
+    const key = `${lang}|${place.grade}|${place.level ?? ""}`;
+    const group = missing.get(key) ?? { lang, ...place, tasks: [] };
+    group.tasks.push(task);
+    missing.set(key, group);
   }
   let added = 0;
-  for (const [lang, group] of missing) {
+  for (const { lang, grade, level, tasks: group } of missing.values()) {
     for (let i = 0; i < group.length; i += BATCH) {
       const batch = group.slice(i, i + BATCH);
-      await pool.add(batch, { trainerId: "bio", lang, grade: GRADE, level: LEVEL });
+      await pool.add(batch, { trainerId: "bio", lang, grade, level });
       added += batch.length;
     }
   }

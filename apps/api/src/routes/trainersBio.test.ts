@@ -3,7 +3,7 @@
 import { type LLMClient } from "@portal/ai";
 import type { Task } from "@portal/core";
 import { TaskPool } from "@portal/task-pool";
-import { PARAGRAPH_TASKS, paragraphsOf, PARAGRAPHS, topicsFor } from "@portal/trainer-bio";
+import { PARAGRAPH_TASKS, paragraphsFor, paragraphsOf, topicsFor } from "@portal/trainer-bio";
 import { bioTrainer } from "@portal/trainer-bio/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app.ts";
@@ -116,7 +116,7 @@ describe("trainer API (bio, offline)", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/trainers/bio/generate",
-      payload: { ...body, topicIds: PARAGRAPHS.map((p) => p.id), count: 20 },
+      payload: { ...body, topicIds: paragraphsFor("lo3").map((p) => p.id), count: 20 },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().tasks).toHaveLength(20);

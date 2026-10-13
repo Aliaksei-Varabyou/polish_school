@@ -1,7 +1,7 @@
 // What the rendered content covers, in the shape the web needs: which paragraphs have tasks (and how
 // many), and which paragraphs a tag reaches. Written to curriculum/coverage.generated.ts by
 // scripts/genCoverage.ts, because the browser cannot render templates itself (node:crypto).
-import { PARAGRAPHS } from "../curriculum/lo.ts";
+import { PARAGRAPHS } from "../curriculum/books.ts";
 import { TAGS } from "../curriculum/tags.ts";
 import type { Content } from "./content.ts";
 

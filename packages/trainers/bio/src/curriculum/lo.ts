@@ -2,39 +2,9 @@
 // Chapters and paragraphs follow "Biologia na czasie 3", Nowa Era, ZR — the table of contents of
 // the copy the student actually uses, page numbers included. Class 3 on the extended track is human
 // biology end to end; genetics, evolution and ecology are taught in class 4.
-//
-// A paragraph is the unit a test is built from (it is the `Topic`); a chapter only groups them.
-// Paragraph ids are slugs, not numbers: another edition may renumber the book, and history and
-// progress are keyed by topic id, so the number is a display field that can change freely.
-import type { Lang, Topic } from "@portal/core";
+import { defineBook } from "./book.ts";
 
-export interface Chapter {
-  /** the pre-paragraph topic ids — still found in older history, so they keep resolving to a name */
-  id: string;
-  number: number;
-  name: Record<Lang, string>;
-  /** Polish curriculum terms for the whole chapter (feedback falls back to these) */
-  subtopics: string[];
-}
-
-export interface Paragraph extends Topic {
-  chapterId: string;
-  /** as printed in the book: "3.2" */
-  number: string;
-  /** first page in the book */
-  page: number;
-}
-
-type Entry = readonly [number: string, page: number, pl: string, ru: string];
-
-interface ChapterSpec {
-  number: number;
-  name: readonly [pl: string, ru: string, en: string];
-  subtopics: readonly string[];
-  paragraphs: Readonly<Record<string, Entry>>;
-}
-
-// `satisfies` rather than an annotation: the literal keys are what makes `P.motion.skeleton` typed
+// the literal keys are what makes `P.motion.skeleton` typed
 const BOOK = {
   organism: {
     number: 1,
@@ -167,38 +137,11 @@ const BOOK = {
       disorders: ["11.5", 467, "Higiena i choroby układu rozrodczego", "Гигиена и болезни половой системы"],
     },
   },
-} as const satisfies Record<string, ChapterSpec>;
+} as const;
 
-type Book = typeof BOOK;
-const chapterKeys = Object.keys(BOOK) as (keyof Book)[];
+const book = defineBook("lo3", "R", BOOK);
 
-const chapterId = (key: string) => `bio.lo3.${key}`;
-
-export const CHAPTERS: Chapter[] = chapterKeys.map((key) => {
-  const { number, name, subtopics } = BOOK[key];
-  const [pl, ru, en] = name;
-  return { id: chapterId(key), number, name: { pl, ru, en }, subtopics: [...subtopics] };
-});
-
-export const PARAGRAPHS: Paragraph[] = chapterKeys.flatMap((key) =>
-  Object.entries(BOOK[key].paragraphs as Record<string, Entry>).map(([slug, [number, page, pl, ru]]) => ({
-    id: `${chapterId(key)}.${slug}`,
-    grade: "lo3" as const,
-    level: "R" as const,
-    // EN is not offered for biology; the slot is filled so the portal-wide `Topic` shape still holds
-    name: { pl, ru, en: pl },
-    // curriculum terms live on the chapter; a paragraph's own terms come from the tasks in it
-    subtopics: [],
-    chapterId: chapterId(key),
-    number,
-    page,
-  })),
-);
-
-/**
- * Paragraph ids by chapter and slug — how content tables name the paragraph a row belongs to, so a
- * typo is a compile error rather than a task silently filed under no paragraph.
- */
-export const P = Object.fromEntries(
-  chapterKeys.map((key) => [key, Object.fromEntries(Object.keys(BOOK[key].paragraphs).map((slug) => [slug, `${chapterId(key)}.${slug}`]))]),
-) as { [C in keyof Book]: { [S in keyof Book[C]["paragraphs"]]: string } };
+export const LO3_CHAPTERS = book.chapters;
+export const LO3_PARAGRAPHS = book.paragraphs;
+/** LO3 paragraph ids by chapter and slug: `P.motion.skeleton` */
+export const P = book.P;

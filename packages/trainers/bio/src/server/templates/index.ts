@@ -18,6 +18,7 @@ import { lo3CirculationTemplates } from "./topics/lo3Circulation.ts";
 import { lo3RemainingTemplates } from "./topics/lo3Remaining.ts";
 import { lo3RespirationTemplates } from "./topics/lo3Respiration.ts";
 import { lo3SkinTemplates } from "./topics/lo3Skin.ts";
+import { sp6Templates } from "./topics/sp6.ts";
 import { lo3UrinaryTemplates } from "./topics/lo3Urinary.ts";
 
 export * from "@portal/trainer-sdk/templates";
@@ -81,4 +82,5 @@ export const ALL_TEMPLATES: BioTemplate[] = [
   ...lo3RemainingTemplates,
   ...lo3HomeostasisTemplates,
   ...lo3SkinTemplates,
+  ...sp6Templates,
 ];

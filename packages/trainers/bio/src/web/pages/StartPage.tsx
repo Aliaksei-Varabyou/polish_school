@@ -1,10 +1,10 @@
 import { TASK_COUNTS, type AnswerMode } from "@portal/core";
 import { Button, Card, Label, Segmented } from "@portal/ui";
 import { useTranslation } from "react-i18next";
-import { PARAGRAPHS, TAGS } from "../../index.ts";
+import { BIO_GRADES, paragraphsFor, tagsFor, type BioGrade } from "../../index.ts";
 import { BIO_LANGS, isBioLang, type BioLang } from "../../lang.ts";
 import { hasTasks, ParagraphTree } from "../components/ParagraphTree.tsx";
-import { useSession, type SelectionMode } from "../store/session.ts";
+import { selectedParagraphs, useSession, type SelectionMode } from "../store/session.ts";
 
 export function StartPage({ portalLang }: { portalLang: string }) {
   const { t } = useTranslation("bio");
@@ -13,12 +13,16 @@ export function StartPage({ portalLang }: { portalLang: string }) {
   const setSettings = useSession((s) => s.setSettings);
   const generate = useSession((s) => s.generate);
 
-  // no class or level picker: biology here is one year of one track (see store/session.ts).
-  // Only paragraphs with tasks count as chosen: an id kept from an older version is dropped here.
-  const selected = settings.topicIds.filter(hasTasks);
+  // one textbook per class; the level follows from the class, so there is no level picker.
+  // Only this class's paragraphs with tasks count as chosen — the other class's choice is kept aside.
+  const grade = settings.grade;
+  const selected = selectedParagraphs(settings);
+  const otherGrades = settings.topicIds.filter((id) => !selected.includes(id));
+  const tags = tagsFor(grade);
 
-  const byTag = settings.mode === "tags";
-  const selectedTags = settings.tagIds;
+  // a class whose content carries no cross-cutting theme gets no theme mode at all
+  const byTag = settings.mode === "tags" && tags.length > 0;
+  const selectedTags = settings.tagIds.filter((id) => tags.some((tag) => tag.id === id));
   const toggleTag = (id: string) =>
     setSettings({ tagIds: selectedTags.includes(id) ? selectedTags.filter((x) => x !== id) : [...selectedTags, id] });
   const ready = byTag ? selectedTags.length > 0 : selected.length > 0;
@@ -42,16 +46,28 @@ export function StartPage({ portalLang }: { portalLang: string }) {
         </Card>
       )}
 
-      <Card>
-        <Label>{t("start.mode")}</Label>
-        <Segmented<SelectionMode>
-          value={settings.mode}
-          onChange={(mode) => setSettings({ mode })}
-          options={[
-            { value: "topics", label: t("start.modeTopics") },
-            { value: "tags", label: t("start.modeTags") },
-          ]}
-        />
+      <Card className="space-y-4">
+        <div>
+          <Label>{t("start.grade")}</Label>
+          <Segmented<BioGrade>
+            value={grade}
+            onChange={(next) => setSettings({ grade: next })}
+            options={BIO_GRADES.map((g) => ({ value: g, label: t(`start.grade_${g}`) }))}
+          />
+        </div>
+        {tags.length > 0 && (
+          <div>
+            <Label>{t("start.mode")}</Label>
+            <Segmented<SelectionMode>
+              value={byTag ? "tags" : "topics"}
+              onChange={(mode) => setSettings({ mode })}
+              options={[
+                { value: "topics", label: t("start.modeTopics") },
+                { value: "tags", label: t("start.modeTags") },
+              ]}
+            />
+          </div>
+        )}
       </Card>
 
       {byTag ? (
@@ -59,7 +75,7 @@ export function StartPage({ portalLang }: { portalLang: string }) {
           <h2 className="mb-1 text-lg font-semibold text-slate-800">{t("start.themes")}</h2>
           <p className="mb-3 text-sm text-slate-500">{t("start.themesHint")}</p>
           <ul className="grid gap-2 sm:grid-cols-2">
-            {TAGS.map((tag) => {
+            {tags.map((tag) => {
               const checked = selectedTags.includes(tag.id);
               return (
                 <li key={tag.id}>
@@ -94,16 +110,21 @@ export function StartPage({ portalLang }: { portalLang: string }) {
             <Button
               variant="ghost"
               className="px-2 py-1.5 text-sm whitespace-nowrap text-indigo-600"
-              onClick={() => setSettings({ topicIds: PARAGRAPHS.map((p) => p.id).filter(hasTasks) })}
+              onClick={() => setSettings({ topicIds: [...otherGrades, ...paragraphsFor(grade).map((p) => p.id).filter(hasTasks)] })}
             >
               {t("start.selectAll")}
             </Button>
-            <Button variant="ghost" className="px-2 py-1.5 text-sm whitespace-nowrap" onClick={() => setSettings({ topicIds: [] })}>
+            <Button variant="ghost" className="px-2 py-1.5 text-sm whitespace-nowrap" onClick={() => setSettings({ topicIds: otherGrades })}>
               {t("start.clearAll")}
             </Button>
           </div>
         </div>
-        <ParagraphTree lang={settings.lang} selected={selected} onChange={(topicIds) => setSettings({ topicIds })} />
+        <ParagraphTree
+          grade={grade}
+          lang={settings.lang}
+          selected={selected}
+          onChange={(ids) => setSettings({ topicIds: [...otherGrades, ...ids] })}
+        />
       </Card>
       )}
 

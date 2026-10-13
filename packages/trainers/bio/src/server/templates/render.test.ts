@@ -2,7 +2,21 @@
 // catches missing translations, colliding distractors, broken table lookups and empty questions.
 import { describe, expect, it } from "vitest";
 import { checkAnswer } from "../../answer.ts";
-import { CHAPTERS, P, PARAGRAPHS, TAGS, getParagraph, paragraphsOf, topicIdsForTags } from "../../curriculum/index.ts";
+import {
+  BIO_GRADES,
+  chaptersFor,
+  getParagraph,
+  levelFor,
+  P,
+  P6,
+  PARAGRAPHS,
+  paragraphsFor,
+  paragraphsOf,
+  TAGS,
+  topicIdsForTags,
+  topicsFor,
+  type BioGrade,
+} from "../../curriculum/index.ts";
 import { BIO_LANGS } from "../../lang.ts";
 import { ALL_TEMPLATES, contentId, renderTemplate } from "./index.ts";
 
@@ -150,36 +164,55 @@ describe("cross-cutting tags", () => {
 });
 
 describe("biology curriculum", () => {
-  it("follows the book: 11 chapters, 54 paragraphs numbered chapter by chapter with rising pages", () => {
-    expect(CHAPTERS).toHaveLength(11);
-    expect(PARAGRAPHS).toHaveLength(54);
-    let lastPage = 0;
-    CHAPTERS.forEach((chapter, i) => {
-      expect(chapter.number).toBe(i + 1);
-      expect(chapter.subtopics.length).toBeGreaterThan(3);
-      const paragraphs = paragraphsOf(chapter.id);
-      expect(paragraphs.map((p) => p.number)).toEqual(paragraphs.map((_, j) => `${i + 1}.${j + 1}`));
-      for (const p of paragraphs) {
-        expect(p.page, `${p.number} page`).toBeGreaterThan(lastPage);
-        lastPage = p.page;
-      }
-    });
-  });
+  // each class is one textbook: chapter numbers restart at 1, paragraphs are numbered within them
+  const BOOKS = { sp6: { chapters: 5, paragraphs: 22 }, lo3: { chapters: 11, paragraphs: 54 } } as const;
 
-  it("makes every paragraph a level-R topic of LO3 with a name in both content languages", () => {
-    expect(new Set(PARAGRAPHS.map((p) => p.id)).size).toBe(54);
+  for (const grade of BIO_GRADES) {
+    it(`follows the ${grade} book chapter by chapter${grade === "lo3" ? ", pages rising" : ""}`, () => {
+      const chapters = chaptersFor(grade);
+      expect(chapters).toHaveLength(BOOKS[grade].chapters);
+      expect(paragraphsFor(grade)).toHaveLength(BOOKS[grade].paragraphs);
+      let lastPage = 0;
+      chapters.forEach((chapter, i) => {
+        expect(chapter.number).toBe(i + 1);
+        expect(chapter.id.startsWith(`bio.${grade}.`)).toBe(true);
+        expect(chapter.subtopics.length).toBeGreaterThan(3);
+        const paragraphs = paragraphsOf(chapter.id);
+        expect(paragraphs.map((p) => p.number)).toEqual(paragraphs.map((_, j) => `${i + 1}.${j + 1}`));
+        // LO3 pages come from a photo of the student's copy; class 6 has none until checked
+        for (const p of paragraphs) {
+          if (grade === "sp6") {
+            expect(p.page).toBeUndefined();
+            continue;
+          }
+          expect(p.page, `${p.number} page`).toBeGreaterThan(lastPage);
+          lastPage = p.page!;
+        }
+      });
+    });
+  }
+
+  it("makes every paragraph a topic of its class, at the class's level, named in both content languages", () => {
+    expect(new Set(PARAGRAPHS.map((p) => p.id)).size).toBe(PARAGRAPHS.length);
     for (const p of PARAGRAPHS) {
-      expect(p.grade).toBe("lo3");
-      expect(p.level).toBe("R");
+      const grade = p.grade as BioGrade;
+      expect(BIO_GRADES).toContain(grade);
+      expect(p.id.startsWith(`bio.${grade}.`)).toBe(true);
+      expect(p.level).toBe(levelFor(grade));
       expect(p.name.pl.length).toBeGreaterThan(3);
       expect(/[а-яё]/i.test(p.name.ru), `${p.number} has no Russian name`).toBe(true);
     }
+    // the allow-list each class's request is checked against
+    expect(topicsFor("sp6")).toHaveLength(22);
+    expect(topicsFor("lo3", "R")).toHaveLength(54);
+    expect(topicsFor("lo3", "P")).toHaveLength(0);
   });
 
-  it("names paragraphs by slug, and P resolves to the same ids", () => {
+  it("names paragraphs by slug, and P / P6 resolve to the same ids", () => {
     expect(P.motion.skeleton).toBe("bio.lo3.motion.skeleton");
     expect(getParagraph(P.senses["taste-smell"])?.number).toBe("9.4");
-    const fromP = Object.values(P).flatMap((chapter) => Object.values(chapter));
+    expect(getParagraph(P6.ectotherms["fish-diversity"])?.number).toBe("4.2");
+    const fromP = [P, P6].flatMap((book) => Object.values(book).flatMap((chapter) => Object.values(chapter as Record<string, string>)));
     expect([...fromP].sort()).toEqual(PARAGRAPHS.map((p) => p.id).sort());
   });
 });

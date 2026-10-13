@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "Trener biologii",
-    "subtitle": "Liceum, klasa 3, zakres rozszerzony — anatomia i fizjologia człowieka"
+    "subtitle_lo3": "Liceum, klasa 3, zakres rozszerzony — anatomia i fizjologia człowieka",
+    "subtitle_sp6": "Klasa 6 — różnorodność zwierząt: od tkanek i bezkręgowców do ssaków"
   },
   "start": {
     "contentLang": "Język zadań",
@@ -31,7 +32,10 @@
     "tasks_one": "{{count}} zadanie",
     "tasks_few": "{{count}} zadania",
     "tasks_many": "{{count}} zadań",
-    "tasks_other": "{{count}} zadania"
+    "tasks_other": "{{count}} zadania",
+    "grade": "Klasa",
+    "grade_sp6": "Klasa 6",
+    "grade_lo3": "Liceum, klasa 3"
   },
   "loading": {
     "title": "Przygotowuję zadania…",

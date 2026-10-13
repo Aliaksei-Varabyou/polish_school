@@ -17,6 +17,7 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
   useEffect(() => setTokenGetter(getAccessToken), [getAccessToken]);
   const status = useSession((s) => s.status);
   const storeLang = useSession((s) => s.settings.lang);
+  const grade = useSession((s) => s.settings.grade);
   const setSettings = useSession((s) => s.setSettings);
 
   // Tasks follow the portal language — but only where biology has content. On English the store
@@ -38,7 +39,7 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
           <span className="mr-2">🧬</span>
           {t("app.title")}
         </h1>
-        {status === "idle" && <p className="mt-1 text-sm text-slate-500">{t("app.subtitle")}</p>}
+        {status === "idle" && <p className="mt-1 text-sm text-slate-500">{t(`app.subtitle_${grade}`)}</p>}
       </div>
       {status === "idle" && <StartPage portalLang={lang} />}
       {status === "loading" && <LoadingScreen />}

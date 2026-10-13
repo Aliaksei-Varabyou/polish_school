@@ -1,27 +1,22 @@
 import type { AnswerMode, FeedbackResponse, Lang, Task, TaskResult } from "@portal/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { checkAnswer, topicIdsForTags } from "../../index.ts";
+import { checkAnswer, isInGrade, levelFor, PARAGRAPH_TASKS, topicIdsForTags, type BioGrade } from "../../index.ts";
 import { toBioLang, type BioLang } from "../../lang.ts";
 import { api, ApiRequestError } from "../api/client.ts";
 import { migrateSettings, type Persisted } from "./migrate.ts";
 import { countRepeats, rememberSeen } from "./seen.ts";
 
-/**
- * Biology is a single-year course: class and level are not choices, they are what the trainer is.
- * Pinning them here (rather than offering a picker that has exactly one valid setting) also keeps
- * `topicsFor` happy — every biology topic is level "R", so a request on "P" would return none.
- */
-export const GRADE = "lo3" as const;
-export const LEVEL = "R" as const;
-
 /** Pick tasks by dział, or by a theme that cuts across several of them (homeostaza, choroby, …). */
 export type SelectionMode = "topics" | "tags";
 
 export interface Settings {
+  /** the class, i.e. which textbook the tree shows; the level follows from it (see levelFor) */
+  grade: BioGrade;
   /** session language; only the languages biology has content in */
   lang: BioLang;
   mode: SelectionMode;
+  /** paragraphs of every class: switching class keeps the other class's choice for when they return */
   topicIds: string[];
   tagIds: string[];
   count: number;
@@ -81,7 +76,7 @@ const browserLang = (): BioLang => toBioLang(navigator.language.slice(0, 2) as L
 export const useSession = create<State>()(
   persist(
     (set, get) => ({
-      settings: { lang: browserLang(), mode: "topics", topicIds: [], tagIds: [], count: 10, answerMode: "mixed" },
+      settings: { grade: "sp6", lang: browserLang(), mode: "topics", topicIds: [], tagIds: [], count: 10, answerMode: "mixed" },
       status: "idle",
       error: null,
       partial: null,
@@ -97,17 +92,25 @@ export const useSession = create<State>()(
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       generate: async (override) => {
-        const settings = { ...get().settings, ...override };
+        const current = get().settings;
+        const settings = { ...current, ...override };
+        // a topic list passed in (the start button, "practise the weak ones") replaces the choice of
+        // this class only; what the student picked for the other class stays for when they return
+        if (override?.topicIds) {
+          settings.topicIds = [...current.topicIds.filter((id) => !isInGrade(id, settings.grade)), ...override.topicIds];
+        }
         set({ settings, status: "loading", error: null, partial: null, feedback: { status: "idle" }, sessionId: null });
         // a theme is expanded client-side into the topics that carry it: the server keeps receiving
         // an ordinary topic list, so its allow-list and verification are untouched
         const byTag = settings.mode === "tags" && settings.tagIds.length > 0;
-        const topicIds = byTag ? topicIdsForTags(settings.tagIds) : settings.topicIds;
+        const topicIds = (byTag ? topicIdsForTags(settings.tagIds) : selectedParagraphs(settings)).filter((id) =>
+          isInGrade(id, settings.grade),
+        );
         try {
           const { tasks, sessionId } = await api.generate({
             lang: settings.lang,
-            grade: GRADE,
-            level: LEVEL,
+            grade: settings.grade,
+            level: levelFor(settings.grade),
             topicIds,
             ...(byTag ? { tagIds: settings.tagIds } : {}),
             count: settings.count,
@@ -163,8 +166,8 @@ export const useSession = create<State>()(
         try {
           const data = await api.feedback({
             lang: settings.lang,
-            grade: GRADE,
-            level: LEVEL,
+            grade: settings.grade,
+            level: levelFor(settings.grade),
             results: buildResults(get().tasks, get().answers),
             ...(sessionId ? { sessionId } : {}),
           });
@@ -178,11 +181,15 @@ export const useSession = create<State>()(
       name: "matema-bio-settings",
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ settings: s.settings, seenTaskIds: s.seenTaskIds }),
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => migrateSettings(persisted as Persisted, version),
     },
   ),
 );
+
+/** The chosen paragraphs of the current class that have something to serve. */
+export const selectedParagraphs = (settings: Settings): string[] =>
+  settings.topicIds.filter((id) => isInGrade(id, settings.grade) && (PARAGRAPH_TASKS[id] ?? 0) > 0);
 
 export function buildResults(tasks: Task[], answers: Record<string, AnswerRecord>): TaskResult[] {
   return tasks.map((t) => {

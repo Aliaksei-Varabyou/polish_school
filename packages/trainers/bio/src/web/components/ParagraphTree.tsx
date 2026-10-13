@@ -3,23 +3,24 @@
 // selectable — the tree mirrors the book, so the student can see what is not covered yet.
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CHAPTERS, PARAGRAPH_TASKS, paragraphsOf, type Chapter } from "../../index.ts";
+import { chaptersFor, PARAGRAPH_TASKS, paragraphsOf, type BioGrade, type Chapter } from "../../index.ts";
 import type { BioLang } from "../../lang.ts";
 
 /** A paragraph can be picked only when the pool has something to serve from it. */
 export const hasTasks = (paragraphId: string): boolean => (PARAGRAPH_TASKS[paragraphId] ?? 0) > 0;
 
 interface Props {
+  grade: BioGrade;
   lang: BioLang;
   selected: readonly string[];
   onChange: (ids: string[]) => void;
 }
 
-export function ParagraphTree({ lang, selected, onChange }: Props) {
+export function ParagraphTree({ grade, lang, selected, onChange }: Props) {
   const picked = new Set(selected);
   return (
     <ul className="space-y-2">
-      {CHAPTERS.map((chapter) => (
+      {chaptersFor(grade).map((chapter) => (
         <ChapterRow key={chapter.id} chapter={chapter} lang={lang} picked={picked} onChange={onChange} />
       ))}
     </ul>
@@ -102,7 +103,8 @@ function ChapterRow({ chapter, lang, picked, onChange }: { chapter: Chapter; lan
                   <span className="flex-1 text-sm leading-snug text-slate-700">
                     {p.name[lang]}
                     <span className="mt-0.5 block text-xs text-slate-500">
-                      {t("start.page", { page: p.page })} · {tasks > 0 ? t("start.tasks", { count: tasks }) : t("start.noTasks")}
+                      {p.page !== undefined && `${t("start.page", { page: p.page })} · `}
+                      {tasks > 0 ? t("start.tasks", { count: tasks }) : t("start.noTasks")}
                     </span>
                   </span>
                 </label>

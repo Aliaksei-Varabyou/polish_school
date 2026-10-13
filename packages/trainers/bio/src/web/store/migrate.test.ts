@@ -15,6 +15,15 @@ describe("migrating saved biology settings", () => {
   it("keeps the rest of the settings and leaves current versions alone", () => {
     const current = { settings: { topicIds: ["bio.lo3.motion.joints"], count: 15 }, seenTaskIds: ["x"] };
     expect(migrateSettings({ settings: { topicIds: [], count: 15, lang: "ru" } }, 0).settings).toMatchObject({ count: 15, lang: "ru" });
-    expect(migrateSettings(current, 1)).toBe(current);
+    expect(migrateSettings(current, 2)).toBe(current);
+  });
+
+  it("puts anyone with saved settings on LO3, the only class there was before class 6", () => {
+    expect(migrateSettings({ settings: { topicIds: ["bio.lo3.motion.joints"] } }, 1).settings).toMatchObject({
+      grade: "lo3",
+      topicIds: ["bio.lo3.motion.joints"],
+    });
+    // an older save goes through both steps
+    expect(migrateSettings({ settings: { topicIds: [] } }, 0).settings?.grade).toBe("lo3");
   });
 });

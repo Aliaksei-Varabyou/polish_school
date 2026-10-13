@@ -21,9 +21,9 @@ test("catalog → biology: 5 tasks answered wrongly → results → analysis", a
   await page.getByRole("link", { name: /Биология/ }).click();
   await expect(page).toHaveURL(/\/t\/bio$/);
   await expect(page.getByRole("heading", { name: /Тренажёр по биологии/ })).toBeVisible();
+  await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
 
-  // one year of one track: no class or level picker. The book's 11 chapters are listed, their
-  // paragraphs folded away until a chapter is opened
+  // the LO3 book's 11 chapters are listed, their paragraphs folded away until a chapter is opened
   await expect(page.getByRole("checkbox")).toHaveCount(11);
 
   // a chapter's own checkbox takes all of its paragraphs that have tasks (10.2, 10.3, 10.4)
@@ -74,6 +74,7 @@ test("biology session can be picked by cross-cutting theme instead of by paragra
   const errors = collectErrors(page);
   await page.goto("/t/bio");
   await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
 
   await page.getByRole("radio", { name: "По теме", exact: true }).click();
   await expect(page.getByText("Сквозные темы")).toBeVisible();
@@ -94,6 +95,7 @@ test("a finished paragraph comes back as repeats instead of an empty session", a
   const errors = collectErrors(page);
   await page.goto("/t/bio");
   await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
 
   // §3.4 has only two tasks, so the first session uses it up
   await page.getByText("3. Опорно-двигательная система").click();
@@ -112,3 +114,36 @@ test("a finished paragraph comes back as repeats instead of an empty session", a
   expect(errors).toEqual([]);
 });
 
+
+test("class 6 has its own book: five chapters of zoology, and a session from one of them", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/t/bio");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+
+  // class 6 is the default for a first visit; its book replaces the LO3 one in the tree
+  await expect(page.getByRole("radio", { name: "6 класс", exact: true })).toBeChecked();
+  await expect(page.getByRole("checkbox")).toHaveCount(5);
+  await expect(page.getByRole("checkbox", { name: "1. Мир животных" })).toBeVisible();
+  // no cross-cutting theme reaches class 6, so the theme mode is not offered
+  await expect(page.getByRole("radio", { name: "По теме", exact: true })).toHaveCount(0);
+
+  await page.getByRole("checkbox", { name: "4. Холоднокровные позвоночные" }).check();
+  await expect(page.getByText("Выбрано параграфов: 6")).toBeVisible();
+
+  // each class keeps its own choice: pick something in LO3, then come back to class 6
+  await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
+  await page.getByRole("checkbox", { name: "10. Эндокринная система" }).check();
+  await page.getByRole("radio", { name: "6 класс", exact: true }).click();
+  await expect(page.getByText("Выбрано параграфов: 6")).toBeVisible();
+
+  await page.locator("select").selectOption("5");
+  await page.getByRole("button", { name: "Начать" }).click();
+  await expect(page.getByText("Задание 1 из 5")).toBeVisible();
+
+  // starting a class 6 session must not wipe what was chosen for LO3
+  await page.getByRole("button", { name: "Выйти", exact: true }).click();
+  await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
+  await expect(page.getByText("Выбрано параграфов: 3")).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
