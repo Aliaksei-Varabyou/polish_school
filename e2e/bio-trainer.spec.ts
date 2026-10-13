@@ -26,20 +26,20 @@ test("catalog → biology: 5 tasks answered wrongly → results → analysis", a
   // the LO3 book's 11 chapters are listed, their paragraphs folded away until a chapter is opened
   await expect(page.getByRole("checkbox")).toHaveCount(11);
 
-  // a chapter's own checkbox takes all of its paragraphs that have tasks (10.2, 10.3, 10.4)
+  // a chapter's own checkbox takes all of its paragraphs that have tasks (10.1–10.4)
   const hormones = page.getByRole("checkbox", { name: "10. Эндокринная система" });
   await hormones.check();
-  await expect(page.getByText("Выбрано параграфов: 3")).toBeVisible();
+  await expect(page.getByText("Выбрано параграфов: 4")).toBeVisible();
   await hormones.uncheck();
   await expect(page.getByText("Выбрано параграфов: 0")).toBeVisible();
 
-  // open a chapter and pick paragraphs one by one; one without tasks cannot be picked
-  await page.getByText("3. Опорно-двигательная система").click();
-  await expect(page.getByRole("checkbox", { name: /Движение у животных/ })).toBeDisabled();
+  // open a chapter and pick paragraphs one by one; every paragraph of the book has tasks now
+  await page.getByText("3. Опорно-двигательная система").last().click(); // the tree, below the lessons card
+  await expect(page.getByRole("checkbox", { name: /Движение у животных/ })).toBeEnabled();
   await page.getByRole("checkbox", { name: /Типы соединений костей/ }).check();
   await page.getByRole("checkbox", { name: /Строение и работа мышечной системы/ }).check();
   await expect(page.getByText("Выбрано параграфов: 2")).toBeVisible();
-  await expect(page.getByText("2/4")).toBeVisible();
+  await expect(page.getByText("2/6")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "3. Опорно-двигательная система" })).not.toBeChecked();
 
   await page.getByRole("radio", { name: "Ввод ответа", exact: true }).click();
@@ -97,16 +97,16 @@ test("a finished paragraph comes back as repeats instead of an empty session", a
   await page.getByRole("radio", { name: "RU", exact: true }).click();
   await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
 
-  // §3.4 has only two tasks, so the first session uses it up
-  await page.getByText("3. Опорно-двигательная система").click();
-  await page.getByRole("checkbox", { name: /Элементы скелета/ }).check();
-  await page.locator("select").selectOption("5");
+  // §10.1 has fourteen tasks, so a session of fifteen uses it up
+  await page.getByText("10. Эндокринная система").last().click();
+  await page.getByRole("checkbox", { name: /Эндокринная система у животных/ }).check();
+  await page.locator("select").selectOption("15");
 
   for (const round of [1, 2]) {
     await page.getByRole("button", { name: "Начать" }).click();
-    await expect(page.getByText("Задание 1 из 2")).toBeVisible();
-    await expect(page.getByText("Подготовлено 2 из 5 заданий.")).toBeVisible();
-    const notice = page.getByText(/Новые задания в выбранных параграфах закончились — 2 из них повторяются/);
+    await expect(page.getByText("Задание 1 из 14")).toBeVisible();
+    await expect(page.getByText("Подготовлено 14 из 15 заданий.")).toBeVisible();
+    const notice = page.getByText(/Новые задания в выбранных параграфах закончились — 14 из них повторяются/);
     await expect(notice).toHaveCount(round === 1 ? 0 : 1);
     await page.getByRole("button", { name: "Выйти", exact: true }).click(); // the confirm is accepted by collectErrors
   }
@@ -143,7 +143,7 @@ test("class 6 has its own book: five chapters of zoology, and a session from one
   // starting a class 6 session must not wipe what was chosen for LO3
   await page.getByRole("button", { name: "Выйти", exact: true }).click();
   await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
-  await expect(page.getByText("Выбрано параграфов: 3")).toBeVisible();
+  await expect(page.getByText("Выбрано параграфов: 4")).toBeVisible();
 
   expect(errors).toEqual([]);
 });
