@@ -25,9 +25,14 @@ const LESSONS: Record<string, Lesson> = {
   [P6.arthropods.molluscs]: lazy(() => import("./molluscs/MolluscsLesson.tsx")),
   [P6.ectotherms.amphibians]: lazy(() => import("./amphibians/AmphibiansLesson.tsx")),
   [P6.ectotherms.fish]: lazy(() => import("./fish/FishLesson.tsx")),
+  [P6.ectotherms["fish-diversity"]]: lazy(() => import("./diversity/FishDiversity.tsx")),
+  [P6.ectotherms["amphibian-diversity"]]: lazy(() => import("./diversity/AmphibianDiversity.tsx")),
+  [P6.ectotherms["reptile-diversity"]]: lazy(() => import("./diversity/ReptileDiversity.tsx")),
   [P6.ectotherms.reptiles]: lazy(() => import("./reptiles/ReptilesLesson.tsx")),
   [P6.endotherms.birds]: lazy(() => import("./birds/BirdsLesson.tsx")),
+  [P6.endotherms["bird-diversity"]]: lazy(() => import("./diversity/BirdDiversity.tsx")),
   [P6.endotherms.mammals]: lazy(() => import("./mammals/MammalsLesson.tsx")),
+  [P6.endotherms["mammal-diversity"]]: lazy(() => import("./diversity/MammalDiversity.tsx")),
 };
 
 export const hasLesson = (paragraphId: string): boolean => paragraphId in LESSONS;

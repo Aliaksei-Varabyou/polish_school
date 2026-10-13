@@ -4,6 +4,7 @@
 // - MatchQuiz: one question at a time, pick the fitting option
 // - CycleDiagram: a life cycle as a ring of stages, with where to break it
 // - CompareTabs: groups side by side, the same features in every tab
+// - SpeciesGallery: species cards that open a description
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
@@ -634,6 +635,60 @@ export function CompareTabs({ lang, cards }: { lang: BioLang; cards: CompareCard
           </table>
           {card.text && <p className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-[15px] leading-relaxed text-emerald-950 ring-1 ring-emerald-200">{card.text[lang]}</p>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- SpeciesGallery ----------
+
+export interface Species {
+  icon: string;
+  name: Txt;
+  text: Txt;
+  /** a short badge, e.g. "protected" or "migratory" */
+  tag?: Txt;
+}
+
+/** A grid of species cards; tapping one opens its description. */
+export function SpeciesGallery({ lang, items }: { lang: BioLang; items: Species[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const item = open === null ? null : items[open];
+  return (
+    <div>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {items.map((s, i) => (
+          <li key={s.name.pl}>
+            <button
+              type="button"
+              aria-pressed={open === i}
+              onClick={() => setOpen(open === i ? null : i)}
+              className={`flex h-full w-full flex-col items-center gap-1 rounded-xl p-3 text-center ring-1 transition-colors ${
+                open === i ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-3xl" aria-hidden>
+                {s.icon}
+              </span>
+              <span className="text-sm leading-tight font-medium text-slate-800">{s.name[lang]}</span>
+              {s.tag && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">{s.tag[lang]}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3" aria-live="polite">
+        {item ? (
+          <p className="rounded-xl bg-emerald-50 px-4 py-3 text-[15px] leading-relaxed text-emerald-950 ring-1 ring-emerald-200">
+            <span className="font-semibold">
+              {item.icon} {item.name[lang]}.
+            </span>{" "}
+            {item.text[lang]}
+          </p>
+        ) : (
+          <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+            👆 {lang === "pl" ? "Dotknij karty, żeby poznać gatunek." : "Нажми на карточку, чтобы узнать о виде."}
+          </p>
+        )}
       </div>
     </div>
   );

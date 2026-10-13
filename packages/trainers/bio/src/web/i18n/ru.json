@@ -104,6 +104,7 @@
     "practiceShort": "Проверить себя",
     "practiceTitle": "Проверь себя",
     "practiceHint": "Тест по этому параграфу (заданий в банке: {{count}}).",
-    "practice": "Начать тест по теме"
+    "practice": "Начать тест по теме",
+    "chapterCount": "уроков: {{count}}"
   }
 }
