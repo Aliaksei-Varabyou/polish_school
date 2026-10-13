@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { chaptersFor, PARAGRAPH_TASKS, paragraphsOf, type BioGrade, type Chapter } from "../../index.ts";
 import type { BioLang } from "../../lang.ts";
+import { hasLesson } from "../lessons/index.ts";
 
 /** A paragraph can be picked only when the pool has something to serve from it. */
 export const hasTasks = (paragraphId: string): boolean => (PARAGRAPH_TASKS[paragraphId] ?? 0) > 0;
@@ -14,20 +15,34 @@ interface Props {
   lang: BioLang;
   selected: readonly string[];
   onChange: (ids: string[]) => void;
+  /** paragraphs that have an interactive explanation get a button that opens it */
+  onOpenLesson?: (paragraphId: string) => void;
 }
 
-export function ParagraphTree({ grade, lang, selected, onChange }: Props) {
+export function ParagraphTree({ grade, lang, selected, onChange, onOpenLesson }: Props) {
   const picked = new Set(selected);
   return (
     <ul className="space-y-2">
       {chaptersFor(grade).map((chapter) => (
-        <ChapterRow key={chapter.id} chapter={chapter} lang={lang} picked={picked} onChange={onChange} />
+        <ChapterRow key={chapter.id} chapter={chapter} lang={lang} picked={picked} onChange={onChange} onOpenLesson={onOpenLesson} />
       ))}
     </ul>
   );
 }
 
-function ChapterRow({ chapter, lang, picked, onChange }: { chapter: Chapter; lang: BioLang; picked: Set<string>; onChange: (ids: string[]) => void }) {
+function ChapterRow({
+  chapter,
+  lang,
+  picked,
+  onChange,
+  onOpenLesson,
+}: {
+  chapter: Chapter;
+  lang: BioLang;
+  picked: Set<string>;
+  onChange: (ids: string[]) => void;
+  onOpenLesson?: (paragraphId: string) => void;
+}) {
   const { t } = useTranslation("bio");
   const paragraphs = paragraphsOf(chapter.id);
   const active = paragraphs.filter((p) => hasTasks(p.id));
@@ -86,9 +101,9 @@ function ChapterRow({ chapter, lang, picked, onChange }: { chapter: Chapter; lan
             const tasks = PARAGRAPH_TASKS[p.id] ?? 0;
             const checked = picked.has(p.id);
             return (
-              <li key={p.id}>
+              <li key={p.id} className="flex items-start gap-1">
                 <label
-                  className={`flex items-start gap-3 rounded-lg px-2 py-1.5 ${
+                  className={`flex flex-1 items-start gap-3 rounded-lg px-2 py-1.5 ${
                     tasks === 0 ? "cursor-not-allowed opacity-50" : checked ? "cursor-pointer bg-emerald-100/70" : "cursor-pointer hover:bg-slate-50"
                   }`}
                 >
@@ -108,6 +123,16 @@ function ChapterRow({ chapter, lang, picked, onChange }: { chapter: Chapter; lan
                     </span>
                   </span>
                 </label>
+                {onOpenLesson && hasLesson(p.id) && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenLesson(p.id)}
+                    aria-label={t("lesson.openFor", { name: p.name[lang] })}
+                    className="mt-1 shrink-0 rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap text-emerald-700 ring-1 ring-emerald-300 hover:bg-emerald-50"
+                  >
+                    📖 {t("lesson.open")}
+                  </button>
+                )}
               </li>
             );
           })}

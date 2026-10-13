@@ -89,5 +89,19 @@
     "practiceWeak": "Practise weak sections",
     "noMistakes": "No mistakes — keep it up!",
     "savedToHistory": "Saved to history"
+  },
+  "lesson": {
+    "listTitle": "Explanations",
+    "listHint": "Interactive study material: understand the topic, then check yourself with a test.",
+    "open": "Explanation",
+    "openFor": "Explanation: {{name}}",
+    "back": "Back to topics",
+    "kicker": "Explanation",
+    "loading": "Loading the lesson…",
+    "missing": "There is no explanation for this paragraph yet.",
+    "practiceShort": "Test yourself",
+    "practiceTitle": "Test yourself",
+    "practiceHint": "A test on this paragraph — {{count}} tasks in the bank.",
+    "practice": "Start a test on this topic"
   }
 }

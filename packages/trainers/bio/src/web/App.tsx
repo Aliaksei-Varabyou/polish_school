@@ -1,8 +1,9 @@
 import type { TrainerAppProps } from "@portal/trainer-sdk";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { isBioLang } from "../lang.ts";
 import { setTokenGetter } from "./api/client.ts";
+import { LessonPage } from "./lessons/LessonPage.tsx";
 import { LoadingScreen } from "./pages/LoadingScreen.tsx";
 import { ResultsPage } from "./pages/ResultsPage.tsx";
 import { StartPage } from "./pages/StartPage.tsx";
@@ -19,6 +20,11 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
   const storeLang = useSession((s) => s.settings.lang);
   const grade = useSession((s) => s.settings.grade);
   const setSettings = useSession((s) => s.setSettings);
+  const generate = useSession((s) => s.generate);
+  // the explanation open on top of the start page; kept out of the session store on purpose —
+  // a lesson is not a test and leaves the session untouched until the student starts one
+  const [lessonId, setLessonId] = useState<string | null>(null);
+  const showLesson = status === "idle" && lessonId !== null;
 
   // Tasks follow the portal language — but only where biology has content. On English the store
   // keeps its own choice and the start page asks for one instead of requesting an empty session.
@@ -39,9 +45,20 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
           <span className="mr-2">🧬</span>
           {t("app.title")}
         </h1>
-        {status === "idle" && <p className="mt-1 text-sm text-slate-500">{t(`app.subtitle_${grade}`)}</p>}
+        {status === "idle" && !showLesson && <p className="mt-1 text-sm text-slate-500">{t(`app.subtitle_${grade}`)}</p>}
       </div>
-      {status === "idle" && <StartPage portalLang={lang} />}
+      {showLesson && (
+        <LessonPage
+          paragraphId={lessonId}
+          lang={storeLang}
+          onClose={() => setLessonId(null)}
+          onPractice={() => {
+            setLessonId(null);
+            void generate({ mode: "topics", topicIds: [lessonId] });
+          }}
+        />
+      )}
+      {status === "idle" && !showLesson && <StartPage portalLang={lang} onOpenLesson={setLessonId} />}
       {status === "loading" && <LoadingScreen />}
       {status === "active" && <TrainerPage />}
       {status === "finished" && <ResultsPage />}
