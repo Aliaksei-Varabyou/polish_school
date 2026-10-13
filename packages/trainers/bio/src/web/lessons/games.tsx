@@ -2,6 +2,7 @@
 // - PartMap: a drawing whose parts explain themselves when tapped, with an optional "label it" mode
 // - TwoWaySort: sort items into two groups
 // - MatchQuiz: one question at a time, pick the fitting option
+// - CycleDiagram: a life cycle as a ring of stages, with where to break it
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
@@ -457,6 +458,126 @@ export function MatchQuiz({
           <Choice onClick={restart}>↺ {KIT.again[lang]}</Choice>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- CycleDiagram ----------
+
+export interface CycleStage {
+  icon: string;
+  name: Txt;
+  text: Txt;
+  /** what a person can do at this step to break the cycle */
+  prevent?: Txt;
+}
+
+const C = {
+  prev: { pl: "Wstecz", ru: "Назад" },
+  shield: { pl: "🛡 Pokaż, gdzie można przerwać cykl", ru: "🛡 Показать, где можно разорвать цикл" },
+  breakHere: { pl: "Tu przerwiesz cykl:", ru: "Здесь цикл можно разорвать:" },
+  step: { pl: "Etap", ru: "Этап" },
+} satisfies Record<string, Txt>;
+
+/** A life cycle drawn as a ring of stages; step through it, and optionally see where to break it. */
+export function CycleDiagram({ lang, title, stages }: { lang: BioLang; title: Txt; stages: CycleStage[] }) {
+  const [i, setI] = useState(0);
+  const [shield, setShield] = useState(false);
+  const n = stages.length;
+  const stage = stages[i]!;
+  const R = 92;
+  const at = (k: number) => {
+    const a = -Math.PI / 2 + (k / n) * Math.PI * 2;
+    return [130 + R * Math.cos(a), 125 + R * Math.sin(a)] as const;
+  };
+  const go = (k: number) => setI((k + n) % n);
+  return (
+    <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <svg viewBox="0 0 260 250" className="mx-auto w-full max-w-[360px] select-none" role="img" aria-label={title[lang]}>
+        <defs>
+          <marker id="cycle-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L 10 5 L 0 10 Z" fill="#94a3b8" />
+          </marker>
+        </defs>
+        <circle cx={130} cy={125} r={R} fill="none" stroke="#e2e8f0" strokeWidth={10} />
+        {stages.map((_, k) => {
+          const a0 = -Math.PI / 2 + ((k + 0.28) / n) * Math.PI * 2;
+          const a1 = -Math.PI / 2 + ((k + 0.72) / n) * Math.PI * 2;
+          return (
+            <path
+              key={`arc${k}`}
+              d={`M${130 + R * Math.cos(a0)} ${125 + R * Math.sin(a0)} A ${R} ${R} 0 0 1 ${130 + R * Math.cos(a1)} ${125 + R * Math.sin(a1)}`}
+              fill="none"
+              stroke="#94a3b8"
+              strokeWidth={2.5}
+              markerEnd="url(#cycle-arrow)"
+            />
+          );
+        })}
+        {stages.map((s, k) => {
+          const [x, y] = at(k);
+          const on = k === i;
+          return (
+            <g
+              key={k}
+              role="button"
+              tabIndex={0}
+              aria-label={`${C.step[lang]} ${k + 1}: ${s.name[lang]}`}
+              aria-pressed={on}
+              onClick={() => go(k)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  go(k);
+                }
+              }}
+              className="cursor-pointer outline-none"
+            >
+              <circle cx={x} cy={y} r={on ? 25 : 21} fill={on ? "#d1fae5" : "white"} stroke={on ? "#059669" : "#cbd5e1"} strokeWidth={on ? 3 : 2} />
+              <text x={x} y={y + 7} textAnchor="middle" fontSize={on ? 22 : 19}>
+                {s.icon}
+              </text>
+              {shield && s.prevent && (
+                <g>
+                  <circle cx={x + 17} cy={y - 17} r={9} fill="#f59e0b" stroke="white" strokeWidth={2} />
+                  <text x={x + 17} y={y - 13} textAnchor="middle" fontSize={10}>
+                    ✋
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+        <text x={130} y={122} textAnchor="middle" fontSize={11} fill="#64748b">
+          {C.step[lang]}
+        </text>
+        <text x={130} y={140} textAnchor="middle" fontSize={18} fontWeight={700} fill="#0f172a">
+          {i + 1} / {n}
+        </text>
+      </svg>
+      <div className="space-y-3">
+        <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200" aria-live="polite">
+          <h3 className="text-base font-semibold text-emerald-900">
+            {stage.icon} {stage.name[lang]}
+          </h3>
+          <p className="mt-1.5 text-[15px] leading-relaxed text-emerald-950">{stage.text[lang]}</p>
+          {shield && stage.prevent && (
+            <p className="mt-2 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-950">
+              <span className="font-semibold">✋ {C.breakHere[lang]}</span> {stage.prevent[lang]}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Choice onClick={() => go(i - 1)}>‹ {C.prev[lang]}</Choice>
+          <Choice state="active" onClick={() => go(i + 1)}>
+            {KIT.next[lang]} ›
+          </Choice>
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={shield} onChange={(e) => setShield(e.target.checked)} className="h-4 w-4 accent-amber-500" />
+          {C.shield[lang]}
+        </label>
+      </div>
     </div>
   );
 }

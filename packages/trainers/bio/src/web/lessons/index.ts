@@ -13,6 +13,10 @@ const tissues = lazy(() => import("./tissues/TissuesLesson.tsx"));
 const LESSONS: Record<string, Lesson> = {
   [P6.animals.tissues]: tissues,
   [P6.animals.connective]: tissues,
+  [P6.worms.cnidarians]: lazy(() => import("./cnidarians/CnidariansLesson.tsx")),
+  [P6.worms.flatworms]: lazy(() => import("./flatworms/FlatwormsLesson.tsx")),
+  [P6.worms.roundworms]: lazy(() => import("./roundworms/RoundwormsLesson.tsx")),
+  [P6.worms.annelids]: lazy(() => import("./annelids/AnnelidsLesson.tsx")),
   [P6.arthropods.insects]: lazy(() => import("./insects/InsectsLesson.tsx")),
   [P6.ectotherms.amphibians]: lazy(() => import("./amphibians/AmphibiansLesson.tsx")),
   [P6.ectotherms.fish]: lazy(() => import("./fish/FishLesson.tsx")),

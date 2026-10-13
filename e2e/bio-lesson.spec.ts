@@ -263,3 +263,84 @@ test("class 6 lesson on mammals: hidden features, teeth, 37 degrees, how they ar
   await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("class 6 lesson on cnidarians: hydra, stinging cell, polyp or medusa, symmetry", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /2\.1\s*Кишечнополостные/);
+  const map = page.locator("#cnidarians-s1");
+  await map.getByRole("button", { name: "Почка", exact: true }).last().click();
+  await expect(map.getByText(/Это почкование/)).toBeVisible();
+
+  const stinger = page.locator("#cnidarians-s2");
+  await stinger.getByRole("button", { name: /Задеть чувствительный волосок/ }).click();
+  await expect(stinger.getByRole("button", { name: /Заново/ })).toBeVisible();
+
+  const sort = page.locator("#cnidarians-s3");
+  const row = sort.getByRole("listitem").filter({ hasText: "гидра" });
+  await row.getByRole("button", { name: "полип" }).click();
+  await expect(row.getByText(/полип живёт прикреплённым/)).toBeVisible();
+
+  const sym = page.locator("#cnidarians-s4");
+  await sym.getByRole("slider").first().fill("60");
+  await expect(sym.getByText(/Это плоскость симметрии/).first()).toBeVisible();
+  await sym.getByRole("slider").last().fill("60");
+  await expect(sym.getByText(/Половинки не одинаковы/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on flatworms: planarian, tapeworm, life cycle with where to break it", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /2\.2\s*Плоские черви/);
+  await page.locator("#flatworms-s1").getByRole("button", { name: "Ветвистый кишечник", exact: true }).last().click();
+  await expect(page.locator("#flatworms-s1").getByText(/только одно отверстие/)).toBeVisible();
+
+  const tw = page.locator("#flatworms-s2");
+  await tw.getByRole("radio", { name: "Бычий цепень" }).click();
+  await expect(tw.getByText(/только четыре присоски/)).toBeVisible();
+
+  const cycle = page.locator("#flatworms-s3");
+  await cycle.getByRole("button", { name: /Этап 4/ }).click();
+  await expect(cycle.getByRole("heading", { name: /Финны в мышцах свиньи/ })).toBeVisible();
+  await cycle.getByLabel(/где можно разорвать цикл/).check();
+  await expect(cycle.getByText(/Ветеринар проверяет мясо/)).toBeVisible();
+  await cycle.getByRole("button", { name: /Дальше/ }).click();
+  await expect(cycle.getByText(/Хорошо проваривай/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on roundworms: ascaris, its cycle, the detective quiz, habits", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /2\.3\s*Круглые черви/);
+  await page.locator("#roundworms-s1").getByRole("button", { name: "Пищеварительная трубка", exact: true }).last().click();
+  await expect(page.locator("#roundworms-s1").getByText(/здесь их два/)).toBeVisible();
+
+  const quiz = page.locator("#roundworms-s3");
+  await quiz.getByRole("button", { name: "острица", exact: true }).click();
+  await expect(quiz.getByText(/другим путём/)).toBeVisible();
+  await quiz.getByRole("button", { name: "человеческая аскарида", exact: true }).click();
+  await expect(quiz.getByText(/яйца аскариды/)).toBeVisible();
+
+  const habits = page.locator("#roundworms-s4");
+  const row = habits.getByRole("listitem").filter({ hasText: "грызть ногти" });
+  await row.getByRole("button", { name: "опасно" }).click();
+  await expect(row.getByText(/попадают в рот/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on annelids: earthworm, crawling, soil, quiz → test", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /2\.4\s*Кольчатые черви/);
+  await page.locator("#annelids-s1").getByRole("button", { name: "Кожно-мускульный мешок", exact: true }).last().click();
+  await expect(page.locator("#annelids-s1").getByText(/кольцевые и продольные/)).toBeVisible();
+  await page.locator("#annelids-s2").getByRole("button", { name: /Ползи/ }).click();
+  await expect(page.locator("#annelids-s2").getByRole("button", { name: /Стоп/ })).toBeVisible();
+  await page.locator("#annelids-s3").getByRole("radio", { name: "С червями" }).click();
+  await expect(page.locator("#annelids-s3").getByText(/друзья садоводов/)).toBeVisible();
+  const quiz = page.locator("#annelids-s4");
+  await quiz.getByRole("button", { name: "дождевой червь", exact: true }).click();
+  await expect(quiz.getByText(/рыхлит почву и создаёт гумус/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Начать тест по теме" }).click();
+  await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
