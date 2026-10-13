@@ -162,3 +162,104 @@ test("class 6 lesson on birds: inner organs, flight builder, beaks, egg", async 
   await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+async function openLesson(page: Page, name: RegExp) {
+  await page.goto("/t/bio");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await page.getByRole("radio", { name: "6 класс", exact: true }).click();
+  await page.getByRole("button", { name }).click();
+}
+
+test("class 6 lesson on tissues serves both tissue paragraphs", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /1\.3\s*Соединительная ткань/);
+  await expect(page.getByRole("heading", { name: "Соединительная ткань" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ткани под микроскопом" })).toBeVisible();
+
+  const scope = page.locator("#tissues-s1");
+  await scope.getByRole("button", { name: "Хрящевая ткань" }).click();
+  await expect(scope.getByRole("img", { name: /Хрящевая ткань/ })).toBeVisible();
+  await expect(scope.getByText(/уменьшает трение в суставах/)).toBeVisible();
+
+  const neuron = page.locator("#tissues-s2");
+  await neuron.getByRole("button", { name: "Аксон", exact: true }).last().click();
+  await expect(neuron.getByText(/Один длинный отросток/)).toBeVisible();
+  await neuron.getByRole("button", { name: /Отправить импульс/ }).click();
+
+  const blood = page.locator("#tissues-s3");
+  await blood.getByRole("button", { name: "Тромбоциты", exact: true }).last().click();
+  await expect(blood.getByText(/помогают крови свернуться/)).toBeVisible();
+
+  const quiz = page.locator("#tissues-s4");
+  await quiz.getByRole("button", { name: "мышечная", exact: true }).click();
+  await expect(quiz.getByText(/не она/)).toBeVisible();
+  await quiz.getByRole("button", { name: "эпителиальная", exact: true }).click();
+  await expect(quiz.getByText(/Это эпителиальная ткань/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on fish: gills, swim bladder, organ quiz", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /4\.1\s*Рыбы/);
+  const map = page.locator("#fish-s1");
+  await map.getByRole("button", { name: "Плавательный пузырь", exact: true }).last().click();
+  await expect(map.getByText(/Тонкостенный мешок с газом/)).toBeVisible();
+
+  const bladder = page.locator("#fish-s3");
+  await bladder.getByRole("slider").fill("10");
+  await expect(bladder.getByText(/опускается ко дну/)).toBeVisible();
+  await bladder.getByRole("slider").fill("90");
+  await expect(bladder.getByText(/всплывает к поверхности/)).toBeVisible();
+
+  const quiz = page.locator("#fish-s4");
+  await quiz.getByRole("button", { name: "хвостовой плавник", exact: true }).click();
+  await expect(quiz.getByText(/главный двигатель/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on reptiles: autotomy, amphibian or reptile, the drying test, species", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /4\.5\s*Пресмыкающиеся/);
+  const map = page.locator("#reptiles-s1");
+  await map.getByRole("button", { name: "Хвост (автотомия)", exact: true }).last().click();
+  await expect(map.getByText(/отбросить — это автотомия/)).toBeVisible();
+
+  const sort = page.locator("#reptiles-s2");
+  const row = sort.getByRole("listitem").filter({ hasText: "наружное оплодотворение" });
+  await row.getByRole("button", { name: "земноводное" }).click();
+  await expect(row.getByText(/вне тела самки/)).toBeVisible();
+
+  const dry = page.locator("#reptiles-s3");
+  await dry.getByRole("slider").fill("8");
+  await expect(dry.getByText(/Икра высохла/)).toBeVisible();
+
+  const quiz = page.locator("#reptiles-s4");
+  await quiz.getByRole("button", { name: "обыкновенная гадюка", exact: true }).click();
+  await expect(quiz.getByText(/спокойно отойди/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on mammals: hidden features, teeth, 37 degrees, how they are born", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /5\.3\s*Млекопитающие/);
+  const map = page.locator("#mammals-s1");
+  await map.getByRole("button", { name: "Молочные железы", exact: true }).last().click();
+  await expect(map.getByText(/Главный признак млекопитающих/)).toBeVisible();
+
+  const teeth = page.locator("#mammals-s2");
+  await teeth.getByRole("radio", { name: /Бобр/ }).click();
+  await expect(teeth.getByText(/растёт всю жизнь/)).toBeVisible();
+
+  const warm = page.locator("#mammals-s3");
+  await expect(warm.getByText(/Мышцы дрожат/)).toBeVisible();
+  await warm.getByRole("slider").fill("34");
+  await expect(warm.getByText(/испаряя воду с языка/)).toBeVisible();
+
+  const quiz = page.locator("#mammals-s4");
+  await quiz.getByRole("button", { name: /однопроходные/ }).click();
+  await expect(quiz.getByText(/Утконос откладывает яйца/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Начать тест по теме" }).click();
+  await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
