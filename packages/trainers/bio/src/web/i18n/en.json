@@ -102,6 +102,7 @@
     "practiceShort": "Test yourself",
     "practiceTitle": "Test yourself",
     "practiceHint": "A test on this paragraph — {{count}} tasks in the bank.",
-    "practice": "Start a test on this topic"
+    "practice": "Start a test on this topic",
+    "chapterCount": "lessons: {{count}}"
   }
 }

@@ -1,7 +1,7 @@
 import { TASK_COUNTS, type AnswerMode } from "@portal/core";
 import { Button, Card, Label, Segmented } from "@portal/ui";
 import { useTranslation } from "react-i18next";
-import { BIO_GRADES, paragraphsFor, tagsFor, type BioGrade } from "../../index.ts";
+import { BIO_GRADES, chaptersFor, paragraphsFor, tagsFor, type BioGrade } from "../../index.ts";
 import { BIO_LANGS, isBioLang, type BioLang } from "../../lang.ts";
 import { hasTasks, ParagraphTree } from "../components/ParagraphTree.tsx";
 import { hasLesson } from "../lessons/index.ts";
@@ -76,20 +76,42 @@ export function StartPage({ portalLang, onOpenLesson }: { portalLang: string; on
         <Card>
           <h2 className="text-lg font-semibold text-slate-800">📖 {t("lesson.listTitle")}</h2>
           <p className="mt-1 mb-3 text-sm text-slate-500">{t("lesson.listHint")}</p>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {lessons.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => onOpenLesson(p.id)}
-                  className="flex w-full items-start gap-3 rounded-xl bg-emerald-50 px-3 py-2.5 text-left ring-1 ring-emerald-200 transition-colors hover:bg-emerald-100"
-                >
-                  <span className="w-9 shrink-0 text-sm text-emerald-700 tabular-nums">{p.number}</span>
-                  <span className="flex-1 text-sm leading-snug font-medium text-slate-800">{p.name[settings.lang]}</span>
-                  <span aria-hidden className="text-emerald-600">→</span>
-                </button>
-              </li>
-            ))}
+          {/* folded by chapter: with a lesson for every paragraph a flat list would push the test settings far down */}
+          <ul className="space-y-2">
+            {chaptersFor(grade).map((chapter) => {
+              const inChapter = lessons.filter((p) => p.chapterId === chapter.id);
+              if (inChapter.length === 0) return null;
+              return (
+                <li key={chapter.id}>
+                  <details className="group rounded-xl bg-emerald-50/60 ring-1 ring-emerald-200">
+                    <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+                      <span className="flex-1 text-sm leading-snug font-medium text-slate-800">
+                        {chapter.number}. {chapter.name[settings.lang]}
+                      </span>
+                      <span className="shrink-0 text-xs whitespace-nowrap text-emerald-700">{t("lesson.chapterCount", { count: inChapter.length })}</span>
+                      <span aria-hidden className="shrink-0 text-slate-400 transition-transform group-open:rotate-90">
+                        ›
+                      </span>
+                    </summary>
+                    <ul className="grid gap-1.5 px-2 pb-2 sm:grid-cols-2">
+                      {inChapter.map((p) => (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            onClick={() => onOpenLesson(p.id)}
+                            className="flex w-full items-start gap-3 rounded-lg bg-white px-3 py-2 text-left ring-1 ring-emerald-200 transition-colors hover:bg-emerald-100"
+                          >
+                            <span className="w-9 shrink-0 text-sm text-emerald-700 tabular-nums">{p.number}</span>
+                            <span className="flex-1 text-sm leading-snug text-slate-800">{p.name[settings.lang]}</span>
+                            <span aria-hidden className="text-emerald-600">→</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         </Card>
       )}

@@ -2,6 +2,9 @@
 // - PartMap: a drawing whose parts explain themselves when tapped, with an optional "label it" mode
 // - TwoWaySort: sort items into two groups
 // - MatchQuiz: one question at a time, pick the fitting option
+// - CycleDiagram: a life cycle as a ring of stages, with where to break it
+// - CompareTabs: groups side by side, the same features in every tab
+// - SpeciesGallery: species cards that open a description
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
@@ -457,6 +460,236 @@ export function MatchQuiz({
           <Choice onClick={restart}>↺ {KIT.again[lang]}</Choice>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- CycleDiagram ----------
+
+export interface CycleStage {
+  icon: string;
+  name: Txt;
+  text: Txt;
+  /** what a person can do at this step to break the cycle */
+  prevent?: Txt;
+}
+
+const C = {
+  prev: { pl: "Wstecz", ru: "Назад" },
+  shield: { pl: "🛡 Pokaż, gdzie można przerwać cykl", ru: "🛡 Показать, где можно разорвать цикл" },
+  breakHere: { pl: "Tu przerwiesz cykl:", ru: "Здесь цикл можно разорвать:" },
+  step: { pl: "Etap", ru: "Этап" },
+} satisfies Record<string, Txt>;
+
+/** A life cycle drawn as a ring of stages; step through it, and optionally see where to break it. */
+export function CycleDiagram({ lang, title, stages }: { lang: BioLang; title: Txt; stages: CycleStage[] }) {
+  const [i, setI] = useState(0);
+  const [shield, setShield] = useState(false);
+  const n = stages.length;
+  const stage = stages[i]!;
+  const R = 92;
+  const at = (k: number) => {
+    const a = -Math.PI / 2 + (k / n) * Math.PI * 2;
+    return [130 + R * Math.cos(a), 125 + R * Math.sin(a)] as const;
+  };
+  const go = (k: number) => setI((k + n) % n);
+  return (
+    <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <svg viewBox="0 0 260 250" className="mx-auto w-full max-w-[360px] select-none" role="img" aria-label={title[lang]}>
+        <defs>
+          <marker id="cycle-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L 10 5 L 0 10 Z" fill="#94a3b8" />
+          </marker>
+        </defs>
+        <circle cx={130} cy={125} r={R} fill="none" stroke="#e2e8f0" strokeWidth={10} />
+        {stages.map((_, k) => {
+          const a0 = -Math.PI / 2 + ((k + 0.28) / n) * Math.PI * 2;
+          const a1 = -Math.PI / 2 + ((k + 0.72) / n) * Math.PI * 2;
+          return (
+            <path
+              key={`arc${k}`}
+              d={`M${130 + R * Math.cos(a0)} ${125 + R * Math.sin(a0)} A ${R} ${R} 0 0 1 ${130 + R * Math.cos(a1)} ${125 + R * Math.sin(a1)}`}
+              fill="none"
+              stroke="#94a3b8"
+              strokeWidth={2.5}
+              markerEnd="url(#cycle-arrow)"
+            />
+          );
+        })}
+        {stages.map((s, k) => {
+          const [x, y] = at(k);
+          const on = k === i;
+          return (
+            <g
+              key={k}
+              role="button"
+              tabIndex={0}
+              aria-label={`${C.step[lang]} ${k + 1}: ${s.name[lang]}`}
+              aria-pressed={on}
+              onClick={() => go(k)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  go(k);
+                }
+              }}
+              className="cursor-pointer outline-none"
+            >
+              <circle cx={x} cy={y} r={on ? 25 : 21} fill={on ? "#d1fae5" : "white"} stroke={on ? "#059669" : "#cbd5e1"} strokeWidth={on ? 3 : 2} />
+              <text x={x} y={y + 7} textAnchor="middle" fontSize={on ? 22 : 19}>
+                {s.icon}
+              </text>
+              {shield && s.prevent && (
+                <g>
+                  <circle cx={x + 17} cy={y - 17} r={9} fill="#f59e0b" stroke="white" strokeWidth={2} />
+                  <text x={x + 17} y={y - 13} textAnchor="middle" fontSize={10}>
+                    ✋
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+        <text x={130} y={122} textAnchor="middle" fontSize={11} fill="#64748b">
+          {C.step[lang]}
+        </text>
+        <text x={130} y={140} textAnchor="middle" fontSize={18} fontWeight={700} fill="#0f172a">
+          {i + 1} / {n}
+        </text>
+      </svg>
+      <div className="space-y-3">
+        <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200" aria-live="polite">
+          <h3 className="text-base font-semibold text-emerald-900">
+            {stage.icon} {stage.name[lang]}
+          </h3>
+          <p className="mt-1.5 text-[15px] leading-relaxed text-emerald-950">{stage.text[lang]}</p>
+          {shield && stage.prevent && (
+            <p className="mt-2 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-950">
+              <span className="font-semibold">✋ {C.breakHere[lang]}</span> {stage.prevent[lang]}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Choice onClick={() => go(i - 1)}>‹ {C.prev[lang]}</Choice>
+          <Choice state="active" onClick={() => go(i + 1)}>
+            {KIT.next[lang]} ›
+          </Choice>
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={shield} onChange={(e) => setShield(e.target.checked)} className="h-4 w-4 accent-amber-500" />
+          {C.shield[lang]}
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// ---------- CompareTabs ----------
+
+export interface CompareCard {
+  id: string;
+  icon: string;
+  name: Txt;
+  art?: ReactNode;
+  /** the same row labels, in the same order, on every card, so switching tabs compares them */
+  rows: { label: Txt; value: Txt }[];
+  text?: Txt;
+}
+
+/** Groups side by side: one tab per group, each with a drawing and a table of the same features. */
+export function CompareTabs({ lang, cards }: { lang: BioLang; cards: CompareCard[] }) {
+  const [id, setId] = useState(cards[0]!.id);
+  const card = cards.find((c) => c.id === id)!;
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap gap-2" role="radiogroup">
+        {cards.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="radio"
+            aria-checked={c.id === id}
+            onClick={() => setId(c.id)}
+            className={`rounded-lg px-3.5 py-2 text-sm font-medium ring-1 transition-colors ${
+              c.id === id ? "bg-emerald-600 text-white ring-emerald-600" : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-100"
+            }`}
+          >
+            {c.icon} {c.name[lang]}
+          </button>
+        ))}
+      </div>
+      <div className={card.art ? "grid items-start gap-5 sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : ""}>
+        {card.art && <div className="rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200">{card.art}</div>}
+        <div aria-live="polite">
+          <table className="w-full text-sm">
+            <tbody>
+              {card.rows.map((r) => (
+                <tr key={r.label.pl} className="border-b border-slate-200 last:border-0">
+                  <th scope="row" className="w-36 py-2 pr-3 text-left align-top font-medium text-slate-500">
+                    {r.label[lang]}
+                  </th>
+                  <td className="py-2 text-slate-800">{r.value[lang]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {card.text && <p className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-[15px] leading-relaxed text-emerald-950 ring-1 ring-emerald-200">{card.text[lang]}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- SpeciesGallery ----------
+
+export interface Species {
+  icon: string;
+  name: Txt;
+  text: Txt;
+  /** a short badge, e.g. "protected" or "migratory" */
+  tag?: Txt;
+}
+
+/** A grid of species cards; tapping one opens its description. */
+export function SpeciesGallery({ lang, items }: { lang: BioLang; items: Species[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const item = open === null ? null : items[open];
+  return (
+    <div>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {items.map((s, i) => (
+          <li key={s.name.pl}>
+            <button
+              type="button"
+              aria-pressed={open === i}
+              onClick={() => setOpen(open === i ? null : i)}
+              className={`flex h-full w-full flex-col items-center gap-1 rounded-xl p-3 text-center ring-1 transition-colors ${
+                open === i ? "bg-emerald-50 ring-emerald-400" : "bg-white ring-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-3xl" aria-hidden>
+                {s.icon}
+              </span>
+              <span className="text-sm leading-tight font-medium text-slate-800">{s.name[lang]}</span>
+              {s.tag && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">{s.tag[lang]}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3" aria-live="polite">
+        {item ? (
+          <p className="rounded-xl bg-emerald-50 px-4 py-3 text-[15px] leading-relaxed text-emerald-950 ring-1 ring-emerald-200">
+            <span className="font-semibold">
+              {item.icon} {item.name[lang]}.
+            </span>{" "}
+            {item.text[lang]}
+          </p>
+        ) : (
+          <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+            👆 {lang === "pl" ? "Dotknij karty, żeby poznać gatunek." : "Нажми на карточку, чтобы узнать о виде."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

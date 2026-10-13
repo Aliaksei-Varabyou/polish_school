@@ -11,14 +11,28 @@ type Lesson = LazyExoticComponent<ComponentType<LessonProps>>;
 const tissues = lazy(() => import("./tissues/TissuesLesson.tsx"));
 
 const LESSONS: Record<string, Lesson> = {
+  [P6.animals.kingdom]: lazy(() => import("./kingdom/KingdomLesson.tsx")),
   [P6.animals.tissues]: tissues,
   [P6.animals.connective]: tissues,
+  [P6.worms.cnidarians]: lazy(() => import("./cnidarians/CnidariansLesson.tsx")),
+  [P6.worms.flatworms]: lazy(() => import("./flatworms/FlatwormsLesson.tsx")),
+  [P6.worms.roundworms]: lazy(() => import("./roundworms/RoundwormsLesson.tsx")),
+  [P6.worms.annelids]: lazy(() => import("./annelids/AnnelidsLesson.tsx")),
+  [P6.arthropods.features]: lazy(() => import("./arthropods/ArthropodsLesson.tsx")),
+  [P6.arthropods.crustaceans]: lazy(() => import("./crustaceans/CrustaceansLesson.tsx")),
   [P6.arthropods.insects]: lazy(() => import("./insects/InsectsLesson.tsx")),
+  [P6.arthropods.arachnids]: lazy(() => import("./arachnids/ArachnidsLesson.tsx")),
+  [P6.arthropods.molluscs]: lazy(() => import("./molluscs/MolluscsLesson.tsx")),
   [P6.ectotherms.amphibians]: lazy(() => import("./amphibians/AmphibiansLesson.tsx")),
   [P6.ectotherms.fish]: lazy(() => import("./fish/FishLesson.tsx")),
+  [P6.ectotherms["fish-diversity"]]: lazy(() => import("./diversity/FishDiversity.tsx")),
+  [P6.ectotherms["amphibian-diversity"]]: lazy(() => import("./diversity/AmphibianDiversity.tsx")),
+  [P6.ectotherms["reptile-diversity"]]: lazy(() => import("./diversity/ReptileDiversity.tsx")),
   [P6.ectotherms.reptiles]: lazy(() => import("./reptiles/ReptilesLesson.tsx")),
   [P6.endotherms.birds]: lazy(() => import("./birds/BirdsLesson.tsx")),
+  [P6.endotherms["bird-diversity"]]: lazy(() => import("./diversity/BirdDiversity.tsx")),
   [P6.endotherms.mammals]: lazy(() => import("./mammals/MammalsLesson.tsx")),
+  [P6.endotherms["mammal-diversity"]]: lazy(() => import("./diversity/MammalDiversity.tsx")),
 };
 
 export const hasLesson = (paragraphId: string): boolean => paragraphId in LESSONS;

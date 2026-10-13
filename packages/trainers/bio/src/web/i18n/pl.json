@@ -104,6 +104,7 @@
     "practiceShort": "Sprawdź się",
     "practiceTitle": "Sprawdź się",
     "practiceHint": "Test z tego paragrafu (zadań w banku: {{count}}).",
-    "practice": "Rozpocznij test z tematu"
+    "practice": "Rozpocznij test z tematu",
+    "chapterCount": "lekcje: {{count}}"
   }
 }
