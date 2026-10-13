@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 import { BIO_GRADES, paragraphsFor, tagsFor, type BioGrade } from "../../index.ts";
 import { BIO_LANGS, isBioLang, type BioLang } from "../../lang.ts";
 import { hasTasks, ParagraphTree } from "../components/ParagraphTree.tsx";
+import { hasLesson } from "../lessons/index.ts";
 import { selectedParagraphs, useSession, type SelectionMode } from "../store/session.ts";
 
-export function StartPage({ portalLang }: { portalLang: string }) {
+export function StartPage({ portalLang, onOpenLesson }: { portalLang: string; onOpenLesson: (paragraphId: string) => void }) {
   const { t } = useTranslation("bio");
   const settings = useSession((s) => s.settings);
   const error = useSession((s) => s.error);
@@ -19,6 +20,7 @@ export function StartPage({ portalLang }: { portalLang: string }) {
   const selected = selectedParagraphs(settings);
   const otherGrades = settings.topicIds.filter((id) => !selected.includes(id));
   const tags = tagsFor(grade);
+  const lessons = paragraphsFor(grade).filter((p) => hasLesson(p.id));
 
   // a class whose content carries no cross-cutting theme gets no theme mode at all
   const byTag = settings.mode === "tags" && tags.length > 0;
@@ -69,6 +71,28 @@ export function StartPage({ portalLang }: { portalLang: string }) {
           </div>
         )}
       </Card>
+
+      {lessons.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-slate-800">📖 {t("lesson.listTitle")}</h2>
+          <p className="mt-1 mb-3 text-sm text-slate-500">{t("lesson.listHint")}</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {lessons.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpenLesson(p.id)}
+                  className="flex w-full items-start gap-3 rounded-xl bg-emerald-50 px-3 py-2.5 text-left ring-1 ring-emerald-200 transition-colors hover:bg-emerald-100"
+                >
+                  <span className="w-9 shrink-0 text-sm text-emerald-700 tabular-nums">{p.number}</span>
+                  <span className="flex-1 text-sm leading-snug font-medium text-slate-800">{p.name[settings.lang]}</span>
+                  <span aria-hidden className="text-emerald-600">→</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {byTag ? (
         <Card>
@@ -124,6 +148,7 @@ export function StartPage({ portalLang }: { portalLang: string }) {
           lang={settings.lang}
           selected={selected}
           onChange={(ids) => setSettings({ topicIds: [...otherGrades, ...ids] })}
+          onOpenLesson={onOpenLesson}
         />
       </Card>
       )}

@@ -91,5 +91,19 @@
     "practiceWeak": "Poćwicz słabe działy",
     "noMistakes": "Bez błędów — tak trzymaj!",
     "savedToHistory": "Zapisano w historii"
+  },
+  "lesson": {
+    "listTitle": "Wyjaśnienia",
+    "listHint": "Interaktywne materiały: zrozum temat, a potem sprawdź się w teście.",
+    "open": "Wyjaśnienie",
+    "openFor": "Wyjaśnienie: {{name}}",
+    "back": "Do wyboru tematów",
+    "kicker": "Wyjaśnienie",
+    "loading": "Wczytuję lekcję…",
+    "missing": "Dla tego paragrafu nie ma jeszcze wyjaśnienia.",
+    "practiceShort": "Sprawdź się",
+    "practiceTitle": "Sprawdź się",
+    "practiceHint": "Test z tego paragrafu (zadań w banku: {{count}}).",
+    "practice": "Rozpocznij test z tematu"
   }
 }
