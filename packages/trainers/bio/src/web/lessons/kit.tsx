@@ -12,6 +12,9 @@ export interface LessonProps {
 }
 
 /** Words the lesson kit itself prints. */
+/** a number the Polish and Russian way: decimal comma, real minus sign */
+export const num = (x: number, digits = 0): string => x.toFixed(digits).replace(".", ",").replace("-", "−");
+
 export const KIT = {
   remember: { pl: "Zapamiętaj", ru: "Запомни" },
   correct: { pl: "Dobrze!", ru: "Верно!" },

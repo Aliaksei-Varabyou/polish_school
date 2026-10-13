@@ -5,6 +5,7 @@
 // - CycleDiagram: a life cycle as a ring of stages, with where to break it
 // - CompareTabs: groups side by side, the same features in every tab
 // - SpeciesGallery: species cards that open a description
+// - OrderGame: put the stations of a route in order
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
@@ -690,6 +691,76 @@ export function SpeciesGallery({ lang, items }: { lang: BioLang; items: Species[
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+// ---------- OrderGame ----------
+
+/**
+ * Put stations of a route in order (blood through the heart, air into the lungs…). The student taps
+ * the next station among shuffled chips; a wrong tap explains nothing but counts, a right one joins
+ * the path drawn so far.
+ */
+export function OrderGame({ lang, title, start, steps, hint }: { lang: BioLang; title: Txt; start?: Txt; steps: Txt[]; hint?: Txt }) {
+  // a fixed shuffle (by a simple hash) keeps renders and tests stable
+  const shuffled = steps.map((s, i) => ({ s, i, k: (s.pl.length * 7 + i * 13) % 17 })).sort((a, b) => a.k - b.k || a.i - b.i);
+  const [done, setDone] = useState(0);
+  const [wrong, setWrong] = useState<number | null>(null);
+  const [mistakes, setMistakes] = useState(0);
+  const finished = done === steps.length;
+  const pick = (i: number) => {
+    if (finished) return;
+    if (i === done) {
+      setDone(done + 1);
+      setWrong(null);
+    } else {
+      setWrong(i);
+      setMistakes(mistakes + 1);
+    }
+  };
+  const reset = () => {
+    setDone(0);
+    setWrong(null);
+    setMistakes(0);
+  };
+  return (
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+      <h3 className="text-base font-semibold text-slate-800">🧭 {title[lang]}</h3>
+      {hint && <p className="mt-1 text-sm text-slate-500">{hint[lang]}</p>}
+      <ol className="mt-3 flex flex-wrap items-center gap-1.5" aria-live="polite">
+        {start && <li className="rounded-lg bg-slate-700 px-2.5 py-1 text-sm font-medium text-white">{start[lang]}</li>}
+        {steps.slice(0, done).map((s, i) => (
+          <li key={s.pl} className="flex items-center gap-1.5">
+            {(start || i > 0) && <span aria-hidden className="text-slate-400">→</span>}
+            <span className="rounded-lg bg-emerald-600 px-2.5 py-1 text-sm font-medium text-white">{s[lang]}</span>
+          </li>
+        ))}
+        {!finished && (
+          <li className="flex items-center gap-1.5">
+            {(start || done > 0) && <span aria-hidden className="text-slate-400">→</span>}
+            <span className="rounded-lg border-2 border-dashed border-slate-300 px-3 py-0.5 text-sm text-slate-400">?</span>
+          </li>
+        )}
+      </ol>
+      {!finished ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {shuffled
+            .filter(({ i }) => i >= done)
+            .map(({ s, i }) => (
+              <Choice key={s.pl} state={wrong === i ? "wrong" : "idle"} onClick={() => pick(i)}>
+                {s[lang]}
+              </Choice>
+            ))}
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <Verdict ok={mistakes === 0} lang={lang}>
+            {T.done[lang]} {mistakes}.
+          </Verdict>
+          <Choice onClick={reset}>↺ {KIT.again[lang]}</Choice>
+        </div>
+      )}
     </div>
   );
 }
