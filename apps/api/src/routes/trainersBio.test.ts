@@ -134,13 +134,13 @@ describe("trainer API (bio, offline)", () => {
     }
   });
   it("serves a finished paragraph again instead of an empty session", async () => {
-    // §3.4 holds two tasks per language: after one session there is nothing unseen left in it
-    const bones = { ...body, topicIds: ["bio.lo3.motion.bones"], count: 5 };
-    const first = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: bones });
+    // §10.1 holds fourteen tasks per language: after one session of fifteen nothing unseen is left
+    const animals = { ...body, topicIds: ["bio.lo3.hormones.animals"], count: 15 };
+    const first = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: animals });
     const seen = (first.json().tasks as Task[]).map((t) => t.id);
-    expect(seen).toHaveLength(2);
+    expect(seen).toHaveLength(14);
 
-    const again = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...bones, excludeIds: seen } });
+    const again = await app.inject({ method: "POST", url: "/api/trainers/bio/generate", payload: { ...animals, excludeIds: seen } });
     expect(again.statusCode).toBe(200);
     expect((again.json().tasks as Task[]).map((t) => t.id).sort()).toEqual([...seen].sort());
   });

@@ -8,7 +8,7 @@ describe("migrating saved biology settings", () => {
     const expected = paragraphsOf("bio.lo3.motion").filter((p) => PARAGRAPH_TASKS[p.id]).map((p) => p.id);
     expect(out.settings?.topicIds).toEqual(expected);
     expect(expected).toContain("bio.lo3.motion.skeleton");
-    expect(expected).not.toContain("bio.lo3.motion.animals"); // no tasks yet
+    expect(expected).toEqual(paragraphsOf("bio.lo3.motion").map((p) => p.id)); // every paragraph has tasks now
     expect(out.seenTaskIds).toEqual([]); // every task id changed with the move
   });
 
