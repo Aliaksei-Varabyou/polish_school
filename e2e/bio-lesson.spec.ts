@@ -87,3 +87,78 @@ test("lesson is reachable from the paragraph tree and leads back to the start pa
   await expect(page.getByRole("heading", { name: /Главы и параграфы/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("class 6 lesson on amphibians: frog parts, tadpole stages, water/land sort, cold blood", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/t/bio");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await page.getByRole("radio", { name: "6 класс", exact: true }).click();
+  await page.getByRole("button", { name: /4\.3\s*Земноводные/ }).click();
+  await expect(page.getByRole("heading", { name: "Как устроена лягушка" })).toBeVisible();
+
+  const frog = page.locator("#amphibians-s1");
+  await frog.locator('[data-part="web"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(frog.getByText(/Работает как ласт/)).toBeVisible();
+  await frog.getByRole("button", { name: "Лёгкие", exact: true }).click();
+  await expect(frog.getByText(/мешковидные лёгкие/)).toBeVisible();
+
+  // the trait table marks what changed between stages
+  const growth = page.locator("#amphibians-s2");
+  await growth.getByRole("slider").fill("4");
+  await expect(growth.getByRole("heading", { name: "Головастик с четырьмя ногами" })).toBeVisible();
+  await expect(growth.getByText("жабрами и лёгкими")).toBeVisible();
+  await expect(growth.getByText("изменилось").first()).toBeVisible();
+
+  const sort = page.locator("#amphibians-s3");
+  const row = sort.getByRole("listitem").filter({ hasText: "лёгкие" });
+  await row.getByRole("button", { name: "к воде" }).click();
+  await expect(row.getByText(/Пока нет/)).toBeVisible();
+  await row.getByRole("button", { name: "к суше" }).click();
+  await expect(row.getByText(/позволяют дышать воздухом/)).toBeVisible();
+
+  const cold = page.locator("#amphibians-s4");
+  await expect(cold.getByText(/Зимняя спячка/)).toBeVisible();
+  await cold.getByRole("slider").fill("6");
+  await expect(cold.getByText(/Тепло\. Лягушка активна/)).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on birds: inner organs, flight builder, beaks, egg", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/t/bio");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await page.getByRole("radio", { name: "6 класс", exact: true }).click();
+  await page.getByRole("button", { name: /5\.1\s*Птицы/ }).click();
+  await expect(page.getByRole("heading", { name: "Как устроена птица" })).toBeVisible();
+
+  const body = page.locator("#birds-s1");
+  await body.getByRole("button", { name: "Киль", exact: true }).click();
+  await expect(body.getByText(/крепятся мощные грудные мышцы/)).toBeVisible();
+  await body.getByRole("radio", { name: "Подпиши сам" }).click();
+  await body.getByRole("button", { name: "Клюв", exact: true }).click();
+  await body.getByRole("button", { name: "Метка 1", exact: true }).click();
+  await expect(body.getByRole("button", { name: "Клюв", exact: true })).toHaveCount(1); // the placed label on the drawing
+
+  const flight = page.locator("#birds-s2");
+  for (const sw of await flight.getByRole("switch").all()) await sw.click();
+  await expect(flight.getByText(/птица взлетает/)).toBeVisible();
+
+  const beaks = page.locator("#birds-s3");
+  await beaks.getByRole("button", { name: /конусовидный/ }).click();
+  await expect(beaks.getByText(/таким клювом это трудно съесть/)).toBeVisible();
+  await beaks.getByRole("button", { name: /крючковатый/ }).click();
+  await expect(beaks.getByText(/канюк, орёл и сова/)).toBeVisible();
+
+  const egg = page.locator("#birds-s4");
+  await egg.getByRole("button", { name: "Зародышевый диск", exact: true }).last().click();
+  await expect(egg.getByText(/именно из него развивается зародыш/)).toBeVisible();
+  const chick = egg.getByRole("listitem").filter({ hasText: "домашняя курица" });
+  await chick.getByRole("button", { name: "выводковая" }).click();
+  await expect(chick.getByText(/птенцы в пуху/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Начать тест по теме" }).click();
+  await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
+  expect(errors).toEqual([]);
+});

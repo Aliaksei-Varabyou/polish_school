@@ -9,6 +9,8 @@ type Lesson = LazyExoticComponent<ComponentType<LessonProps>>;
 
 const LESSONS: Record<string, Lesson> = {
   [P6.arthropods.insects]: lazy(() => import("./insects/InsectsLesson.tsx")),
+  [P6.ectotherms.amphibians]: lazy(() => import("./amphibians/AmphibiansLesson.tsx")),
+  [P6.endotherms.birds]: lazy(() => import("./birds/BirdsLesson.tsx")),
 };
 
 export const hasLesson = (paragraphId: string): boolean => paragraphId in LESSONS;
