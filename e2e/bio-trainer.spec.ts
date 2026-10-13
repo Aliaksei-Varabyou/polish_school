@@ -34,7 +34,7 @@ test("catalog → biology: 5 tasks answered wrongly → results → analysis", a
   await expect(page.getByText("Выбрано параграфов: 0")).toBeVisible();
 
   // open a chapter and pick paragraphs one by one; every paragraph of the book has tasks now
-  await page.getByText("3. Опорно-двигательная система").click();
+  await page.getByText("3. Опорно-двигательная система").last().click(); // the tree, below the lessons card
   await expect(page.getByRole("checkbox", { name: /Движение у животных/ })).toBeEnabled();
   await page.getByRole("checkbox", { name: /Типы соединений костей/ }).check();
   await page.getByRole("checkbox", { name: /Строение и работа мышечной системы/ }).check();
@@ -98,7 +98,7 @@ test("a finished paragraph comes back as repeats instead of an empty session", a
   await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
 
   // §10.1 has fourteen tasks, so a session of fifteen uses it up
-  await page.getByText("10. Эндокринная система").click();
+  await page.getByText("10. Эндокринная система").last().click();
   await page.getByRole("checkbox", { name: /Эндокринная система у животных/ }).check();
   await page.locator("select").selectOption("15");
 
