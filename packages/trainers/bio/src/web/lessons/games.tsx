@@ -3,6 +3,7 @@
 // - TwoWaySort: sort items into two groups
 // - MatchQuiz: one question at a time, pick the fitting option
 // - CycleDiagram: a life cycle as a ring of stages, with where to break it
+// - CompareTabs: groups side by side, the same features in every tab
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
@@ -577,6 +578,62 @@ export function CycleDiagram({ lang, title, stages }: { lang: BioLang; title: Tx
           <input type="checkbox" checked={shield} onChange={(e) => setShield(e.target.checked)} className="h-4 w-4 accent-amber-500" />
           {C.shield[lang]}
         </label>
+      </div>
+    </div>
+  );
+}
+
+// ---------- CompareTabs ----------
+
+export interface CompareCard {
+  id: string;
+  icon: string;
+  name: Txt;
+  art?: ReactNode;
+  /** the same row labels, in the same order, on every card, so switching tabs compares them */
+  rows: { label: Txt; value: Txt }[];
+  text?: Txt;
+}
+
+/** Groups side by side: one tab per group, each with a drawing and a table of the same features. */
+export function CompareTabs({ lang, cards }: { lang: BioLang; cards: CompareCard[] }) {
+  const [id, setId] = useState(cards[0]!.id);
+  const card = cards.find((c) => c.id === id)!;
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap gap-2" role="radiogroup">
+        {cards.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="radio"
+            aria-checked={c.id === id}
+            onClick={() => setId(c.id)}
+            className={`rounded-lg px-3.5 py-2 text-sm font-medium ring-1 transition-colors ${
+              c.id === id ? "bg-emerald-600 text-white ring-emerald-600" : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-100"
+            }`}
+          >
+            {c.icon} {c.name[lang]}
+          </button>
+        ))}
+      </div>
+      <div className={card.art ? "grid items-start gap-5 sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : ""}>
+        {card.art && <div className="rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200">{card.art}</div>}
+        <div aria-live="polite">
+          <table className="w-full text-sm">
+            <tbody>
+              {card.rows.map((r) => (
+                <tr key={r.label.pl} className="border-b border-slate-200 last:border-0">
+                  <th scope="row" className="w-36 py-2 pr-3 text-left align-top font-medium text-slate-500">
+                    {r.label[lang]}
+                  </th>
+                  <td className="py-2 text-slate-800">{r.value[lang]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {card.text && <p className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-[15px] leading-relaxed text-emerald-950 ring-1 ring-emerald-200">{card.text[lang]}</p>}
+        </div>
       </div>
     </div>
   );

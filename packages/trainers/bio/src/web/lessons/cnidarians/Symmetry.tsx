@@ -1,6 +1,6 @@
 // Radial vs bilateral symmetry: turn a line through the animal and find the planes that split it into
 // mirror halves. A hydra seen from above has many; a planarian has just one. Used by the cnidarian
-// and the flatworm lessons.
+// and the kingdom lessons.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
 import type { Txt } from "../kit.tsx";

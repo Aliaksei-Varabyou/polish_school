@@ -344,3 +344,73 @@ test("class 6 lesson on annelids: earthworm, crawling, soil, quiz → test", asy
   await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("class 6 lesson on the animal kingdom: animal or not, spine, symmetry, diets", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /1\.1\s*В царстве животных/);
+  const s1 = page.locator("#kingdom-s1");
+  const sponge = s1.getByRole("listitem").filter({ hasText: "морская губка" });
+  await sponge.getByRole("button", { name: "не животное" }).click();
+  await expect(sponge.getByText(/Пока нет/)).toBeVisible();
+  await sponge.getByRole("button", { name: "животное", exact: true }).click();
+  await expect(sponge.getByText(/простейшее животное/)).toBeVisible();
+  const quiz = page.locator("#kingdom-s4");
+  await quiz.getByRole("button", { name: "растительноядное", exact: true }).click();
+  await expect(quiz.getByText(/Ест траву, листья/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on arthropod features: molting staircase, groups, circulation", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /3\.1\s*Признаки членистоногих/);
+  const molt = page.locator("#arthropods-s1");
+  for (let i = 0; i < 2; i++) await molt.getByRole("button", { name: /Ешь и расти/ }).click();
+  await expect(molt.getByText(/Тесно!/)).toBeVisible();
+  await molt.getByRole("button", { name: /Линька/ }).click();
+  await expect(molt.getByText(/Новый пока мягкий/)).toBeVisible();
+  await expect(molt.getByText(/растёт ступеньками/)).toBeVisible();
+
+  const groups = page.locator("#arthropods-s2");
+  await groups.getByRole("radio", { name: /Паукообразные/ }).click();
+  await expect(groups.getByRole("cell", { name: "4 пары" })).toBeVisible();
+
+  await page.locator("#arthropods-s4").getByRole("radio", { name: /Замкнутая/ }).click();
+  await expect(page.locator("#arthropods-s4").getByText(/никогда из них не изливается/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lessons on crustaceans and arachnids", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /3\.2\s*Ракообразные/);
+  await page.locator("#crustaceans-s1").getByRole("button", { name: "Жабры", exact: true }).last().click();
+  await expect(page.locator("#crustaceans-s1").getByText(/Перистые жабры/)).toBeVisible();
+  const quiz = page.locator("#crustaceans-s3");
+  await quiz.getByRole("button", { name: "речной рак", exact: true }).click();
+  await expect(quiz.getByText(/показатель чистоты воды/).last()).toBeVisible();
+
+  await openLesson(page, /3\.4\s*Паукообразные/);
+  const hunt = page.locator("#arachnids-s2");
+  for (let i = 0; i < 3; i++) await hunt.getByRole("button", { name: /Дальше/ }).click();
+  await expect(hunt.getByRole("img", { name: "Шаг 4" })).toBeVisible();
+  const tick = page.locator("#arachnids-s3").getByRole("listitem").filter({ hasText: "намазать клеща маслом" });
+  await tick.getByRole("button", { name: "неправильно" }).click();
+  await expect(tick.getByText(/больше бактерий/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("class 6 lesson on molluscs: snail, three groups, pearl, quiz → test", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLesson(page, /3\.5\s*Моллюски/);
+  await page.locator("#molluscs-s1").getByRole("button", { name: "Тёрка (радула)", exact: true }).last().click();
+  await expect(page.locator("#molluscs-s1").getByText(/тысячами мелких зубчиков/)).toBeVisible();
+  await page.locator("#molluscs-s2").getByRole("radio", { name: /Двустворчатые/ }).click();
+  await expect(page.locator("#molluscs-s2").getByRole("cell", { name: "из двух створок" })).toBeVisible();
+  await page.locator("#molluscs-s3").getByRole("slider").fill("7");
+  await expect(page.locator("#molluscs-s3").getByRole("img", { name: "Слоёв: 7" })).toBeVisible();
+  const quiz = page.locator("#molluscs-s4");
+  await quiz.getByRole("button", { name: "виноградная улитка", exact: true }).click();
+  await expect(quiz.getByText(/крупнейшая наземная улитка/)).toBeVisible();
+  await page.getByRole("button", { name: "Начать тест по теме" }).click();
+  await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
