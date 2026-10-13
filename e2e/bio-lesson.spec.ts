@@ -449,3 +449,76 @@ test("class 6 lessons on diversity: fish, amphibians, reptiles, birds, mammals",
   await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+// ---------- liceum, klasa 3 ----------
+
+async function openLo3Lesson(page: Page, chapter: number, name: RegExp) {
+  await page.goto("/t/bio");
+  await page.getByRole("radio", { name: "RU", exact: true }).click();
+  await page.getByRole("radio", { name: "Лицей, 3 класс", exact: true }).click();
+  await page.locator("details summary").filter({ hasText: new RegExp(`^${chapter}\\. `) }).first().click();
+  await page.getByRole("button", { name }).first().click();
+}
+
+test("LO3 lesson on the heart: map, cardiac cycle, circulation order, vessels", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLo3Lesson(page, 6, /6\.3\s*Строение и функции кровеносной системы/);
+  await page.getByRole("button", { name: "Левый желудочек", exact: true }).last().click();
+  await expect(page.getByText(/самая толстая мышечная стенка/).first()).toBeVisible();
+  // the route starts at the left ventricle; the first station is the aorta
+  await page.locator("#heart-s3").getByRole("button", { name: "аорта", exact: true }).click();
+  await expect(page.locator("#heart-s3").getByRole("listitem").filter({ hasText: "аорта" }).first()).toBeVisible();
+  await page.locator("#heart-s4").getByRole("radio", { name: /Вены/ }).click();
+  await expect(page.locator("#heart-s4").getByRole("cell", { name: /к сердцу/ }).first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("LO3 lesson on breathing: airway, mechanics, spirogram, ventilation", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLo3Lesson(page, 5, /5\.2\s*Строение и функции дыхательной системы/);
+  await page.locator("#breath-s1").getByRole("button", { name: "глотка", exact: true }).click();
+  await page.locator("#breath-s2").getByRole("button", { name: "Выдох", exact: true }).click();
+  await expect(page.locator("#breath-s2").getByRole("cell", { name: /расслабляется и поднимается/ })).toBeVisible();
+  await page.locator("#breath-s3").getByRole("button", { name: "VC", exact: true }).click();
+  await expect(page.locator("#breath-s3").getByText("≈ 4700 мл")).toBeVisible();
+  await page.locator("#breath-s4").getByRole("slider").first().fill("1000");
+  await expect(page.locator("#breath-s4").getByText("14,00 л/мин").first()).toBeVisible();
+  await page.locator("#breath-s5").getByRole("button", { name: "В тканях" }).click();
+  await expect(page.locator("#breath-s5").getByText(/гидрокарбонат/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("LO3 lesson on the nephron: map, processes, fate, vasopressin, urine path → test", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLo3Lesson(page, 7, /7\.2\s*Строение и работа мочевыделительной системы/);
+  await page.getByRole("button", { name: "Петля нефрона (Генле)", exact: true }).last().click();
+  await expect(page.getByText(/восходящее — выкачивает соль/).first()).toBeVisible();
+  await page.locator("#neph-s2").getByRole("radio", { name: /секреция/ }).click();
+  await expect(page.locator("#neph-s2").getByRole("cell", { name: /регуляция pH/ })).toBeVisible();
+  // the first substance in the quiz is a plasma protein — it never leaves the blood
+  await page.locator("#neph-s3").getByRole("button", { name: "не попадает в фильтрат" }).click();
+  await expect(page.locator("#neph-s3").getByText(/признак повреждения почек/)).toBeVisible();
+  await page.locator("#neph-s4").getByRole("slider").fill("0");
+  await expect(page.locator("#neph-s4").getByText(/Обезвоживание/)).toBeVisible();
+  await expect(page.locator("#neph-s4").getByText("0,5 л / сутки")).toBeVisible();
+  await page.getByRole("button", { name: "Начать тест по теме" }).click();
+  await expect(page.getByText(/Задание 1 из \d+/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("LO3 lesson on the eye: map, accommodation, defects with glasses, receptors", async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLo3Lesson(page, 9, /9\.2\s*Строение и работа органа зрения/);
+  await page.getByRole("button", { name: "Слепое пятно", exact: true }).last().click();
+  await expect(page.getByText(/нет фоторецепторов/).first()).toBeVisible();
+  await page.locator("#eye-s2").getByRole("slider").fill("0");
+  await expect(page.locator("#eye-s2").getByText(/ресничная мышца сокращается/)).toBeVisible();
+  await page.locator("#eye-s3").getByRole("button", { name: "Дальнозоркость" }).click();
+  await page.locator("#eye-s3").getByRole("checkbox").check();
+  await expect(page.locator("#eye-s3").getByText(/собирающая \(выпуклая\) линза/)).toBeVisible();
+  await page.locator("#eye-s3").getByRole("slider").fill("4");
+  await expect(page.locator("#eye-s3").getByText(/= 25,0 см — собирающая/)).toBeVisible();
+  await page.locator("#eye-s4").getByRole("radio", { name: /Палочки/ }).click();
+  await expect(page.locator("#eye-s4").getByRole("cell", { name: /родопсин/ })).toBeVisible();
+  expect(errors).toEqual([]);
+});

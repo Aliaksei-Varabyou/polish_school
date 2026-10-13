@@ -2,13 +2,17 @@
 // the task pool: a lesson only reads the curriculum and, at its end, starts an ordinary session on
 // its own paragraph. Each lesson loads lazily, so the start page pays nothing for them.
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { P6 } from "../../curriculum/index.ts";
+import { P, P6 } from "../../curriculum/index.ts";
 import type { LessonProps } from "./kit.tsx";
 
 type Lesson = LazyExoticComponent<ComponentType<LessonProps>>;
 
 // one lesson covers both tissue paragraphs: the four groups are best seen side by side
 const tissues = lazy(() => import("./tissues/TissuesLesson.tsx"));
+// LO3: the heart lesson covers the build and the working of the circulatory system, the breathing
+// lesson the airways and ventilation
+const heart = lazy(() => import("./lo3/heart/HeartLesson.tsx"));
+const breathing = lazy(() => import("./lo3/breathing/BreathingLesson.tsx"));
 
 const LESSONS: Record<string, Lesson> = {
   [P6.animals.kingdom]: lazy(() => import("./kingdom/KingdomLesson.tsx")),
@@ -33,6 +37,13 @@ const LESSONS: Record<string, Lesson> = {
   [P6.endotherms["bird-diversity"]]: lazy(() => import("./diversity/BirdDiversity.tsx")),
   [P6.endotherms.mammals]: lazy(() => import("./mammals/MammalsLesson.tsx")),
   [P6.endotherms["mammal-diversity"]]: lazy(() => import("./diversity/MammalDiversity.tsx")),
+  // liceum, klasa 3
+  [P.respiration.structure]: breathing,
+  [P.respiration.ventilation]: breathing,
+  [P.circulation.structure]: heart,
+  [P.circulation.function]: heart,
+  [P.urinary.structure]: lazy(() => import("./lo3/nephron/NephronLesson.tsx")),
+  [P.senses.vision]: lazy(() => import("./lo3/eye/EyeLesson.tsx")),
 };
 
 export const hasLesson = (paragraphId: string): boolean => paragraphId in LESSONS;
