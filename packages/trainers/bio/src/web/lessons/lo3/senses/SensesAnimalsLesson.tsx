@@ -2,9 +2,9 @@
 // templates/data/comparative.ts (ANIMAL_SENSES).
 import { useEffect, useMemo, useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { MatchQuiz, SpeciesGallery, type QuizItem, type QuizOption, type Species } from "../../games.tsx";
-import { Choice, num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { MatchQuiz, SpeciesGallery, type QuizItem, type QuizOption, type Species } from "@portal/lessons";
+import { Choice, num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

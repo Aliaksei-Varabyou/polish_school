@@ -3,7 +3,7 @@
 // is visible step by step.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { KIT, type Txt } from "../kit.tsx";
+import { KIT, type Txt } from "@portal/lessons";
 
 type Trait = "breath" | "limbs" | "tail" | "home" | "food";
 

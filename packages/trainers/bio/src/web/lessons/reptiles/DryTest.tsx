@@ -2,7 +2,7 @@
 // lie side by side on dry sand; the slider adds hours of sunshine.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 const T = {
   hours: { pl: "Godziny na słońcu", ru: "Часов на солнце" },

@@ -1,6 +1,6 @@
 // Block 3: a drop of blood under the microscope — plasma and the three kinds of blood cells.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type BloodPart = "plasma" | "red" | "white" | "platelets";
 

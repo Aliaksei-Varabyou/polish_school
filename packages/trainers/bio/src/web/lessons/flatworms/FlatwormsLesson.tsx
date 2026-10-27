@@ -1,8 +1,8 @@
 // Lesson for §2.2 "Płazińce – zwierzęta, które mają płaskie ciało" (Puls życia 6). Terms follow
 // templates/data/sp6Invertebrates.ts (FLATWORMS).
-import { CycleDiagram, TwoWaySort, type CycleStage, type SortItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { CycleDiagram, TwoWaySort, type CycleStage, type SortItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { PlanariaMap, Tapeworm } from "./Flatworms.tsx";
 
 const T = {

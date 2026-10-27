@@ -2,7 +2,7 @@
 // is for; "Label it" turns the same drawing into an exercise — pick a label, then the pin it belongs to.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, Verdict, type Txt } from "../kit.tsx";
+import { Choice, KIT, Verdict, type Txt } from "@portal/lessons";
 
 type PartId = "antennae" | "eyes" | "mouth" | "head" | "thorax" | "legs" | "wings" | "abdomen" | "spiracles";
 

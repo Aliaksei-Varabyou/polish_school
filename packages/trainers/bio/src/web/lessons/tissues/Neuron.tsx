@@ -2,8 +2,8 @@
 // through the cell body and down the axon on the same drawing, showing the direction impulses travel.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
-import { Choice, type Txt } from "../kit.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
+import { Choice, type Txt } from "@portal/lessons";
 
 type NeuronPart = "dendrites" | "body" | "nucleus" | "axon" | "terminals";
 

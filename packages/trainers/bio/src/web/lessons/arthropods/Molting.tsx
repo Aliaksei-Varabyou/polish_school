@@ -2,7 +2,7 @@
 // animal until it is cramped, then lets it molt; the chart of its size turns into a staircase.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, type Txt } from "../kit.tsx";
+import { Choice, KIT, type Txt } from "@portal/lessons";
 
 const T = {
   eat: { pl: "🍃 Jedz i rośnij", ru: "🍃 Ешь и расти" },

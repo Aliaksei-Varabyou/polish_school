@@ -2,7 +2,7 @@
 // the depth.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 const GILL_STEPS: Txt[] = [
   { pl: "Ryba otwiera pysk i nabiera wody.", ru: "Рыба открывает рот и набирает воду." },

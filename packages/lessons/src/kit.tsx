@@ -3,13 +3,13 @@
 // so the words inside a lesson are part of its content, not of the UI translations.
 import { emitMors } from "@portal/ui";
 import { useEffect, type ReactNode } from "react";
-import type { BioLang } from "../../lang.ts";
+import type { ContentLang } from "./lang.ts";
 
 /** A piece of lesson text in both content languages. */
-export type Txt = Readonly<Record<BioLang, string>>;
+export type Txt = Readonly<Record<ContentLang, string>>;
 
 export interface LessonProps {
-  lang: BioLang;
+  lang: ContentLang;
 }
 
 /** Words the lesson kit itself prints. */
@@ -37,7 +37,7 @@ export function Section({ id, n, title, intro, children }: { id: string; n: numb
   );
 }
 
-export function Remember({ lang, items }: { lang: BioLang; items: readonly Txt[] }) {
+export function Remember({ lang, items }: { lang: ContentLang; items: readonly Txt[] }) {
   return (
     <aside className="mt-6 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
       <div className="mb-1.5 text-sm font-semibold text-amber-800">💡 {KIT.remember[lang]}</div>
@@ -51,7 +51,7 @@ export function Remember({ lang, items }: { lang: BioLang; items: readonly Txt[]
 }
 
 /** One line of feedback after an answer: green when right, rose with an explanation when not. */
-export function Verdict({ ok, lang, children }: { ok: boolean; lang: BioLang; children?: ReactNode }) {
+export function Verdict({ ok, lang, children }: { ok: boolean; lang: ContentLang; children?: ReactNode }) {
   // lessons with their own widgets get Mors's reaction for free; the shared games announce their
   // steps themselves, and the bus drops this echo of the same moment
   useEffect(() => emitMors(ok ? "right" : "wrong"), [ok]);

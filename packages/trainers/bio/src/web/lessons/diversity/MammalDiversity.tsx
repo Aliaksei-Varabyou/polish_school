@@ -2,9 +2,9 @@
 // templates/data/sp6Vertebrates.ts (MAMMAL_SPECIES).
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { MatchQuiz, SpeciesGallery, type QuizItem, type QuizOption, type Species } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { SPECIES_HINT, MatchQuiz, SpeciesGallery, type QuizItem, type QuizOption, type Species } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 
@@ -107,7 +107,7 @@ export default function MammalDiversityLesson({ lang }: LessonProps) {
     <div className="space-y-5">
       <LessonIntro lang={lang} lead={T.lead} prefix="mammd" sections={[T.s1, T.s2, T.s3]} />
       <Section id="mammd-s1" n={1} title={T.s1[lang]}>
-        <SpeciesGallery lang={lang} items={SPECIES} />
+        <SpeciesGallery lang={lang} items={SPECIES} hint={SPECIES_HINT} />
         <Remember lang={lang} items={REMEMBER.s1} />
       </Section>
       <Section id="mammd-s2" n={2} title={T.s2[lang]} intro={<p>{T.s2intro[lang]}</p>}>

@@ -19,6 +19,7 @@
     "@portal/ai": "*",
     "@portal/core": "*",
     "@portal/db": "*",
+    "@portal/lessons": "*",
     "@portal/task-pool": "*",
     "@portal/trainer-sdk": "*",
     "@portal/ui": "*",

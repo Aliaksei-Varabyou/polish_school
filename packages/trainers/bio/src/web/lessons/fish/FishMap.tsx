@@ -1,6 +1,6 @@
 // Block 1 of the fish lesson: a fish from the side; gills and the swim bladder show through when chosen.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type FishPart = "skin" | "tail" | "paired" | "unpaired" | "cover" | "lateral" | "gills" | "bladder";
 

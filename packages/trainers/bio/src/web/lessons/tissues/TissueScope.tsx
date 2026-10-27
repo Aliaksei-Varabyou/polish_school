@@ -2,7 +2,7 @@
 // looks under a school microscope, with what it is made of, where it is and what it does.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 type Group = "epithelial" | "muscle" | "nerve" | "connective";
 

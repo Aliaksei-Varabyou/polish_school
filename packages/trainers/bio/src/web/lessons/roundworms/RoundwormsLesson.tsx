@@ -1,9 +1,9 @@
 // Lesson for §2.3 "Nicienie – zwierzęta, które mają nitkowate ciało" (Puls życia 6). Terms follow
 // templates/data/sp6Invertebrates.ts (ROUNDWORMS).
 import type { BioLang } from "../../../lang.ts";
-import { CycleDiagram, MatchQuiz, PartMap, TwoWaySort, type CycleStage, type MapPart, type QuizItem, type QuizOption, type SortItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { CycleDiagram, MatchQuiz, PartMap, TwoWaySort, type CycleStage, type MapPart, type QuizItem, type QuizOption, type SortItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const T = {
   lead: {

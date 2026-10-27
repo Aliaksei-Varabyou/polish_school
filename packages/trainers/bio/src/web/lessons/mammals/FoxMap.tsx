@@ -1,7 +1,7 @@
 // Block 1 of the mammals lesson: a fox from the side, with the features only mammals have. The milk
 // glands and the diaphragm are drawn over it when chosen.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type FoxPart = "fur" | "ear" | "whiskers" | "teeth" | "legs" | "tail" | "milk" | "diaphragm";
 

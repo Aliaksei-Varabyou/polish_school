@@ -2,7 +2,7 @@
 // body follows it, the bird's does not. What the frog is doing changes with its temperature.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 const MONTHS: Txt[] = [
   { pl: "styczeń", ru: "январь" },

@@ -1,7 +1,7 @@
 // Block 1 of the birds lesson: a bird from the side. Outer parts are drawn; the inner ones — hollow
 // bones, the keel with its muscles, the air sacs — appear over the drawing when chosen.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type BirdPart = "feathers" | "beak" | "wing" | "tail" | "legs" | "gland" | "bones" | "keel" | "airsacs";
 

@@ -3,7 +3,7 @@
 // its own paragraph. Each lesson loads lazily, so the start page pays nothing for them.
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { P, P6 } from "../../curriculum/index.ts";
-import type { LessonProps } from "./kit.tsx";
+import type { LessonProps } from "@portal/lessons";
 
 type Lesson = LazyExoticComponent<ComponentType<LessonProps>>;
 

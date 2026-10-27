@@ -5,9 +5,9 @@
 // Drawings are schematic, textbook-style anatomical diagrams.
 import { useEffect, useState, type ReactNode } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { CompareTabs, PartMap, type CompareCard, type MapPart } from "../../games.tsx";
-import { Choice, num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { CompareTabs, PartMap, type CompareCard, type MapPart } from "@portal/lessons";
+import { Choice, num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

@@ -2,9 +2,9 @@
 // templates/data/systems.ts (NERVOUS_PARTS) and templates/data/systemsMore.ts (NEURON_WORK).
 import { useEffect, useRef, useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { PartMap, type MapPart } from "../../games.tsx";
-import { Choice, KIT, num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
+import { Choice, KIT, num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

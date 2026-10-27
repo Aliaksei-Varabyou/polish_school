@@ -2,7 +2,7 @@
 // tooth coloured by its kind, with the reason for each shape.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 type Kind = "incisor" | "canine" | "premolar" | "molar";
 

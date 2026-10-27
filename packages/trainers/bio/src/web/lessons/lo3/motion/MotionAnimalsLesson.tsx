@@ -3,9 +3,9 @@
 // muscle sac and the ways of moving without a skeleton.
 import { useEffect, useRef, useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { CompareTabs, MatchQuiz, type CompareCard, type QuizItem, type QuizOption } from "../../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { CompareTabs, MatchQuiz, type CompareCard, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

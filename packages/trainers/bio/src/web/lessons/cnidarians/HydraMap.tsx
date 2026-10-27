@@ -1,6 +1,6 @@
 // Block 1 of the cnidarians lesson: a hydra with a bud. The gut cavity shows through when chosen.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type HydraPart = "tentacles" | "stingers" | "mouth" | "cavity" | "foot" | "bud";
 

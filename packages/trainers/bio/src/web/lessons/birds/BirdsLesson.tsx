@@ -1,8 +1,8 @@
 // Lesson for §5.1 "Ptaki – kręgowce zdolne do lotu" (Puls życia 6). Terms follow the task bank of the
 // same paragraph (templates/data/sp6Vertebrates.ts, BIRDS).
-import { TwoWaySort, type SortItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { TwoWaySort, type SortItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { Beaks } from "./Beaks.tsx";
 import { BirdMap } from "./BirdMap.tsx";
 import { EggMap } from "./EggMap.tsx";

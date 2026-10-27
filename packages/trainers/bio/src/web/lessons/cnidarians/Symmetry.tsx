@@ -3,7 +3,7 @@
 // and the kingdom lessons.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 const T = {
   angle: { pl: "Obróć płaszczyznę", ru: "Поверни плоскость" },

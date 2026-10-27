@@ -1,11 +1,11 @@
 // The opening card of a lesson: a short lead and the list of its sections, each a jump link.
-import type { BioLang } from "../../lang.ts";
+import type { ContentLang } from "./lang.ts";
 import type { Txt } from "./kit.tsx";
 
 const CONTENTS: Txt = { pl: "W tej lekcji", ru: "В этом уроке" };
 
 /** Sections are expected to carry the ids `${prefix}-s1`, `${prefix}-s2`, … */
-export function LessonIntro({ lang, lead, prefix, sections }: { lang: BioLang; lead: Txt; prefix: string; sections: Txt[] }) {
+export function LessonIntro({ lang, lead, prefix, sections }: { lang: ContentLang; lead: Txt; prefix: string; sections: Txt[] }) {
   return (
     <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-sky-50 p-5 ring-1 ring-emerald-200 sm:p-7">
       <p className="text-[15px] leading-relaxed text-slate-700 sm:text-base">{lead[lang]}</p>

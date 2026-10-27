@@ -1,8 +1,8 @@
 // Lesson for §2.4 "Pierścienice – zwierzęta, które mają segmentowane ciało" (Puls życia 6). Terms
 // follow templates/data/sp6Invertebrates.ts (ANNELIDS).
-import { MatchQuiz, type QuizItem, type QuizOption } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { MatchQuiz, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { Crawl, EarthwormMap, Soil } from "./Earthworm.tsx";
 
 const T = {

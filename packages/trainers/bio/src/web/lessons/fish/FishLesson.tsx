@@ -1,8 +1,8 @@
 // Lesson for §4.1 "Ryby – kręgowce środowisk wodnych" (Puls życia 6). Terms follow
 // templates/data/sp6Vertebrates.ts (FISH).
-import { MatchQuiz, type QuizItem, type QuizOption } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { MatchQuiz, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { FishMap } from "./FishMap.tsx";
 import { Buoyancy, GillsFlow } from "./FishWater.tsx";
 

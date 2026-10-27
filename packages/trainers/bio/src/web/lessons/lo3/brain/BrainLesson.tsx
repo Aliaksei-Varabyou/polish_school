@@ -3,9 +3,9 @@
 // templates/data/systems.ts (NERVOUS_PARTS) and templates/data/systemsMore.ts (BRAIN_PARTS, PERIPHERAL_PARTS).
 import { useEffect, useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { OrderGame, PartMap, TwoWaySort, type MapPart, type SortItem } from "../../games.tsx";
-import { Choice, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { OrderGame, PartMap, TwoWaySort, type MapPart, type SortItem } from "@portal/lessons";
+import { Choice, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

@@ -1,8 +1,8 @@
 // Lesson for §4.6 "Przegląd i znaczenie gadów" (Puls życia 6). Species follow
 // templates/data/sp6Vertebrates.ts (REPTILE_SPECIES).
-import { CompareTabs, SpeciesGallery, TwoWaySort, type CompareCard, type SortItem, type Species } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { SPECIES_HINT, CompareTabs, SpeciesGallery, TwoWaySort, type CompareCard, type SortItem, type Species } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 const PROTECTED = r("chroniony", "охраняется");
@@ -112,7 +112,7 @@ export default function ReptileDiversityLesson({ lang }: LessonProps) {
     <div className="space-y-5">
       <LessonIntro lang={lang} lead={T.lead} prefix="reptd" sections={[T.s1, T.s2, T.s3]} />
       <Section id="reptd-s1" n={1} title={T.s1[lang]}>
-        <SpeciesGallery lang={lang} items={SPECIES} />
+        <SpeciesGallery lang={lang} items={SPECIES} hint={SPECIES_HINT} />
         <Remember lang={lang} items={REMEMBER.s1} />
       </Section>
       <Section id="reptd-s2" n={2} title={T.s2[lang]} intro={<p>{T.s2intro[lang]}</p>}>

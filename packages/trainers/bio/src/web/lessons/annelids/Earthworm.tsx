@@ -2,8 +2,8 @@
 // does for the soil.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
-import { Choice, type Txt } from "../kit.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
+import { Choice, type Txt } from "@portal/lessons";
 
 type WormPart = "skin" | "segments" | "clitellum" | "bristles" | "mouth" | "vessels" | "sac";
 

@@ -3,9 +3,9 @@
 // Diseases follow templates/data/disorders.ts (CIRCULATION_DISORDERS, IMMUNE_DISORDERS).
 import { useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { MatchQuiz, type QuizItem, type QuizOption } from "../../games.tsx";
-import { Choice, KIT, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { MatchQuiz, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Choice, KIT, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

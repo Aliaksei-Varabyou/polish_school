@@ -1,9 +1,9 @@
 // Lesson for §1.1 "W królestwie zwierząt" (Puls życia 6). Terms follow
 // templates/data/sp6Invertebrates.ts (KINGDOM).
 import { Symmetry } from "../cnidarians/Symmetry.tsx";
-import { MatchQuiz, TwoWaySort, type QuizItem, type QuizOption, type SortItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { MatchQuiz, TwoWaySort, type QuizItem, type QuizOption, type SortItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const T = {
   lead: {

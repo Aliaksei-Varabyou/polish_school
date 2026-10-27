@@ -1,7 +1,7 @@
 // Block 3: beaks. Six heads with six beak shapes; for each food the student picks the beak that
 // can get it, and learns which bird it is.
 import type { BioLang } from "../../../lang.ts";
-import { MatchQuiz, type QuizItem, type QuizOption } from "../games.tsx";
+import { MatchQuiz, type QuizItem, type QuizOption } from "@portal/lessons";
 
 function head(beak: string, color = "#f59e0b", extra?: string) {
   return (

@@ -1,8 +1,8 @@
 // Lesson for §4.3 "Płazy – kręgowce wodno-lądowe" (Puls życia 6). Terms follow the task bank of the
 // same paragraph (templates/data/sp6Vertebrates.ts, AMPHIBIANS).
-import { TwoWaySort, type SortItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { TwoWaySort, type SortItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { ColdBlood } from "./ColdBlood.tsx";
 import { FrogMap } from "./FrogMap.tsx";
 import { TadpoleGrowth } from "./TadpoleGrowth.tsx";

@@ -1,8 +1,8 @@
 // Drawings and interactives of the flatworms lesson: the planarian, a tapeworm's head and chain.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
-import type { Txt } from "../kit.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
+import type { Txt } from "@portal/lessons";
 
 type PlanariaPart = "eyes" | "body" | "pharynx" | "gut" | "cilia";
 

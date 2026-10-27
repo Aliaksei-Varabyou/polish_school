@@ -1,8 +1,8 @@
 // Lesson for §5.3 "Ssaki – kręgowce, które karmią młode mlekiem" (Puls życia 6). Terms follow
 // templates/data/sp6Vertebrates.ts (MAMMALS, MAMMAL_SPECIES).
-import { MatchQuiz, type QuizItem, type QuizOption } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { MatchQuiz, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { FoxMap } from "./FoxMap.tsx";
 import { KeepWarm } from "./KeepWarm.tsx";
 import { Teeth } from "./Teeth.tsx";

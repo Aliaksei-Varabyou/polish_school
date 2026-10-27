@@ -3,7 +3,7 @@
 // time. A wrong step is not skipped: the hint explains what to look at and the student tries again.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, Verdict, type Txt } from "../kit.tsx";
+import { Choice, KIT, Verdict, type Txt } from "@portal/lessons";
 
 type Group = "insect" | "arachnid" | "crustacean" | "other";
 type Pairs = 3 | 4 | 5;

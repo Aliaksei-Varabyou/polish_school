@@ -3,9 +3,9 @@
 // templates/data/organism.ts (TISSUES, HIERARCHY_AND_TRANSPORT).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { CompareTabs, type CompareCard } from "../../games.tsx";
-import { Choice, num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { CompareTabs, type CompareCard } from "@portal/lessons";
+import { Choice, num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

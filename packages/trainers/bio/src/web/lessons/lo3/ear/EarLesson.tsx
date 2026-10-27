@@ -2,9 +2,9 @@
 // templates/data/systems.ts (SENSE_PARTS, senses.ear) and systemsMore.ts (EAR_PARTS).
 import { useEffect, useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { OrderGame, PartMap, type MapPart } from "../../games.tsx";
-import { Choice, num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { OrderGame, PartMap, type MapPart } from "@portal/lessons";
+import { Choice, num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

@@ -3,9 +3,9 @@
 // sense where they act. Organs and enzymes follow templates/data/systems.ts (DIGESTIVE_ORGANS, ENZYMES).
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { MatchQuiz, OrderGame, PartMap, type MapPart, type QuizItem, type QuizOption } from "../../games.tsx";
-import { Choice, KIT, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { MatchQuiz, OrderGame, PartMap, type MapPart, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Choice, KIT, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

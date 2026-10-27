@@ -3,9 +3,9 @@
 // zapłodnienie zewnętrzne/wewnętrzne, jajorodność, żyworodność, rozwój złożony, błony płodowe.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { CompareTabs, MatchQuiz, TwoWaySort, type CompareCard, type QuizItem, type QuizOption, type SortItem } from "../../games.tsx";
-import { Choice, KIT, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { CompareTabs, MatchQuiz, TwoWaySort, type CompareCard, type QuizItem, type QuizOption, type SortItem } from "@portal/lessons";
+import { Choice, KIT, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

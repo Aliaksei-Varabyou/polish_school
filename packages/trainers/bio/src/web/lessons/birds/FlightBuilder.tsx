@@ -2,7 +2,7 @@
 // switched on, and with all of them the bird takes off.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, type Txt } from "../kit.tsx";
+import { Choice, KIT, type Txt } from "@portal/lessons";
 
 interface Adaptation {
   id: string;

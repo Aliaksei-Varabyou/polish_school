@@ -2,9 +2,9 @@
 // gazowa" (zakres rozszerzony). Terms and volumes follow templates/data/respiration.ts.
 import { useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { OrderGame } from "../../games.tsx";
-import { Choice, num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { OrderGame } from "@portal/lessons";
+import { Choice, num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

@@ -2,7 +2,7 @@
 // coiled thread into a water flea.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, type Txt } from "../kit.tsx";
+import { Choice, KIT, type Txt } from "@portal/lessons";
 
 const T = {
   touch: { pl: "👆 Dotknij włoska czuciowego", ru: "👆 Задеть чувствительный волосок" },

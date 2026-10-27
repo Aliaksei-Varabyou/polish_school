@@ -1,8 +1,8 @@
 // Lesson for §2.1 "Parzydełkowce – najprostsze zwierzęta tkankowe" (Puls życia 6). Terms follow
 // templates/data/sp6Invertebrates.ts (CNIDARIANS).
-import { TwoWaySort, type SortItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { TwoWaySort, type SortItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { HydraMap } from "./HydraMap.tsx";
 import { Stinger } from "./Stinger.tsx";
 import { Symmetry } from "./Symmetry.tsx";

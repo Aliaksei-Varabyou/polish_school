@@ -1,7 +1,7 @@
 // Block 1 of the reptiles lesson: a sand lizard from above. Choosing the tail shows autotomy — the
 // tail snaps off — and choosing the tongue flicks it out.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type LizardPart = "scales" | "eyes" | "ear" | "legs" | "tail" | "tongue" | "lungs";
 

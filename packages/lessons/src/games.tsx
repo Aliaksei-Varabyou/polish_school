@@ -6,9 +6,11 @@
 // - CompareTabs: groups side by side, the same features in every tab
 // - SpeciesGallery: species cards that open a description
 // - OrderGame: put the stations of a route in order
+// - Timeline: put events in chronological order; the years appear as they are placed
+// - TrueFalse: judge statements, each explained once answered
 import { emitMors } from "@portal/ui";
 import { useState, type ReactNode } from "react";
-import type { BioLang } from "../../lang.ts";
+import type { ContentLang } from "./lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
 
 const T = {
@@ -25,6 +27,10 @@ const T = {
   pickFirst: { pl: "Najpierw wybierz podpis z listy.", ru: "Сначала выбери подпись из списка." },
   wrongPin: { pl: "ta pinezka wskazuje inną część. Spróbuj jeszcze raz.", ru: "эта метка указывает на другую часть. Попробуй ещё раз." },
   done: { pl: "Wszystko gotowe! Pomyłek:", ru: "Всё готово! Ошибок:" },
+  earliest: { pl: "Co było najpierw?", ru: "Что было раньше всего?" },
+  thenWhat: { pl: "Co było potem?", ru: "Что было потом?" },
+  truth: { pl: "Prawda", ru: "Правда" },
+  falsehood: { pl: "Fałsz", ru: "Ложь" },
   pin: { pl: "Pinezka", ru: "Метка" },
 } satisfies Record<string, Txt>;
 
@@ -48,7 +54,7 @@ export interface ArtKit<Id extends string> {
 }
 
 interface PartMapProps<Id extends string> {
-  lang: BioLang;
+  lang: ContentLang;
   parts: Record<Id, MapPart>;
   viewBox: string;
   title: Txt;
@@ -285,7 +291,7 @@ export interface SortItem {
   why: Txt;
 }
 
-export function TwoWaySort({ lang, title, hint, groups, items }: { lang: BioLang; title: Txt; hint?: Txt; groups: [Txt, Txt]; items: SortItem[] }) {
+export function TwoWaySort({ lang, title, hint, groups, items }: { lang: ContentLang; title: Txt; hint?: Txt; groups: [Txt, Txt]; items: SortItem[] }) {
   const [solved, setSolved] = useState<Record<number, boolean>>({});
   const [wrong, setWrong] = useState<Record<number, boolean>>({});
   const [mistakes, setMistakes] = useState(0);
@@ -366,7 +372,7 @@ export function MatchQuiz({
   items,
   wrongHint,
 }: {
-  lang: BioLang;
+  lang: ContentLang;
   title: Txt;
   question: Txt;
   options: QuizOption[];
@@ -493,7 +499,7 @@ const C = {
 } satisfies Record<string, Txt>;
 
 /** A life cycle drawn as a ring of stages; step through it, and optionally see where to break it. */
-export function CycleDiagram({ lang, title, stages }: { lang: BioLang; title: Txt; stages: CycleStage[] }) {
+export function CycleDiagram({ lang, title, stages }: { lang: ContentLang; title: Txt; stages: CycleStage[] }) {
   const [i, setI] = useState(0);
   const [shield, setShield] = useState(false);
   const n = stages.length;
@@ -608,7 +614,7 @@ export interface CompareCard {
 }
 
 /** Groups side by side: one tab per group, each with a drawing and a table of the same features. */
-export function CompareTabs({ lang, cards }: { lang: BioLang; cards: CompareCard[] }) {
+export function CompareTabs({ lang, cards }: { lang: ContentLang; cards: CompareCard[] }) {
   const [id, setId] = useState(cards[0]!.id);
   const card = cards.find((c) => c.id === id)!;
   return (
@@ -662,7 +668,7 @@ export interface Species {
 }
 
 /** A grid of species cards; tapping one opens its description. */
-export function SpeciesGallery({ lang, items }: { lang: BioLang; items: Species[] }) {
+export function SpeciesGallery({ lang, items, hint }: { lang: ContentLang; items: Species[]; hint?: Txt }) {
   const [open, setOpen] = useState<number | null>(null);
   const item = open === null ? null : items[open];
   return (
@@ -697,7 +703,7 @@ export function SpeciesGallery({ lang, items }: { lang: BioLang; items: Species[
           </p>
         ) : (
           <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-            👆 {lang === "pl" ? "Dotknij karty, żeby poznać gatunek." : "Нажми на карточку, чтобы узнать о виде."}
+            👆 {(hint ?? GALLERY_HINT)[lang]}
           </p>
         )}
       </div>
@@ -712,7 +718,7 @@ export function SpeciesGallery({ lang, items }: { lang: BioLang; items: Species[
  * the next station among shuffled chips; a wrong tap explains nothing but counts, a right one joins
  * the path drawn so far.
  */
-export function OrderGame({ lang, title, start, steps, hint }: { lang: BioLang; title: Txt; start?: Txt; steps: Txt[]; hint?: Txt }) {
+export function OrderGame({ lang, title, start, steps, hint }: { lang: ContentLang; title: Txt; start?: Txt; steps: Txt[]; hint?: Txt }) {
   // a fixed shuffle (by a simple hash) keeps renders and tests stable
   const shuffled = steps.map((s, i) => ({ s, i, k: (s.pl.length * 7 + i * 13) % 17 })).sort((a, b) => a.k - b.k || a.i - b.i);
   const [done, setDone] = useState(0);
@@ -766,6 +772,164 @@ export function OrderGame({ lang, title, start, steps, hint }: { lang: BioLang; 
             ))}
         </div>
       ) : (
+        <div className="mt-3 space-y-3">
+          <Verdict ok={mistakes === 0} lang={lang}>
+            {T.done[lang]} {mistakes}.
+          </Verdict>
+          <Choice onClick={reset}>↺ {KIT.again[lang]}</Choice>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** what the gallery says before a card is opened */
+const GALLERY_HINT: Txt = { pl: "Dotknij karty, żeby dowiedzieć się więcej.", ru: "Нажми на карточку, чтобы узнать больше." };
+/** the hint for a gallery of species (biology's "Przegląd i znaczenie" lessons) */
+export const SPECIES_HINT: Txt = { pl: "Dotknij karty, żeby poznać gatunek.", ru: "Нажми на карточку, чтобы узнать о виде." };
+
+// ---------- Timeline ----------
+
+export interface TimelineEvent {
+  name: Txt;
+  /** a year, or a date as printed ("1 IX 1939", "XV w.") — compared by `order`, shown as is */
+  when: string;
+  /** one line on why the event matters, shown once it is placed */
+  note?: Txt;
+}
+
+/**
+ * Put events in chronological order. The student taps, among shuffled chips, the event that comes
+ * next; a right tap adds it to the line with its date, a wrong one is counted. Events are given in
+ * the right order and shuffled for display by a fixed hash, so renders and tests stay stable.
+ */
+export function Timeline({ lang, title, hint, events }: { lang: ContentLang; title: Txt; hint?: Txt; events: TimelineEvent[] }) {
+  const shuffled = events.map((e, i) => ({ e, i, k: (e.name.pl.length * 7 + i * 13) % 17 })).sort((a, b) => a.k - b.k || a.i - b.i);
+  const [done, setDone] = useState(0);
+  const [wrong, setWrong] = useState<number | null>(null);
+  const [mistakes, setMistakes] = useState(0);
+  const finished = done === events.length;
+  const pick = (i: number) => {
+    if (finished) return;
+    if (i === done) {
+      emitMors(done + 1 === events.length ? (mistakes === 0 ? "perfect" : "done") : "right");
+      setDone(done + 1);
+      setWrong(null);
+    } else {
+      emitMors("wrong");
+      setWrong(i);
+      setMistakes(mistakes + 1);
+    }
+  };
+  const reset = () => {
+    setDone(0);
+    setWrong(null);
+    setMistakes(0);
+  };
+  return (
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+      <h3 className="text-base font-semibold text-slate-800">🕰 {title[lang]}</h3>
+      {hint && <p className="mt-1 text-sm text-slate-500">{hint[lang]}</p>}
+      <ol className="relative mt-3 ml-3 border-l-2 border-amber-300 pl-5" aria-live="polite">
+        {events.slice(0, done).map((e) => (
+          <li key={e.name.pl} className="relative pb-3">
+            <span aria-hidden className="absolute top-1.5 -left-[27px] h-3 w-3 rounded-full bg-amber-500 ring-2 ring-white" />
+            <div className="text-sm">
+              <span className="font-semibold text-amber-800 tabular-nums">{e.when}</span> <span className="text-slate-800">{e.name[lang]}</span>
+            </div>
+            {e.note && <div className="text-xs text-slate-500">{e.note[lang]}</div>}
+          </li>
+        ))}
+        {!finished && (
+          <li className="relative pb-1">
+            <span aria-hidden className="absolute top-1.5 -left-[27px] h-3 w-3 rounded-full border-2 border-dashed border-slate-400 bg-white" />
+            <span className="text-sm text-slate-400">{done === 0 ? T.earliest[lang] : T.thenWhat[lang]}</span>
+          </li>
+        )}
+      </ol>
+      {!finished ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {shuffled
+            .filter(({ i }) => i >= done)
+            .map(({ e, i }) => (
+              <Choice key={e.name.pl} state={wrong === i ? "wrong" : "idle"} onClick={() => pick(i)}>
+                {e.name[lang]}
+              </Choice>
+            ))}
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <Verdict ok={mistakes === 0} lang={lang}>
+            {T.done[lang]} {mistakes}.
+          </Verdict>
+          <Choice onClick={reset}>↺ {KIT.again[lang]}</Choice>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- TrueFalse ----------
+
+export interface Statement {
+  text: Txt;
+  truth: boolean;
+  /** the correction or the confirmation, shown once answered */
+  why: Txt;
+}
+
+/** Judge each statement true or false; a wrong pick explains itself and counts as a mistake. */
+export function TrueFalse({ lang, title, hint, items }: { lang: ContentLang; title: Txt; hint?: Txt; items: Statement[] }) {
+  const [answered, setAnswered] = useState<Record<number, boolean>>({});
+  const [mistakes, setMistakes] = useState(0);
+  const done = Object.keys(answered).length === items.length;
+  const pick = (i: number, truth: boolean) => {
+    if (answered[i] !== undefined) return;
+    const ok = items[i]!.truth === truth;
+    const finished = Object.keys(answered).length + 1 === items.length;
+    const total = mistakes + (ok ? 0 : 1);
+    emitMors(finished ? (total === 0 ? "perfect" : "done") : ok ? "right" : "wrong");
+    setAnswered({ ...answered, [i]: ok });
+    if (!ok) setMistakes(mistakes + 1);
+  };
+  const reset = () => {
+    setAnswered({});
+    setMistakes(0);
+  };
+  return (
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+      <h3 className="text-base font-semibold text-slate-800">⚖️ {title[lang]}</h3>
+      {hint && <p className="mt-1 text-sm text-slate-500">{hint[lang]}</p>}
+      <ul className="mt-3 divide-y divide-slate-200">
+        {items.map((item, i) => {
+          const ok = answered[i];
+          return (
+            <li key={item.text.pl} className="py-2.5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="text-[15px] text-slate-800">{item.text[lang]}</div>
+                <div className="flex shrink-0 gap-2">
+                  {([true, false] as const).map((truth) => (
+                    <Choice
+                      key={String(truth)}
+                      disabled={ok !== undefined}
+                      state={ok === undefined ? "idle" : item.truth === truth ? "right" : ok ? "idle" : "wrong"}
+                      onClick={() => pick(i, truth)}
+                    >
+                      {truth ? T.truth[lang] : T.falsehood[lang]}
+                    </Choice>
+                  ))}
+                </div>
+              </div>
+              {ok !== undefined && (
+                <div className={`mt-1.5 text-xs ${ok ? "text-emerald-700" : "text-rose-700"}`}>
+                  {ok ? "✓" : "✗"} {item.why[lang]}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {done && (
         <div className="mt-3 space-y-3">
           <Verdict ok={mistakes === 0} lang={lang}>
             {T.done[lang]} {mistakes}.

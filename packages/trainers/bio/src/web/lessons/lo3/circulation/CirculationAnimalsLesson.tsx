@@ -2,9 +2,9 @@
 // templates/data/comparative.ts (ANIMAL_CIRCULATION).
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { CompareTabs, OrderGame, type CompareCard } from "../../games.tsx";
-import { Choice, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { CompareTabs, OrderGame, type CompareCard } from "@portal/lessons";
+import { Choice, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

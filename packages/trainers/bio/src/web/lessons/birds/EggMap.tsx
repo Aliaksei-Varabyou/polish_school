@@ -1,6 +1,6 @@
 // Block 4, part 1: a bird's egg cut lengthwise, every layer explaining what it gives the embryo.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type EggPart = "shell" | "membranes" | "aircell" | "albumen" | "chalazae" | "yolk" | "disc";
 

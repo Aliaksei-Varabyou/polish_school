@@ -3,7 +3,7 @@
 // stands out. A short sorting game follows.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, Verdict, type Txt } from "../kit.tsx";
+import { Choice, KIT, Verdict, type Txt } from "@portal/lessons";
 
 interface Stage {
   name: Txt;

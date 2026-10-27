@@ -2,9 +2,9 @@
 // processes follow templates/data/urinary.ts (NEPHRON_PARTS, URINE_PROCESSES).
 import { useState } from "react";
 import type { BioLang } from "../../../../lang.ts";
-import { CompareTabs, MatchQuiz, OrderGame, PartMap, type CompareCard, type MapPart, type QuizItem, type QuizOption } from "../../games.tsx";
-import { num, Remember, Section, type LessonProps, type Txt } from "../../kit.tsx";
-import { LessonIntro } from "../../LessonIntro.tsx";
+import { CompareTabs, MatchQuiz, OrderGame, PartMap, type CompareCard, type MapPart, type QuizItem, type QuizOption } from "@portal/lessons";
+import { num, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 

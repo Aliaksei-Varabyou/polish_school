@@ -1,9 +1,9 @@
 // Lesson for §1.2 "Tkanki: nabłonkowa, mięśniowa i nerwowa" and §1.3 "Tkanka łączna" (Puls życia 6) —
 // one lesson for both, since the four tissue groups only make sense side by side. Terms follow
 // templates/data/sp6Invertebrates.ts (TISSUES6, CONNECTIVE).
-import { MatchQuiz, type QuizItem } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { MatchQuiz, type QuizItem } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { BloodMap } from "./BloodMap.tsx";
 import { Neuron } from "./Neuron.tsx";
 import { GROUPS, TissueScope } from "./TissueScope.tsx";

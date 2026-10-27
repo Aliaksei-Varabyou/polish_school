@@ -1,9 +1,9 @@
 // Lesson for §3.3 "Owady – stawonogi zdolne do lotu" (Puls życia 6). The terms match the task bank
 // of the same paragraph (templates/data/sp6Invertebrates.ts), so the explanation and the test use
 // the same words.
-import type { LessonProps, Txt } from "../kit.tsx";
-import { Remember, Section } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import type { LessonProps, Txt } from "@portal/lessons";
+import { Remember, Section } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { BodyMap } from "./BodyMap.tsx";
 import { Classifier } from "./Classifier.tsx";
 import { Metamorphosis } from "./Metamorphosis.tsx";

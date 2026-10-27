@@ -1,7 +1,7 @@
 // Block 1 of the amphibians lesson: a frog seen from the side, every part explaining what it does on
 // land or in water.
 import type { BioLang } from "../../../lang.ts";
-import { PartMap, type MapPart } from "../games.tsx";
+import { PartMap, type MapPart } from "@portal/lessons";
 
 type FrogPart = "skin" | "eyes" | "ear" | "tongue" | "forelimb" | "hindlimb" | "web" | "lungs";
 

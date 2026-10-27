@@ -2,9 +2,9 @@
 // templates/data/sp6Vertebrates.ts (FISH_SPECIES).
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { SpeciesGallery, TwoWaySort, type SortItem, type Species } from "../games.tsx";
-import { Choice, Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { SPECIES_HINT, SpeciesGallery, TwoWaySort, type SortItem, type Species } from "@portal/lessons";
+import { Choice, Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 
 const r = (pl: string, ru: string): Txt => ({ pl, ru });
 
@@ -151,7 +151,7 @@ export default function FishDiversityLesson({ lang }: LessonProps) {
     <div className="space-y-5">
       <LessonIntro lang={lang} lead={T.lead} prefix="fishd" sections={[T.s1, T.s2, T.s3]} />
       <Section id="fishd-s1" n={1} title={T.s1[lang]}>
-        <SpeciesGallery lang={lang} items={SPECIES} />
+        <SpeciesGallery lang={lang} items={SPECIES} hint={SPECIES_HINT} />
         <Remember lang={lang} items={REMEMBER.s1} />
       </Section>
       <Section id="fishd-s2" n={2} title={T.s2[lang]} intro={<p>{T.s2intro[lang]}</p>}>

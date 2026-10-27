@@ -2,7 +2,7 @@
 // "Feed the insect" asks which type fits a given food and names the insect that eats it.
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { Choice, KIT, Verdict, type Txt } from "../kit.tsx";
+import { Choice, KIT, Verdict, type Txt } from "@portal/lessons";
 
 type Mouth = "chewing" | "piercing" | "siphoning" | "sponging";
 

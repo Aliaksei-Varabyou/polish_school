@@ -2,9 +2,9 @@
 // templates/data/sp6Invertebrates.ts (ARTHROPOD_FEATURES).
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import { CompareTabs, MatchQuiz, type CompareCard, type QuizItem, type QuizOption } from "../games.tsx";
-import { Remember, Section, type LessonProps, type Txt } from "../kit.tsx";
-import { LessonIntro } from "../LessonIntro.tsx";
+import { CompareTabs, MatchQuiz, type CompareCard, type QuizItem, type QuizOption } from "@portal/lessons";
+import { Remember, Section, type LessonProps, type Txt } from "@portal/lessons";
+import { LessonIntro } from "@portal/lessons";
 import { Molting } from "./Molting.tsx";
 
 const T = {

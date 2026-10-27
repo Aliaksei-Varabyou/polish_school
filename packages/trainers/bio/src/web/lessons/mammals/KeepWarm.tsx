@@ -2,7 +2,7 @@
 // body temperature does not — the panel lists what the body does to hold it.
 import { useState } from "react";
 import type { BioLang } from "../../../lang.ts";
-import type { Txt } from "../kit.tsx";
+import type { Txt } from "@portal/lessons";
 
 const T = {
   air: { pl: "Temperatura powietrza", ru: "Температура воздуха" },
