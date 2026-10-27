@@ -6,6 +6,7 @@
 // - CompareTabs: groups side by side, the same features in every tab
 // - SpeciesGallery: species cards that open a description
 // - OrderGame: put the stations of a route in order
+import { emitMors } from "@portal/ui";
 import { useState, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 import { Choice, KIT, Verdict, type Txt } from "./kit.tsx";
@@ -165,10 +166,13 @@ function LabelMode<Id extends string>({ lang, parts, viewBox, title, art, labelO
     if (placed.includes(target)) return;
     if (!chosen) return setMessage({ ok: false, text: T.pickFirst[lang] });
     if (chosen === target) {
+      const finished = placed.length + 1 === labelOrder.length;
+      emitMors(finished ? (mistakes === 0 ? "perfect" : "done") : "right");
       setPlaced([...placed, target]);
       setMessage({ ok: true, text: parts[target].name[lang] });
       setChosen(null);
     } else {
+      emitMors("wrong");
       setMistakes(mistakes + 1);
       setMessage({ ok: false, text: `${parts[chosen].name[lang]} — ${T.wrongPin[lang]}` });
     }
@@ -290,9 +294,12 @@ export function TwoWaySort({ lang, title, hint, groups, items }: { lang: BioLang
   const pick = (i: number, group: 0 | 1) => {
     if (solved[i]) return;
     if (items[i]!.group === group) {
+      const finished = Object.keys(solved).length + 1 === items.length;
+      emitMors(finished ? (mistakes === 0 ? "perfect" : "done") : "right");
       setSolved({ ...solved, [i]: true });
       setWrong({ ...wrong, [i]: false });
     } else {
+      emitMors("wrong");
       setWrong({ ...wrong, [i]: true });
       setMistakes(mistakes + 1);
     }
@@ -375,14 +382,17 @@ export function MatchQuiz({
   const pick = (id: string) => {
     if (!item || solved) return;
     if (id === item.answer) {
+      emitMors("right");
       setSolved(true);
       setWrong(null);
     } else {
+      emitMors("wrong");
       setWrong(id);
       setMistakes(mistakes + 1);
     }
   };
   const next = () => {
+    if (index + 1 === items.length) emitMors(mistakes === 0 ? "perfect" : "done");
     setIndex(index + 1);
     setSolved(false);
     setWrong(null);
@@ -712,9 +722,11 @@ export function OrderGame({ lang, title, start, steps, hint }: { lang: BioLang; 
   const pick = (i: number) => {
     if (finished) return;
     if (i === done) {
+      emitMors(done + 1 === steps.length ? (mistakes === 0 ? "perfect" : "done") : "right");
       setDone(done + 1);
       setWrong(null);
     } else {
+      emitMors("wrong");
       setWrong(i);
       setMistakes(mistakes + 1);
     }

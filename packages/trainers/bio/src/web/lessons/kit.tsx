@@ -1,7 +1,8 @@
 // Building blocks shared by the lessons: bilingual text, section cards, the "remember" box and the
 // small feedback line every interactive uses. Lesson content follows the session language (pl/ru),
 // so the words inside a lesson are part of its content, not of the UI translations.
-import type { ReactNode } from "react";
+import { emitMors } from "@portal/ui";
+import { useEffect, type ReactNode } from "react";
 import type { BioLang } from "../../lang.ts";
 
 /** A piece of lesson text in both content languages. */
@@ -51,6 +52,9 @@ export function Remember({ lang, items }: { lang: BioLang; items: readonly Txt[]
 
 /** One line of feedback after an answer: green when right, rose with an explanation when not. */
 export function Verdict({ ok, lang, children }: { ok: boolean; lang: BioLang; children?: ReactNode }) {
+  // lessons with their own widgets get Mors's reaction for free; the shared games announce their
+  // steps themselves, and the bus drops this echo of the same moment
+  useEffect(() => emitMors(ok ? "right" : "wrong"), [ok]);
   return (
     <div
       role="status"
