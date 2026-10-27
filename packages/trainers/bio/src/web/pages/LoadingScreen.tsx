@@ -1,25 +1,15 @@
-import { Card } from "@portal/ui";
-import { useEffect, useState } from "react";
+import { Card, MorsRun } from "@portal/ui";
 import { useTranslation } from "react-i18next";
-
-const SYMBOLS = ["🫀", "🫁", "🧠", "🦴", "🩸", "🧬", "👁️", "🦷"];
+import { MORS_LOADING } from "../mors.ts";
+import { useSession } from "../store/session.ts";
 
 export function LoadingScreen() {
   const { t } = useTranslation("bio");
-  const [i, setI] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setI((n) => (n + 1) % SYMBOLS.length), 600);
-    return () => clearInterval(id);
-  }, []);
+  const lang = useSession((s) => s.settings.lang);
 
   return (
-    <Card className="flex flex-col items-center py-16 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-4xl ring-4 ring-emerald-100">
-        <span key={i} className="animate-pulse">
-          {SYMBOLS[i]}
-        </span>
-      </div>
+    <Card className="flex flex-col items-center py-14 text-center">
+      <MorsRun size={220} className="mb-4 h-auto w-[180px] sm:w-[220px]" title={MORS_LOADING[lang]} />
       <h2 className="text-xl font-semibold text-slate-800">{t("loading.title")}</h2>
       <p className="mt-2 text-sm text-slate-500">{t("loading.hint")}</p>
     </Card>

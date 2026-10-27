@@ -1,9 +1,11 @@
 import type { TrainerAppProps } from "@portal/trainer-sdk";
 import { useEffect, useState } from "react";
+import { MorsBuddy } from "@portal/ui";
 import { useTranslation } from "react-i18next";
 import { isBioLang } from "../lang.ts";
 import { setTokenGetter } from "./api/client.ts";
 import { LessonPage } from "./lessons/LessonPage.tsx";
+import { MORS_LABELS, MORS_LINES } from "./mors.ts";
 import { LoadingScreen } from "./pages/LoadingScreen.tsx";
 import { ResultsPage } from "./pages/ResultsPage.tsx";
 import { StartPage } from "./pages/StartPage.tsx";
@@ -25,6 +27,9 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
   // a lesson is not a test and leaves the session untouched until the student starts one
   const [lessonId, setLessonId] = useState<string | null>(null);
   const showLesson = status === "idle" && lessonId !== null;
+  // Mors keeps company while the student learns: in a lesson and during a test. The results and
+  // loading screens draw him inline instead, and the start page is left calm.
+  const withMors = showLesson || status === "active";
 
   // Tasks follow the portal language — but only where biology has content. On English the store
   // keeps its own choice and the start page asks for one instead of requesting an empty session.
@@ -39,7 +44,8 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
   }, [status, setLanguageLocked]);
 
   return (
-    <div>
+    <div className={withMors ? "pb-24 xl:pb-0" : undefined}>
+      {withMors && <MorsBuddy lines={MORS_LINES[storeLang]} labels={MORS_LABELS[storeLang]} />}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           <span className="mr-2">🧬</span>
