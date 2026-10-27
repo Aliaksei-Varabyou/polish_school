@@ -1,6 +1,6 @@
 import { getTopic } from "../../index.ts";
-import { Button, Card, ProgressBar } from "@portal/ui";
-import { useState } from "react";
+import { Button, Card, ProgressBar, useMorsAnswer } from "@portal/ui";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnswerInput } from "../components/AnswerInput.tsx";
 import { ChoiceOptions } from "../components/ChoiceOptions.tsx";
@@ -21,8 +21,13 @@ export function TrainerPage() {
   const [solutionOpen, setSolutionOpen] = useState<string | null>(null);
 
   const task = tasks[index];
+  const record = task ? answers[task.id] : undefined;
+
+  // Mors reacts the moment an answer lands
+  const history = useMemo(() => tasks.slice(0, index + 1).map((t) => answers[t.id]?.correct), [tasks, index, answers]);
+  useMorsAnswer(task?.id, record?.correct, history);
+
   if (!task) return null;
-  const record = answers[task.id];
   const answered = !!record;
   const showSolution = solutionOpen === task.id || (answered && !record.correct && solutionOpen !== `hide:${task.id}`);
   const isLast = index + 1 >= tasks.length;

@@ -4,7 +4,7 @@
 // after every answer would turn into noise. The student can send him away; he then shrinks to a paw
 // button and stays away on the next visit too.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MORS_PRIORITY, onMors, type MorsEvent, type MorsEventKind } from "./bus.ts";
+import { emitMors, MORS_PRIORITY, onMors, type MorsEvent, type MorsEventKind } from "./bus.ts";
 import { Mors, type MorsMood } from "./Mors.tsx";
 
 export type MorsLines = Partial<Record<MorsEventKind | "pet" | "petMany", readonly string[]>>;
@@ -86,6 +86,13 @@ export function MorsBuddy({ lines, labels, sleepAfterMs = 75_000 }: Props) {
     const ms = MOOD_MS[next];
     if (ms) moodTimer.current = setTimeout(() => setMood("idle"), ms);
   }, []);
+
+  // a hello when he arrives on a screen, unless the page has already said something
+  useEffect(() => {
+    if (hidden) return;
+    const t = setTimeout(() => emitMors("greet"), 900);
+    return () => clearTimeout(t);
+  }, [hidden]);
 
   // events from the page
   useEffect(() => {

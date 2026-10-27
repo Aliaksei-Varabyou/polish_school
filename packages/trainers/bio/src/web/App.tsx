@@ -1,11 +1,11 @@
 import type { TrainerAppProps } from "@portal/trainer-sdk";
 import { useEffect, useState } from "react";
-import { MorsBuddy } from "@portal/ui";
+import { MORS_LABELS, MorsBuddy } from "@portal/ui";
 import { useTranslation } from "react-i18next";
 import { isBioLang } from "../lang.ts";
 import { setTokenGetter } from "./api/client.ts";
 import { LessonPage } from "./lessons/LessonPage.tsx";
-import { MORS_LABELS, MORS_LINES } from "./mors.ts";
+import { bioMorsLines } from "./mors.ts";
 import { LoadingScreen } from "./pages/LoadingScreen.tsx";
 import { ResultsPage } from "./pages/ResultsPage.tsx";
 import { StartPage } from "./pages/StartPage.tsx";
@@ -45,7 +45,7 @@ export default function BioTrainerApp({ lang, setLanguageLocked, getAccessToken 
 
   return (
     <div className={withMors ? "pb-24 xl:pb-0" : undefined}>
-      {withMors && <MorsBuddy lines={MORS_LINES[storeLang]} labels={MORS_LABELS[storeLang]} />}
+      {withMors && <MorsBuddy lines={bioMorsLines(storeLang)} labels={MORS_LABELS[storeLang]} />}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           <span className="mr-2">🧬</span>

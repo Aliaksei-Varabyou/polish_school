@@ -1,5 +1,5 @@
-import { Button, Card, Mors, type MorsMood } from "@portal/ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Button, Card, MorsVerdict } from "@portal/ui";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { topicLabel } from "../../index.ts";
 import { correctAnswerText } from "../components/format.ts";
@@ -15,17 +15,6 @@ export function ResultsPage() {
   const correct = tasks.filter((task) => answers[task.id]?.correct).length;
   const pct = tasks.length ? Math.round((correct / tasks.length) * 100) : 0;
   const message = pct >= 90 ? "great" : pct >= 70 ? "good" : pct >= 50 ? "ok" : "low";
-
-  // Mors greets the score: a spin for a top result, a sympathetic head tilt for a weak one
-  const scoreMood: MorsMood = message === "great" ? "celebrate" : message === "good" ? "happy" : message === "ok" ? "idle" : "wrong";
-  const [mood, setMood] = useState<MorsMood>(scoreMood);
-  const petTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(petTimer.current), []);
-  const pet = () => {
-    clearTimeout(petTimer.current);
-    setMood("pet");
-    petTimer.current = setTimeout(() => setMood(message === "great" ? "happy" : "idle"), 1900);
-  };
 
   const byTopic = useMemo(() => {
     const map = new Map<string, { ok: number; total: number }>();
@@ -55,14 +44,7 @@ export function ResultsPage() {
   return (
     <div className="space-y-5">
       <Card className="text-center">
-        <div className="mb-3 flex items-end justify-center gap-2">
-          <button type="button" onClick={pet} aria-label={MORS_RESULTS[lang].pet} className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-indigo-500">
-            <Mors mood={mood} size={88} />
-          </button>
-          <div className="relative mb-8 max-w-[240px] rounded-2xl bg-slate-50 px-3.5 py-2 text-left text-sm font-medium text-slate-700 ring-1 ring-slate-200">
-            {MORS_RESULTS[lang][message]}
-          </div>
-        </div>
+        <MorsVerdict lang={lang} band={message} say={MORS_RESULTS[lang][message]} />
         <div className="text-sm font-medium tracking-wide text-slate-500 uppercase">{t("results.title")}</div>
         <div className={`mt-2 text-5xl font-bold ${pct >= 70 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-rose-600"}`}>
           {pct}%

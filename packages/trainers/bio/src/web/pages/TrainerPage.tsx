@@ -1,6 +1,6 @@
 import { Button, Card, ProgressBar } from "@portal/ui";
-import { emitMors } from "@portal/ui";
-import { useEffect, useRef, useState } from "react";
+import { useMorsAnswer } from "@portal/ui";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { topicLabel } from "../../index.ts";
 import { AnswerInput } from "../components/AnswerInput.tsx";
@@ -23,17 +23,9 @@ export function TrainerPage() {
   const task = tasks[index];
   const record = task ? answers[task.id] : undefined;
 
-  // Mors reacts the moment an answer lands (not when a saved session is reopened on an answered task)
-  const seen = useRef(task && record ? task.id : null);
-  useEffect(() => {
-    if (!task || !record || seen.current === task.id) return;
-    seen.current = task.id;
-    if (!record.correct) return emitMors("wrong");
-    let streak = 0;
-    for (let i = index; i >= 0 && answers[tasks[i]!.id]?.correct; i--) streak++;
-    if ([3, 5, 7, 10, 15, 20].includes(streak)) emitMors("streak", { n: streak });
-    else emitMors("right");
-  }, [task, record, index, tasks, answers]);
+  // Mors reacts the moment an answer lands
+  const history = useMemo(() => tasks.slice(0, index + 1).map((t) => answers[t.id]?.correct), [tasks, index, answers]);
+  useMorsAnswer(task?.id, record?.correct, history);
 
   if (!task) return null;
   const answered = !!record;

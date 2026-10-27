@@ -1,6 +1,6 @@
 import type { ChoiceLabel } from "@portal/core";
-import { Button, Card, ProgressBar } from "@portal/ui";
-import { useState } from "react";
+import { Button, Card, ProgressBar, useMorsAnswer } from "@portal/ui";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChoiceOptions } from "../components/ChoiceOptions.tsx";
 import { useSession } from "../store/session.ts";
@@ -18,8 +18,13 @@ export function QuizPage() {
   const [solutionOpen, setSolutionOpen] = useState<string | null>(null);
 
   const question = questions[index];
+  const record = question ? answers[question.id] : undefined;
+
+  // Mors reacts the moment an answer lands
+  const history = useMemo(() => questions.slice(0, index + 1).map((q) => answers[q.id]?.correct), [questions, index, answers]);
+  useMorsAnswer(question?.id, record?.correct, history);
+
   if (!question) return null;
-  const record = answers[question.id];
   const answered = !!record;
   const showSolution = solutionOpen === question.id || (answered && !record.correct && solutionOpen !== `hide:${question.id}`);
   const isLast = index + 1 >= questions.length;

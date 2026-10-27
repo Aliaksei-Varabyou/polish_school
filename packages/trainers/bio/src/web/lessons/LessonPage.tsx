@@ -25,12 +25,11 @@ export function LessonPage({ paragraphId, lang, onClose, onPractice }: Props) {
     window.scrollTo({ top: 0 });
   }, [paragraphId]);
 
-  // Mors follows the reading: a hello on opening, a word at the last section, and a nudge towards
-  // the test when its block comes into view. Each fires once per lesson.
+  // Mors follows the reading: a word at the last section and a nudge towards the test when its
+  // block comes into view. Each fires once per lesson (the hello is the companion's own).
   const lessonRef = useRef<HTMLDivElement>(null);
   const practiceRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const hello = setTimeout(() => emitMors("greet"), 900);
     const fired = new Set<Element>();
     const io = new IntersectionObserver(
       (entries) => {
@@ -58,7 +57,6 @@ export function LessonPage({ paragraphId, lang, onClose, onPractice }: Props) {
     if (lessonRef.current) mo.observe(lessonRef.current, { childList: true, subtree: true });
     watchLast();
     return () => {
-      clearTimeout(hello);
       io.disconnect();
       mo.disconnect();
     };

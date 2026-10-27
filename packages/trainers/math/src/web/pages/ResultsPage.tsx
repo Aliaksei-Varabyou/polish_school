@@ -1,9 +1,10 @@
 import { getTopic } from "../../index.ts";
-import { Button, Card } from "@portal/ui";
+import { Button, Card, MorsVerdict } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { correctAnswerText, prettyAnswer } from "../components/format.ts";
 import { MathText } from "../components/MathText.tsx";
+import { MORS_RESULTS } from "../mors.ts";
 import { useSession } from "../store/session.ts";
 
 export function ResultsPage() {
@@ -44,6 +45,7 @@ export function ResultsPage() {
   return (
     <div className="space-y-5">
       <Card className="text-center">
+        <MorsVerdict lang={lang} band={message} say={MORS_RESULTS[lang][message]} />
         <div className="text-sm font-medium uppercase tracking-wide text-slate-500">{t("results.title")}</div>
         <div className={`mt-2 text-5xl font-bold ${pct >= 70 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-rose-600"}`}>
           {pct}%

@@ -1,8 +1,10 @@
 import "katex/dist/katex.min.css";
 import type { TrainerAppProps } from "@portal/trainer-sdk";
+import { MORS_LABELS, MorsBuddy } from "@portal/ui";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { setTokenGetter } from "./api/client.ts";
+import { mathMorsLines } from "./mors.ts";
 import { LoadingScreen } from "./pages/LoadingScreen.tsx";
 import { ResultsPage } from "./pages/ResultsPage.tsx";
 import { StartPage } from "./pages/StartPage.tsx";
@@ -30,8 +32,12 @@ export default function MathTrainerApp({ lang, setLanguageLocked, getAccessToken
     return () => setLanguageLocked(false);
   }, [status, setLanguageLocked]);
 
+  // Mors keeps company during a test; the results and loading screens draw him inline instead
+  const withMors = status === "active";
+
   return (
-    <div>
+    <div className={withMors ? "pb-24 xl:pb-0" : undefined}>
+      {withMors && <MorsBuddy lines={mathMorsLines(storeLang)} labels={MORS_LABELS[storeLang]} />}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           <span className="mr-2">➗</span>

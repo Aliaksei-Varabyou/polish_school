@@ -1,10 +1,13 @@
-import { Button, Card } from "@portal/ui";
+import type { Lang } from "@portal/core";
+import { Button, Card, MorsVerdict } from "@portal/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { MORS_RESULTS } from "../mors.ts";
 import { useSession } from "../store/session.ts";
 
 export function ResultsPage() {
-  const { t } = useTranslation("lectures");
+  const { t, i18n } = useTranslation("lectures");
+  const lang = i18n.language as Lang;
   const { questions, answers } = useSession();
   const { start, quit } = useSession.getState();
 
@@ -29,6 +32,7 @@ export function ResultsPage() {
   return (
     <div className="space-y-5">
       <Card className="text-center">
+        <MorsVerdict lang={lang} band={message} say={(MORS_RESULTS[lang] ?? MORS_RESULTS.pl)[message]} />
         <div className="text-sm font-medium uppercase tracking-wide text-slate-500">{t("results.title")}</div>
         <div className={`mt-2 text-5xl font-bold ${pct >= 70 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-rose-600"}`}>
           {pct}%
