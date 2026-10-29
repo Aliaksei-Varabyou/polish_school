@@ -183,3 +183,7 @@ npm run e2e       # playwright; перед стартом сервера сам 
 (`node scripts/build-vercel-function.mjs`): Vercel проверяет бандл до того, как выполнит `buildCommand`.
 
 Приложение тренажёра получает `lang` и `setLanguageLocked` от портала и грузится отдельным чанком.
+
+## Лицензия
+
+All rights reserved. Код не распространяется под открытой лицензией, подробности в файле [LICENSE](LICENSE).

@@ -1,6 +1,7 @@
 {
   "name": "matema",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "workspaces": [
     "packages/*",
